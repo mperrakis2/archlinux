@@ -1,0 +1,201 @@
+# In this text file you can specify files and/or directories to exclude from 
+# cloning. For example,
+#
+# -/home/user/Music/* (exclude all files and directories under
+#                      /home/user/Music/)
+# -/home/user/Music/  (exclude directory 'Music' under /home/user/)
+# -/home/user/Music   (exclude a file or directory named 'Music' under
+#                      /home/user/)
+#
+# A leading minus (-) sign specifies an exclude entry. Do not use quotes unless
+# they are part of the filename or dirname in which case they have to be escaped,
+# e.g. \', \". A trailing '/' specifies a directory to be excluded. No trailing
+# '/' specifies a directory or file to be excluded.
+
+# If you want to exclude everything under a specific directory except certain
+# files or directories you can use an exclude/include tuple. For example,
+#
+# -/home/user/*               (exclude all files and directories under
+#                              /home/user/)
+# +/home/user/business/report (include a file or directory named 'report' under
+#                              /home/user/business/)
+# +/home/user/business/sales/ (include a directory named 'sales' under
+#                              /home/user/business/)
+#
+# A leading plus (+) sign specifies an include entry.
+#
+# A tuple requires at least two entries and one of them has to be an exclude.
+# If there's no exclude entry for an include entry the include entry is ignored.
+# The exclude entry need not preceed the include entries.
+#
+# In case 'report' is under a directory and you are unsure if it's a file or
+# directory and want to exclude it only if it's a file, you can create a
+# tuple as follows:
+#
+# -/home/user/report  (exclude a file or directory named 'report')
+# +/home/user/report/ (include directory 'report')
+#
+# Another example of a tuple:
+# -/home/user/a*    # exclude all 'a*' under '/home/user/'
+# -/home/user/c*    # exclude all 'c*' under '/home/user/'
+# +/home/user/[ac]z # include 'az' and 'cz' under '/home/user/'
+
+# If a filename or dirname includes spaces or parentheses or escaped characters
+# like a newline they have to be escaped. For example,
+#
+# [prompt]$ ls -1
+# '/home/user/monthly'$'\n''reports/november'
+# '/home/user/sales/november (sorted)'
+#
+# The above filenames contain a newline ($'\n'), a space and parentheses. The
+# correct exclude entries, removing unnecessary single quotes, would be
+#
+# -/home/user/monthly$'\n'reports/november (escaped character syntax: $'\<ec>')
+# -/home/user/sales/november\ \(sorted\)   (space and parentheses escaped)
+#
+# All escaped characters have to be specified as $'\<ec>'.
+
+# Valid entries
+# -------------
+# Valid entries are described in detail below.
+#
+# a) blank lines
+#
+# b) comments
+# -----------
+# A line starting with '#' is a comment.
+#
+# c) -|+<fspec>
+# -------------
+# A leading sign ('-' or '+') followed by a mandatory file specification
+# (<fspec>) and an optional '/'. <fspec> specifies full pathnames of files or
+# directories and all metacharacters of the bash shell can be used. <fspec> must
+# have a leading '/' and if followed by one a directory is specifed. If not
+# followed by one a directory or file is specified.
+#  
+# examples
+# --------
+# -/dir1/dir2/report*  (exclude all files and directories beginning with
+#                       'report', under '/dir1/dir2/')
+# -/dir1/dir2/report*/ (exclude directories beginning with 'report', under
+#                       '/dir1/dir2/')
+#
+# exclude/include tuple:
+# -/dir1/dir2/          (exclude 'dir1/dir2' under root directory)
+# +/dir1/dir2/file1.txt (include 'file1.txt' under '/dir1/dir2/')
+# +/dir1/dir2/file2.txt (include 'file2.txt' under '/dir1/dir2/')
+#
+# -/dir1/dir2/????.txt
+# -/dir1/dir2/foot????.doc
+# -/dir1/dir2/best.???
+# -/dir1/dir2/*.pl
+# -/dir1/dir2/a*.*
+# -/dir1/dir2/[p-s]*             (files/dirs with first char in 'p-s' range)
+# -/dir1/dir2/[^p-s]*            (files/dirs with first char NOT in 'p-s' range)
+# -/dir1/dir2/[^p]*              (files/dirs with first char NOT 'p')
+# -/dir1/dir2/[1-5]*             (files/dirs with first char in '1-5' range)
+# -/dir1/dir2/{?????.sh,*st.txt} (files that match '?????.sh' AND '*st.txt')
+# -/dir1/dir2/*{.jpg,.mp3}       (files that have 'jpg' AND 'mp3' extention)
+# -/dir1/dir2/?(*.jpg|*.mp3)     (0 or 1 file that have 'jpg' OR 'mp3' extention)
+# -/dir1/dir2/*(*.jpg|*.mp3)     (0 or more files that have 'jpg' OR 'mp3' extention)
+# -/dir1/dir2/+(*.jpg|*.mp3)     (1 or more files that have 'jpg' OR 'mp3' extention)
+# -/dir1/dir2/!(*.jpg|*.mp3)     (files that do NOT have 'jpg' OR 'mp3' extention)
+#
+# d) -|+/[<path>] [<path>]<name>
+# ------------------------------
+# A leading sign ('-' or '+') followed by a '/' and a <path> which is optional
+# and can have a trailing '/'. All metacharacters of the bash shell can be used
+# in <path>. The next token contains an optional <path> which can't have a
+# leading '/'. <name> specifies filenames or dirnames. <path> and <name> must be
+# separated by a '/'. The following metacharacters can be used in 
+# [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies
+# directories only.
+#  
+# examples
+# --------
+# -/dir1/dir2/ report*      (exclude all files and directories beginning with
+#                            'report' that are under:
+#                            * '/dir1/dir2/'
+#                            * or any directory that is under '/dir1/dir2/')
+# -/dir1/dir2 report*/      (exclude directories beginning with 'report' that
+#                            are under:
+#                            * '/dir1/dir2/'
+#                            * or any directory that is under '/dir1/dir2/')
+# -/dir1/dir2/ dir3/report* (exclude all files and directories beginning with
+#                            'report' that are under any 'dir3' directory that
+#                            is under:
+#                            * '/dir1/dir2/'
+#                            * or any directory that is under '/dir1/dir2/')
+# -/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that
+#                            are under any 'dir3' directory that is under:
+#                            * '/dir1/dir2/'
+#                            * or any directory that is under '/dir1/dir2/')
+#
+# exclude/include tuple:
+# -/dir1/dir2 dir3/dir4/           (exclude directory 'dir4' that is under any
+#                                   'dir3' directory that is under:
+#                                   * '/dir1/dir2/'
+#                                   * or any directory that is under '/dir1/dir2/')
+# +/dir1/dir2 dir3/dir4/file1.txt  (include 'file1.txt' that is under any 
+#                                   '/dir3/dir4/' directory that is under:
+#                                   * '/dir1/dir2/'
+#                                   * or any directory that is under '/dir1/dir2/')
+# +/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any 
+#                                   '/dir3/dir4/' directory that is under:
+#                                   * '/dir1/dir2/'
+#                                   * or any directory that is under '/dir1/dir2/')
+#
+# -/dir1/dir2/  ????.txt
+# -/dir1/dir2   dir3/dir4/????.txt
+# -/dir1/di*r2/ foot????.doc
+# -/dir1/di*r2  dir3/dir4/foot????.doc
+# -/dir1/dir2/  [p-s]*
+# -/dir1/dir2/  [p-s]*/
+# -/dir1/dir2   dir3/dir4/[p-s]*
+# -/dir1/dir2   dir3/dir4/[p-s]*/
+# -/dir1/di*r2/ [^p-s]*
+# -/dir1/di*r2/ [^p-s]*/
+# -/dir1/di*r2  dir3/dir4/[^p-s]*
+# -/dir1/di*r2  dir3/dir4/[^p-s]*/
+# -/dir1/di*r2/ [^p]*
+# -/dir1/di*r2/ [^p]*/
+# -/dir1/di*r2  dir3/dir4/[^p]*
+# -/dir1/di*r2  dir3/dir4/[^p]*/
+# -/dir1/di*r2/ [1-5]*
+# -/dir1/di*r2/ [1-5]*/
+# -/dir1/di*r2  dir3/dir4/[1-5]*
+# -/dir1/di*r2  dir3/dir4/[1-5]*/
+# -/dir1/{?????sales,*reports}/ dir2/dir3/[^p-s]*
+# -/dir1/*{jpg,mp3}             dir2/dir3/[^p-s]*/
+# -/dir1/?(*jpg|*mp3)/          dir2/dir3/[^1-5]*
+# -/dir1/*(*jpg|*mp3)           dir2/dir3/[^1-5]*/
+# -/dir1/+(*jpg|*mp3)/          dir2/dir3/[^p]*
+# -/dir1/!(*jpg|*mp3)           dir2/dir3/[^p]*/
+#
+# The following examples are invalid, as the second token contains some
+# metacharacters that are interpreted as plain characters (valid metacharacters
+# for the second token are *, ?, [], [^]).
+# -/dir1/di*r2/ +(*.jpg|*.mp3)    , interpreted as plain characters: + ( | )
+# -/dir1/di*r2  !(*.jpg|*.mp3)    , interpreted as plain characters: ! ( | )
+# -/dir1/di*r2/ ?(*.jpg|*.mp3)    , interpreted as plain characters: ( | )
+# -/dir1/di*r2  *(*.jpg|*.mp3)    , interpreted as plain characters: ( | )
+# -/dir1/di*r2  *{.jpg,.mp3}      , interpreted as plain characters: { , }
+# -/dir1/di*r2/ {?????.sh,*st.txt}, interpreted as plain characters: { , }
+
+# For clarity, you can put your entries here (above the default entries below).
+#-/home/markos/Music/*
+
+# According to the Filesystem Hierarchy Standard (FHS) the following directories
+# contain data that is temporary and used while a system is running and may 
+# change after a reboot. Therefore, they don't need to be cloned and are
+# excluded. It's best not to modify the following entries.
+-/dev/*
+-/proc/*
+-/run/*
+-/sys/*
+-/tmp/*
+-/mnt/*
+-/var/cache/*
+-/var/lock/*
+-/var/run/*
+-/var/tmp/*

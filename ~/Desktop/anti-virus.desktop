@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Anti Virus
+Comment=Αντιιικό
+Exec=bash -c "sudo ./av.sh; echo 'press any key to exit'; read -rsn 1;"
+Icon=clamtk
+Path=/usr/local/bin/
+Terminal=true
+StartupNotify=false

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Copy User
+Comment=Copy one user to another deleting the other if it exists.
+Exec=bash -c "sudo ./usercp.sh; ../wait.sh"
+Icon=system-users
+Path=/usr/local/bin/
+Terminal=true
+StartupNotify=false
+GenericName=copy user

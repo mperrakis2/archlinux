@@ -1,0 +1,25 @@
+No amount of careful planning will ever replace dumb luck.
+Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain)
+
+1. before clone
+   ============
+   a. bleachbit
+   b. sudo bleachbit
+
+2. run cloning script (see next group)
+
+3. after clone
+   ===========
+   a. run kodi to update kodi add ons
+   b. run qBitTorrent and update plug ins
+
+   Add/Remove Software (pamac)
+   c. Refresh databases
+   d. Updates -> install
+
+   or
+
+   c. sudo pacman -Syu
+
+   # update package dbs and packages for all repos (including AUR)
+   d. yay --answerclean All --answerdiff None --answerupgrade None --removemake --topdown --cleanafter --redownload --redownloadall --rebuild --rebuildtree

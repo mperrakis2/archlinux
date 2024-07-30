@@ -1,0 +1,7 @@
+# allow members of group sudo to execute any command
+%sudo ALL=(ALL:ALL) NOPASSWD:ALL
+
+# allow all users to run an virus scan/clean
+ALL ALL=NOPASSWD: /usr/local/bin/av.sh
+
+Defaults editor="/usr/bin/nano" # default editor unless overwritten by the user

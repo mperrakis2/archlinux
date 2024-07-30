@@ -1,0 +1,11 @@
+[Unit]
+Description=Disable wakeup triggers in /proc/acpi/wakeup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/systemd/scripts/disable_wakeup.sh
+ExecStop=/usr/lib/systemd/scripts/disable_wakeup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

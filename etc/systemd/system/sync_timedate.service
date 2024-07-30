@@ -1,0 +1,12 @@
+# This service is used to work around an apparent bug where time & date are
+# off after resuming from suspend.            
+
+[Unit]
+Description=Sync time & date after suspend, hibernate, etc.
+After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+            
+[Service]
+ExecStart=/usr/lib/systemd/scripts/sync_timedate.sh
+           
+[Install]
+WantedBy=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
