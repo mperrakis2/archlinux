@@ -1,0 +1,14 @@
+# https://protonvpn.com/support/wireguard-manual-linux/
+# config file: /etc/wireguard/NL-FREE-409094.conf (must be less than 15 chars)
+# enable user service: systemctl --user enable protonvpn.service
+[Unit]
+Description=Proton Vpn
+
+[Service]
+Type=oneshot
+ExecStart=wg-quick up NL-FREE-409094
+ExecStop=wg-quick down NL-FREE-409094
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
