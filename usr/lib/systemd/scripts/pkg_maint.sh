@@ -33,8 +33,8 @@ done
 readonly sudo_users
 declare -i err=0
 
-# all yay commands should not run under root
-ORPHANS=$(su - "${sudo_users[0]}" -c "yay -Qttdq") # get orphan packages
+# all paru commands should not run under root
+ORPHANS=$(su - "${sudo_users[0]}" -c "paru -Qttdq") # get orphan packages
 ((err=$?))
 readonly ORPHANS
 
@@ -44,14 +44,14 @@ if (( ! err )); then
     set +o pipefail # reset it, as 'yes' below has an exit code of 141
     # answer yes to removal of all orphan packages
     for orphan in $ORPHANS; do
-        su - "${sudo_users[0]}" -c "yes | LC_ALL=en_US.UTF-8 yay -Rns $orphan"
+        su - "${sudo_users[0]}" -c "yes | LC_ALL=en_US.UTF-8 paru -Rns $orphan"
         ((err+=$?))
     done
     set -o pipefail
 elif (( err == 1 )); then # err == 1 => no orphans found which is not an error
     ((err=0))
 else
-    errmsg="yay get orphans exited with error code $err while searching for "
+    errmsg="paru get orphans exited with error code $err while searching for "
     errmsg+="orphan packages."
     systemd-cat -t "${0}" -p "err" echo "$errmsg"
 fi
@@ -61,11 +61,11 @@ declare -i tmp=0
 set +o pipefail # reset it, as 'yes' below has an exit code of 141
 # answer yes to clearing package cache for all sudo users
 for sudo_user in "${sudo_users[@]}"; do
-    su - "$sudo_user" -c "yes | LC_ALL=en_US.UTF-8 yay -Scc" 
+    su - "$sudo_user" -c "yes | LC_ALL=en_US.UTF-8 paru -Scc" 
     tmp=$?
     ((err+=tmp))
     if (( tmp )); then
-        errmsg="yay clear cache for user \"$sudo_user\" exited with error code "
+        errmsg="paru clear cache for user \"$sudo_user\" exited with error code "
         errmsg+="$tmp while clearing the package cache."
         systemd-cat -t "${0}" -p "err" echo "$errmsg"
     fi
