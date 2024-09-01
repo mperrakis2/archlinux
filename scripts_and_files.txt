@@ -13,7 +13,7 @@ useful scripts and config files (need sudo)
         new_user/              # directory that contains new user data
     userdel.sh                 # delete a user
     upd_dbs_and_keyring.sh     # update pacman DBs, core & extra, and update keyring package in case there's a newer version
-    upd_grub_kernel_version.sh # update kernel version in grub.cfg, called from /usr/share /libalpm/hooks/upd_grub_kernel_version.hook
+    upd_grub_kernel_version.sh # update kernel version in grub.cfg, called from /usr/share/libalpm/hooks/upd_grub_kernel_version.hook
     cpshim.sh                  # copy shim binaries to boot partition, called from /usr/share/libalpm/hooks/cpshim.hook
     wait.sh                    # used in desktop launchers that launch scripts to prevent the script window from closing
 
