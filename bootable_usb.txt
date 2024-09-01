@@ -21,32 +21,49 @@ https://bbs.archlinux.org/viewtopic.php?id=286617
 # grub modules are taken from link below but exclude 'linuxefi' mod which is for ubuntu only
 https://wiki.archlinux.org/title/GRUB#Shim-lock
 
+sign grub font file (execute only once under user account)
+----------------------------------------------------------
+gpg --full-gen-key # choose RSA 2048
+
+dirs=("$(bootctl -p)"/grub "$(bootctl -p)" "$(bootctl -p)" "$(bootctl -p)" "$(bootctl -p)" "$(bootctl -p)/EFI")
+files=(grub.cfg vmlinuz-linux vmlinuz-linux-lts initramfs-linux.img initramfs-linux-lts.img grub.init.cfg)
+
+for ((i = 0; i < ${#dirs[@]}; i++)); do
+    cp "${dirs[i]}"/"${files[i]}" . ;
+    gpg --detach-sign "${files[i]}" ;
+    sudo cp "${files[i]}".sig "${dirs[i]}" ;
+    rm "${files[i]}" "${files[i]}".sig ;
+done
+
 1. a. grub_modules="all_video boot btrfs cat chain configfile echo efifwsetup efinet ext2 fat font gettext gfxmenu gfxterm gfxterm_background gzio halt help hfsplus iso9660 jpeg keystatus loadenv loopback linux ls lsefi lsefimmap lsefisystab lssal memdisk minicmd normal ntfs part_apple part_msdos part_gpt password_pbkdf2 png probe reboot regexp search search_fs_uuid search_fs_file search_label sleep smbios squash4 test true video xfs zfs zfscrypt zfsinfo cpuid play tpm cryptodisk gcry_arcfour gcry_blowfish gcry_camellia gcry_cast5 gcry_crc gcry_des gcry_dsa gcry_idea gcry_md4 gcry_md5 gcry_rfc2268 gcry_rijndael gcry_rmd160 gcry_rsa gcry_seed gcry_serpent gcry_sha1 gcry_sha256 gcry_sha512 gcry_tiger gcry_twofish gcry_whirlpool luks lvm mdraid09 mdraid1x raid5rec raid6rec http tftp"
 
-   # grub-install removable
-   b. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --efi-directory="$(bootctl -p)" --recheck --removable --target=x86_64-efi /dev/nvme0n1
+   # grub-install
+   b. gpg --output grub.key --export $(gpg -k | grep -B 1 "Markos Perrakis" | head -n 1 | xargs)
+   c. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --pubkey=grub.key --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi
+   d. rm grub.key
 
-   # grub-install internal HD
-   c. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi /dev/nvme0n1
+   # sign grub default font
+   e. cp "$(bootctl -p)"/grub/fonts/unicode.pf2 .
+   f. gpg --detach-sign unicode.pf2
+   g. sudo cp unicode.pf2.sig "$(bootctl -p)"/grub/fonts/
+   h. rm unicode.pf2 unicode.pf2.sig
 
 # check https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
 
 2. install shim-signed & sbsigntools packages
 
-3. a. sudo mv /boot/EFI/BOOT/BOOTX64.EFI /boot/EFI/BOOT/grubx64.efi
-   b. sudo cp /usr/share/shim-signed/shimx64.efi /boot/EFI/BOOT/BOOTX64.EFI
-   c. sudo cp /usr/share/shim-signed/mmx64.efi /boot/EFI/BOOT/
-   d. sudo cp /usr/share/shim-signed/shimx64.efi /boot/EFI/"$(uname -n)"/
-   e. sudo cp /usr/share/shim-signed/mmx64.efi /boot/EFI/"$(uname -n)"/
+3. a. sudo cp "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/BOOT/
+   b. sudo cp /usr/share/shim-signed/shimx64.efi "$(bootctl -p)"/EFI/BOOT/BOOTX64.EFI
+   c. sudo cp /usr/share/shim-signed/shimx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/
    Execute once only -> sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "Shim" --loader /EFI/"$(uname -n)"/shimx64.efi
 
-4. a. cd /boot/EFI
+4. a. cd "$(bootctl -p)"/EFI
    Execute once only -> sudo openssl req -newkey rsa:2048 -nodes -keyout MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=my Machine Owner Key/" -out MOK.crt
                      -> sudo openssl x509 -outform DER -in MOK.crt -out MOK.cer
-   b. sudo sbsign --key MOK.key --cert MOK.crt --output /boot/vmlinuz-linux /boot/vmlinuz-linux
-   c. sudo sbsign --key MOK.key --cert MOK.crt --output /boot/vmlinuz-linux-lts /boot/vmlinuz-linux-lts
-   d. sudo sbsign --key MOK.key --cert MOK.crt --output /boot/EFI/BOOT/grubx64.efi /boot/EFI/BOOT/grubx64.efi
-   e. sudo sbsign --key MOK.key --cert MOK.crt --output /boot/EFI/"$(uname -n)"/grubx64.efi /boot/EFI/"$(uname -n)"/grubx64.efi
+   b. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/vmlinuz-linux "$(bootctl -p)"/vmlinuz-linux
+   c. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/vmlinuz-linux-lts "$(bootctl -p)"/vmlinuz-linux-lts
+   d. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/EFI/BOOT/grubx64.efi "$(bootctl -p)"/EFI/BOOT/grubx64.efi
+   e. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi
    Execute once only -> Create the following file and make it executable: /etc/initcpio/post/kernel-sbsign (see link above for file contents)
 
 5. a. Reboot and enable Secure Boot. If shim does not find the certificate grubx64.efi is signed with in MokList it will launch MokManager (mmx64.efi).
@@ -71,8 +88,8 @@ update /etc/kernel/cmdline # e.g. root=UUID=55e14ea4-8667-4d95-9b49-321c1b166e2b
 add menu entries to grub.cfg for the two ukis (below)
 save cmdline file above and grub.cfg to google drive
 
-sudo sbctl bundle --save /boot/EFI/arch/uki-linux-x86_64.efi
-sudo sbctl bundle --save /boot/EFI/arch/uki-linux-lts-x86_64.efi --kernel-img /boot/vmlinuz-linux-lts  --initramfs /boot/initramfs-linux-lts.img
+sudo sbctl bundle --save "$(bootctl -p)"/EFI/arch/uki-linux-x86_64.efi
+sudo sbctl bundle --save "$(bootctl -p)"/EFI/arch/uki-linux-lts-x86_64.efi --kernel-img "$(bootctl -p)"/vmlinuz-linux-lts  --initramfs "$(bootctl -p)"/initramfs-linux-lts.img
 sudo sbctl generate-bundles [--sign]
 
 UEFI stub
