@@ -39,11 +39,11 @@ GRUB_DISABLE_RECOVERY="true"
 
 # Uncomment and set to the desired menu colors.  Used by normal and wallpaper
 # modes only.  Entries specified as foreground/background.
-export GRUB_COLOR_NORMAL="light-cyan/dark-gray"
-export GRUB_COLOR_HIGHLIGHT="blue/light-gray"
+GRUB_COLOR_NORMAL="white/light-blue"
+GRUB_COLOR_HIGHLIGHT="blue/white"
 
 # Uncomment one of them for the gfx desired, a image background or a gfxtheme
-GRUB_BACKGROUND="/usr/share/grub/OrionM42Polarie-SerraAire.jpg"
+#GRUB_BACKGROUND="/usr/share/grub/OrionM42Polarie-SerraAire.jpg"
 #GRUB_THEME="/usr/share/grub/themes/starfield"
 
 # Uncomment to get a beep at GRUB start
@@ -61,4 +61,6 @@ GRUB_DISABLE_SUBMENU="y"
 # functionality install os-prober and uncomment to detect and include other
 # operating systems.
 #GRUB_DISABLE_OS_PROBER="false"
+
+# don't load any early initrd images before the actual functional initrd image
 GRUB_EARLY_INITRD_LINUX_STOCK=""
