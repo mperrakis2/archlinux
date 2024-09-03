@@ -26,9 +26,11 @@ useful scripts and config files (need sudo)
 /etc/skel/.config/locale.conf  # default language for new user
 /etc/sudoers.d/override        # users added to the sudo group don't have to use their password
 
-/etc/grub.d/40_custom                                                # added grub user as the only one to use grub command line and edit menu entries
-/etc/grub.d/09_make_OS_entries_unrestricted                          # custom grub file to make menu entries unrestricted
+/etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
+/etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
 /usr/share/libalpm/hooks/upd_grub_kernel_version.hook                # update kernel versions in grub.cfg
+/usr/share/libalpm/hooks/upd_grub_cfg.hook                           # update grub.cfg when installing/upgrading grub
+/usr/share/libalpm/hooks/cpshim.hook                                 # copy shim binaries to boot partition
 /etc/systemd/system/lightdm.service.d/override.conf                  # override to display greeter in Greek
 /etc/systemd/system/pamac-cleancache.service.d/override.conf         # override to remove pamac build files
 /etc/systemd/system/archlinux-keyring-wkd-sync.timer.d/override.conf # override to run timer daily
