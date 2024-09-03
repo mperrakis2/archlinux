@@ -57,7 +57,7 @@ done
 3. a. sudo cp "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/BOOT/
    b. sudo cp /usr/share/shim-signed/shimx64.efi "$(bootctl -p)"/EFI/BOOT/BOOTX64.EFI
    c. sudo cp /usr/share/shim-signed/shimx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/
-   Execute once only -> sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "Shim" --loader /EFI/"$(uname -n)"/shimx64.efi
+   d. sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "Shim" --loader /EFI/"$(uname -n)"/shimx64.efi
 
 4. a. cd "$(bootctl -p)"/EFI
    Execute once only -> sudo openssl req -newkey rsa:2048 -nodes -keyout MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=my Machine Owner Key/" -out MOK.crt
