@@ -1,6 +1,10 @@
 # GRUB boot loader configuration
 
+# Uncomment to make GRUB remember the last selection. This requires
+# setting 'GRUB_DEFAULT=saved' above.
+GRUB_SAVEDEFAULT="true"
 GRUB_DEFAULT="saved"
+
 GRUB_TIMEOUT="5"
 GRUB_DISTRIBUTOR="$(uname -n)"
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=6 resume=UUID=b923f392-5744-435a-b9f8-e642eace6847 resume_offset=85829632"
@@ -49,10 +53,6 @@ GRUB_COLOR_HIGHLIGHT="blue/brown"
 
 # Uncomment to get a beep at GRUB start
 #GRUB_INIT_TUNE="480 440 1"
-
-# Uncomment to make GRUB remember the last selection. This requires
-# setting 'GRUB_DEFAULT=saved' above.
-GRUB_SAVEDEFAULT="true"
 
 # Uncomment to disable submenus in boot menu
 GRUB_DISABLE_SUBMENU="y"
