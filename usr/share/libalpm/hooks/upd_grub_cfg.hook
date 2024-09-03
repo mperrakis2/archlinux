@@ -2,9 +2,11 @@
 Operation = Install
 Operation = Upgrade
 Type = Package
+Target = linux
+Target = linux-lts
 Target = grub
 
 [Action]
 Description = After an install/update of grub, update grub.cfg.
 When = PostTransaction
-Exec = /usr/bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg && /usr/local/bin/upd_grub_kernel_version.sh"
+Exec = /usr/bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg && /usr/local/bin/upd_grub_cfg.sh"
