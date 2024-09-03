@@ -81,26 +81,35 @@ esac
 
 title_correction_code=
 
+shopt -s extglob
+
 linux_entry ()
 {
   os="$1"
   version="$2"
   type="$3"
   args="$4"
+  kv="$(strings "$linux" | grep "$(hostname)" | tail -n 1 | xargs | cut -d ' ' -f 1)"
 
+  if [[ "$kv" =~ lts ]]; then
+      kv="LTS kernel ${kv}"
+  else
+      kv="kernel ${kv}"
+  fi
+  
   if [ -z "$boot_device_id" ]; then
       boot_device_id="$(grub_get_device_id "${GRUB_DEVICE}")"
   fi
   if [ x$type != xsimple ] ; then
       case $type in
 	  booster)
-	      title="$(gettext_printf "%s, with Linux %s (booster initramfs)" "${os}" "${version}")" ;;
+	      title="$(gettext_printf "%s with Linux %s (booster initramfs)" "$GRUB_DISTRIBUTOR" "${kv}")" ;;
 	  fallback)
-	      title="$(gettext_printf "%s, with Linux %s (fallback initramfs)" "${os}" "${version}")" ;;
+	      title="$(gettext_printf "%s with Linux %s (fallback initramfs)" "$GRUB_DISTRIBUTOR" "${kv}")" ;;
 	  recovery)
-	      title="$(gettext_printf "%s, with Linux %s (recovery mode)" "${os}" "${version}")" ;;
+	      title="$(gettext_printf "%s with Linux %s (recovery mode)" "$GRUB_DISTRIBUTOR" "${kv}")" ;;
 	  *)
-	      title="$(gettext_printf "%s, with Linux %s" "${os}" "${version}")" ;;
+	      title="$(gettext_printf "%s with Linux %s" "$GRUB_DISTRIBUTOR" "${kv}")" ;;
       esac
       if [ x"$title" = x"$GRUB_ACTUAL_DEFAULT" ] || [ x"Previous Linux versions>$title" = x"$GRUB_ACTUAL_DEFAULT" ]; then
 	  replacement_title="$(echo "Advanced options for ${OS}" | sed 's,>,>>,g')>$(echo "$title" | sed 's,>,>>,g')"
@@ -144,7 +153,7 @@ linux_entry ()
     fi
     printf '%s\n' "${prepare_boot_cache}" | sed "s/^/$submenu_indentation/"
   fi
-  message="$(gettext_printf "Loading Linux %s ..." ${version})"
+  message="$(gettext_printf "Loading Linux %s ..." "${kv}")"
   sed "s/^/$submenu_indentation/" << EOF
 	echo	'$(echo "$message" | grub_quote)'
 	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} rw ${args}
