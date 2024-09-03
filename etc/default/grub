@@ -40,8 +40,8 @@ GRUB_DISABLE_RECOVERY="true"
 
 # Uncomment and set to the desired menu colors.  Used by normal and wallpaper
 # modes only.  Entries specified as foreground/background.
-GRUB_COLOR_NORMAL="white/light-blue"
-GRUB_COLOR_HIGHLIGHT="blue/white"
+GRUB_COLOR_NORMAL="brown/light-blue"
+GRUB_COLOR_HIGHLIGHT="blue/brown"
 
 # Uncomment one of them for the gfx desired, a image background or a gfxtheme
 #GRUB_BACKGROUND="/usr/share/grub/OrionM42Polarie-SerraAire.jpg"
