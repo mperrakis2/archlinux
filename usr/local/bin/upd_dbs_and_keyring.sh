@@ -1,14 +1,17 @@
 #!/usr/bin/bash
-
-# this script is called whenever pacman or yay are run; it's part of aliases in
-# /usr/local/bin/.bashrc
-
-if pacman -Fy; then # update package DBs
-    if pacman -Qu archlinux-keyring; then # check update for keyring
-        pacman --noconfirm -S archlinux-keyring # update keyring
-    else
-        exit 0
+ 
+# this script is called whenever pacman or paru are run; it's in aliases in
+# /etc/skel/.bashrc
+ 
+declare -i err=0
+ 
+if pacman -Qu archlinux-keyring; then       # check update for keyring
+    pacman --noconfirm -S archlinux-keyring # update keyring
+    let err=$?
+    if (( ! err )); then
+        pacman -Fy                          # update package lists
+        let err=$?
     fi
-else
-    exit $?
 fi
+ 
+exit $err
