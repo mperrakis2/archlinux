@@ -8,4 +8,4 @@ Target = linux-lts
 [Action]
 Description = After an install/update of the linux kernel, update grub.cfg with new kernel versions.
 When = PostTransaction
-Exec = /usr/bin/grub-mkconfig -o /boot/grub/grub.cfg
+Exec = /usr/local/bin/upd_grub_kernel_version.sh
