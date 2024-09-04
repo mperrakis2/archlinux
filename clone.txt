@@ -19,6 +19,6 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
 
    or
 
-   c. paru -Syu --skipreview --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload --rebuild=all
+   c. paru -Syu --skipreview --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all --rebuild=tree
       paru --clean
       paru --repoctl --clean
