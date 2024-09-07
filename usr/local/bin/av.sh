@@ -25,6 +25,9 @@ readonly CMDFILE="clamscan.cmd" # the commands themselves
 
 # commands to be executed
 declare -a cmds=(\
+                 # run check rootkit
+                 "chkrootkit -x" \
+
                  # remove virus & tmp dir and log & error files from last scan      
                  "rm -rf $LOGDIR/$LOGFILE $LOGDIR/$ERRFILE $VIRDIR $TMPDIR" \
 
