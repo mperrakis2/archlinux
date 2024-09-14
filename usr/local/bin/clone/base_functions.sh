@@ -817,19 +817,32 @@ mount_ptn() {
     local p
     local UUID
     local mnt_dir
+    local fstype
+    local EVIL_MICROSOFT="ntfs|msdos"
+    readonly EVIL_MICROSOFT
     local -i is_mnt=0
     
     if [[ "$1" == "$srcdisk" ]]; then p="$SP"; else p="$DP"; fi
 
     # get partition UUID
-    UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\(.*\)\" BLOCK_SIZE")
+    UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\([^\"]*\)\"")
 
     # find mount directory of partition if it exists
     mnt_dir=$(mount | grep "$1$p$2" | cut -f 3 -d ' ')
 
+    # if filesystem ntfs or msdos unmount partition in order to mount it with
+    # user and group id
+    if [[ "$mnt_dir" ]]; then
+        fstype="$(lsblk -no FSTYPE "$1$p$2" 2> "$ERRFILE")"
+        if [[ "$fstype" =~ ($EVIL_MICROSOFT) ]]; then
+            umount "$mnt_dir"
+            mnt_dir=""
+        fi
+    fi
+
     # if partition not mounted, mount it based on its partition UUID under
     # /media/<UUID>
-    if (( ! ${#mnt_dir} )); then
+    if [[ -z "$mnt_dir" ]]; then
         local -a cmds=()
         
         # create command to create directory for mounting if one does not exist
@@ -837,7 +850,8 @@ mount_ptn() {
 
         # check if device has 'msdos' partition table type and create command to
         # mount partition
-        if parted -m "$1" print | grep msdos > /dev/null; then
+        if parted -m "$1$p$2" print | grep -E "$EVIL_MICROSOFT" > /dev/null 2>> "$ERRFILE"
+        then
             local uid
             local gid
 
@@ -899,6 +913,31 @@ umount_ptn() {
 
     # execute commands created above
     exec_cmds "${cmds[@]}"
+}
+
+# get partition size
+# $1: ref to int, size of dst partition
+get_ptn_size() {
+    if (( $# != 1 )); then
+        local msg="\nOne param required: int ref to dst partition size. Exiting."
+        
+        exit_with_stack "$msg"
+    fi
+    
+    local -n ref="$1"
+    local pct
+    local cmd
+
+    # get size of src partition in bytes
+    ((ref=$(field "$ptn" "$PSIZE")))
+
+    # calculate percentage of src partition based on src disk size
+    pct=$(bc <<< "scale=2; $ref / $SRC_DISK_RESIZE")
+
+    # calculate dst partition size based on percentage above
+    cmd='{printf "%.0f", ($1 * $2 == int($1 * $2)) '
+    cmd+='? $1 * $2 : int($1 * $2) + 1}'
+    ((ref=$(awk "$cmd" <<< "$pct $dst_space_avail")))
 }
 
 # executes an array of commands
@@ -988,7 +1027,7 @@ exec_cmds() {
             (( err )) && break
         fi
             
-        sync; sync -f
+        sync
     done
     echo | tee -a "$CMDFILE"
 

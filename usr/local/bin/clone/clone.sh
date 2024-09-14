@@ -63,7 +63,7 @@
 #     create src partitions on dst
 # format swap partitions on dst, if any
 # clone using rsync
-# if src is bootable and used to boot the system, apply the following on dst
+# if src is bootable and booted the system, apply the following on dst
 #     update grub cfg file
 #     update fstab file
 #     if swap partitions exist and/or swap files exist 
@@ -93,6 +93,7 @@ readonly FILTERS
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
+
 SCRIPT_NAME=$(basename "${BASH_SOURCE:-$0}") # get name of script
 readonly SCRIPT_NAME
 
@@ -164,7 +165,8 @@ readonly MPTN MDIR MIS_MNT MUUID MDST
 
 declare -i SOURCE=1
 declare -i USED=2
-readonly SOURCE USED
+declare -i PCENT=3
+readonly SOURCE USED PCENT
 
 declare -i SPTN=1
 declare -i SUUID=2
@@ -191,7 +193,7 @@ declare -i disk_cnt=0    # number of available disks
 declare -i no_resize=0
 
 declare -A rsync_filters=() # files/dirs excluded from or included in cloning
-declare -i total_clone_size=0
+declare -i clone_size=0
 declare -a src_ptn_data=()
 srcdisk=""
 dstdisk=""
@@ -199,16 +201,15 @@ declare -ia esp_ptn_nums=(0 0)
 declare -ia boot_ptn_nums=(0 0)
 declare -ia bios_ptn_nums=(0 0)
 
-# number of partitions that may be resized (excluding ESP, boot, bios & swap)
-declare -i rsz_ptn_num=0
-
 declare -i start=0
 declare START_DATE=""
 declare -i DST_ALIGN=MIBIBYTE
 declare -i dst_disk_size=0
-declare -i rem_dst_size=0
+declare -i dst_space_avail=0
 declare -A alignments=()
 declare -i src_lba=0
+declare -i create_ptn=0
+
 fstab_file="/etc/fstab"
 LOGFILE=""
 ERRFILE=""
@@ -219,6 +220,7 @@ DP="" # dst partiion prefix
 declare -a rsync_params=()
 declare -a g_parted_data=() # disk data retrieved from 'parted' command
 declare -i LOOP=1
+readonly EFI="[Ee][Ff][Ii]"
 
 # return: 0 on success else the error code of the command that failed
 trap_signals() {
@@ -279,7 +281,8 @@ This script clones a disk to another. To run it just type in its name and press
 enter. Then, you will be asked for source and destination disks. Source and
 destination need not be the same size as long as all source data fits on
 destination. Also, the directories and/or files contained in the
-$YELLOW'$FILTERS'$OFF file will ${YELLOW}NOT$OFF be cloned. Here they are:
+$YELLOW'$FILTERS'$OFF
+file will ${YELLOW}NOT$OFF be cloned. Here they are:
 
 intro_msg
 
@@ -551,6 +554,21 @@ populate_arrays() {
         return $?
     fi
 
+    local msg
+    
+    # The dst disk can't be the disk that was used to boot the system, as this
+    # would destroy the system. This extreme case is possible if:
+    # 1. the clone directory is copied to a disk that was not used to boot the
+    #    system
+    # 2. the clone script is executed on that disk and the disk that is selected
+    #    as destination is the disk that was used to boot the system 
+    if [[ "$BOOTPTN" =~ $dstdisk$DP ]]; then
+        msg="\nThe destination disk can't be the disk that was used to boot the"
+        msg+=" system.\n"
+        prompt LOOP "$msg"
+        return $?
+    fi
+    
     local DST_DISK_NAME
     DST_DISK_NAME=$(expr "$(lsblk -dP -o NAME "$dstdisk")" : "^NAME=\"\(.*\)\"$")
 
@@ -569,15 +587,13 @@ populate_arrays() {
         (( start )) && ((DST_ALIGN=start))
     fi
 
-    local msg
-    
     # if no optimal_io_size then get minimum_io_size
     if (( ! start )); then
         start=$(cat /sys/block/"$DST_DISK_NAME"/queue/minimum_io_size)
 
         # if minimum_io_size exists return if not power of 2
         if (( start )); then
-            if (( $(echo "x=l($start)/l(2); scale=0; 2^((x+0.5)/1)" | bc -l) != start ))
+            if (( $(bc -l <<< "x=l($start)/l(2); scale=0; 2^((x+0.5)/1)") != start ))
             then
                 msg="\nThe minimum_io_size is not a power of two: "
                 msg+="$YELLOW$start$RED. Exiting."
@@ -620,7 +636,6 @@ populate_arrays() {
     esp_ptn_nums=(0 0)
     boot_ptn_nums=(0 0)
     bios_ptn_nums=(0 0)
-    ((rsz_ptn_num=0))
     local -i ptn_num
     local -i ptn_cnt
     local -i startb
@@ -688,9 +703,9 @@ populate_arrays() {
                     (( ptn_cnt == 1 )) && ((no_resize+=startb))
 
                     # add size of esp, boot, bios and swap partitions
-                    if [[ "$flags" =~ esp || "$flags" == boot || \
+                    if [[ "$flags" =~ esp || "$flags" =~ boot || \
                           "$flags" =~ bios || "$fstype" =~ swap ]]; then
-                        ((no_resize+=size))
+                        [[ ! "$flags" =~ boot ]] && ((no_resize+=size))
 
                         # save partition number of ESP partition
                         if [[ "$flags" =~ esp ]]; then
@@ -709,10 +724,6 @@ populate_arrays() {
                             ((bios_ptn_nums[0]=ptn_num))
                             ((bios_ptn_nums[1]=ptn_cnt))
                         fi
-                    else
-                        # increment the number of partitions that may be 
-                        # resized (excluding ESP, boot, bios & swap)
-                        ((++rsz_ptn_num))
                     fi
                 fi
             fi
@@ -721,7 +732,7 @@ populate_arrays() {
         # add size of remaining space in src partition
         if (( disk_num == OPTIONS[0] )); then
             if (( ptn_cnt > 0 )); then
-                ((no_resize+=$(field "${disks_info[$disk_num]}" $DSIZE)-end))
+                ((no_resize += $(field "${disks_info[$disk_num]}" $DSIZE) - end))
             else
                 # exit if no partitions to clone
                 cecho -e "\n${RED}Source disk $YELLOW$srcdisk$RED has no"\
@@ -731,19 +742,6 @@ populate_arrays() {
         fi
     done
 
-    # The dst disk can't be the disk that was used to boot the system, as this
-    # would destroy the system. This extreme case is possible if:
-    # 1. the clone directory is copied to a disk that was not used to boot the
-    #    system
-    # 2. the clone script is executed on that disk and the disk that is selected
-    #    as destination is the disk that was used to boot the system 
-    if [[ "$BOOTPTN" =~ $dstdisk$DP ]]; then
-        msg="\nThe destination disk can't be the disk that was used to boot the"
-        msg+=" system.\n"
-        prompt LOOP "$msg"
-        return $?
-    fi
-    
     ((LOOP=0))
     readonly LOOP
 
@@ -851,12 +849,10 @@ populate_arrays() {
             # partition data
             partitions[i]+=$size
 
-            # if swap, esp, bios or boot, update the byte counter of 
-            # non-resizable bytes
+            # if swap, esp or bios, update the byte counter of non-resizable bytes
             [[ "$(field "$ptn" $PFSTYPE)" =~ swap || \
                "$(field "$ptn" $PFLAGS)" =~ esp   || \
-               "$(field "$ptn" $PFLAGS)" =~ bios  || \
-               "$(field "$ptn" $PFLAGS)" == boot ]] && 
+               "$(field "$ptn" $PFLAGS)" =~ bios ]] && 
                 ((no_resize_dst+=size))
         fi
     done
@@ -870,14 +866,14 @@ populate_arrays() {
     # get total size of dst disk
     (( dst_disk_size = $(field "${disks_info[${OPTIONS[1]}]}" $DSIZE) ))
 
-    # add dst postamble space to dst non-removable size
-    (( rem_dst_size = dst_disk_size - no_resize_dst ))
-    (( dst_postamble = rem_dst_size - (rem_dst_size / DST_ALIGN) * DST_ALIGN ))
+    # add dst postamble space to dst non-resizable space
+    (( dst_space_avail = dst_disk_size - no_resize_dst ))
+    (( dst_postamble = dst_space_avail - (dst_space_avail / DST_ALIGN) * DST_ALIGN ))
     (( dst_postamble < src_lba )) && (( dst_postamble = src_lba ))
     (( no_resize_dst += dst_postamble ))
-    (( rem_dst_size -= dst_postamble ))
+    (( dst_space_avail -= dst_postamble ))
 
-    # make sure that all partitions on src fit on dest
+    # make sure that all partitions on src fit on dst
     if (( dst_disk_size - no_resize_dst <= 0 )); then
         cecho -e "\n${RED}Destination partition size ($YELLOW$dst_disk_size$RED)"\
                  "${RED}< source partition size ($YELLOW$no_resize_dst$RED)."\
@@ -897,7 +893,7 @@ mask_hibernation() {
     # USR1 so that this process can handle masking/unmasking hibernation
     if (( $# == 1 )); then
         # sync and restore stdout and stderr to the terminal
-        sync; sync -f
+        sync
         exec &> /dev/tty
 
         cecho -e "\n\nReceived signal USR1 from another clone process"\
@@ -1007,9 +1003,8 @@ calc_diskspace() {
                 mount_points+=("$srcmnt")
                 
                 # return if any src partition does not have UUID
-                grep $(lsblk -fr "$srcdisk" | grep $(basename "$srcdisk$SP$ptn_num") | 
-                       cut -f 2 -d ' ') "$fstab_file" >> "$LOGFILE" 2>> "$ERRFILE"
-                if (( $? )); then
+                flags="$(lsblk -no UUID "$srcdisk$SP$ptn_num" 2>> "$ERRFILE")"
+                if [[ -z "$flags" ]]; then
                     cecho -e "\n${RED}The $YELLOW$srcdisk$SP$ptn_num$RED source"\
                              "${RED}partition mounted on"\
                              "$YELLOW$(field "$srcmnt" $MDIR)${RED} does not"\
@@ -1020,6 +1015,54 @@ calc_diskspace() {
         fi
     done
 
+    echo -e "\tGetting total data size on source disk..."
+    
+    # get the total data size on src
+    src_ptn_data=()
+    readarray -t src_ptn_data < <(df -ak --sync --output=source,used,pcent | grep "$srcdisk")
+
+    local -i used
+    local -i CONVERSION_UNIT=1024
+    readonly CONVERSION_UNIT
+
+    # add src bios partition
+    if (( bios_ptn_nums[0] )); then
+        (( used = $(lsblk -nb -o SIZE "$srcdisk$SP${bios_ptn_nums[0]}") / CONVERSION_UNIT ))
+        src_ptn_data+=("$srcdisk$SP${bios_ptn_nums[0]} $used 0%")
+    fi
+
+    local i
+    local -i src_data_size=0
+    local source
+    local pcent
+    local -i total_pcent=0
+
+    # save src partition data and calculate totals
+    for i in "${!src_ptn_data[@]}"; do
+        # remove whitespace
+        src_ptn_data[i]=$(echo "${src_ptn_data[i]}" | xargs)
+        source=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
+        (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') * CONVERSION_UNIT ))
+        if [[ "$source" == "$srcdisk$SP${esp_ptn_nums[0]}" ]]; then
+            pcent=0
+        else
+            pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
+            pcent="${pcent/'%'}"
+        fi
+        src_ptn_data[i]="$source $used $pcent"
+        (( total_pcent += pcent ))
+        (( src_data_size += $used ))
+    done
+
+    ((clone_size=src_data_size))
+
+    # normalize percentages
+    for i in "${!src_ptn_data[@]}"; do
+        pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
+        pcent="$(bc <<< "scale=5; $pcent / $total_pcent")"
+        src_ptn_data[i]="${src_ptn_data[i]%' '[0-9]*} $pcent"
+    done
+
     echo -e "\tUnmounting any source partitions that were mounted..."
 
     # unmount src partitions that were mounted
@@ -1028,31 +1071,6 @@ calc_diskspace() {
         ((err=$?))
         if (( err )); then return $err; fi
     done
-
-    echo -e "\tGetting total data size on source disk..."
-    
-    # get the total data size on src
-    src_ptn_data=()
-    readarray -t src_ptn_data < <(df -ak --sync --output=source,used | grep "$srcdisk")
-
-    local i
-    local -i total_src_size=0
-    local source
-    local -i used
-    local -i CONVERSION_UNIT=1024
-    readonly CONVERSION_UNIT
-
-    # save src partition data and calculate total size
-    for i in "${!src_ptn_data[@]}"; do
-        # remove whitespace
-        src_ptn_data[i]=$(echo "${src_ptn_data[i]}" | xargs)
-        source=$(field "${src_ptn_data[i]}" $SOURCE ' ')
-        ((used=$(field "${src_ptn_data[i]}" $USED ' ')*CONVERSION_UNIT))
-        src_ptn_data[i]="$source $used"
-        ((total_src_size+=$(field "${src_ptn_data[i]}" $USED ' ')))
-    done
-
-    ((total_clone_size=total_src_size))
 
     echo -e "\n\tChecking files/directories excluded from source disk..."
 
@@ -1127,9 +1145,17 @@ calc_diskspace() {
             if [[ ${paths[0]::1} == "+" ]]; then
                 cechot "$CYAN'${paths[*]}'$YELLOW is not on the source disk"\
                        "and it's an include entry which is not valid. $MSG."
-            else
+            elif [[ "$BOOTPTN" =~ $srcdisk$SP ]]; then
                 add_filter filters user_filters paths
+            else                
+                cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source"\
+                       "disk and will be omitted. $MSG."
             fi
+            continue
+        # if paths are not on src disk, skip them
+        elif [[ ! "$srcptn" =~ $srcdisk$SP ]]; then
+            cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source disk"\
+                   "and will be omitted. $MSG."
             continue
         fi
 
@@ -1183,76 +1209,71 @@ calc_diskspace() {
             continue
         fi
 
-        if [[ "$srcptn" =~ $srcdisk$SP ]]; then
-            # check if the filter has been processed already
-            ((match=0))
-            for k in "${!user_filters[@]}"; do
-                # if new path is an existing filter, skip it
-                if [[ "${paths[*]}" == "${user_filters["$k"]}" ]]; then
-                    cechot "$CYAN'${paths[*]}'$YELLOW is listed more than once"\
-                           "and will be omitted. $MSG."
+        # check if the filter has been processed already
+        ((match=0))
+        for k in "${!user_filters[@]}"; do
+            # if new path is an existing filter, skip it
+            if [[ "${paths[*]}" == "${user_filters["$k"]}" ]]; then
+                cechot "$CYAN'${paths[*]}'$YELLOW is listed more than once"\
+                        "and will be omitted. $MSG."
+                ((match=1))
+                break
+            fi
+            
+            # compare exclude filters
+            if [[ "${paths[0]::1}" == "-" && \
+                    "${paths[0]::1}" == "${k::1}" ]]
+            then
+                # if existing filter "fits" into new filter, skip new
+                if [[ "${user_filters["$k"]: -1}" == "/" && \
+                        "${paths[*]}" =~ "${user_filters["$k"]}" ]]; then
+                    cechot "$CYAN'${paths[*]}'$YELLOW is under"\
+                            "$CYAN'${user_filters["$k"]}'$YELLOW and will be"\
+                            "omitted. $MSG."
                     ((match=1))
                     break
                 fi
                 
-                # compare exclude filters
-                if [[ "${paths[0]::1}" == "-" && \
-                      "${paths[0]::1}" == "${k::1}" ]]
-                then
-                    # if existing filter "fits" into new filter, skip new
-                    if [[ "${user_filters["$k"]: -1}" == "/" && \
-                          "${paths[*]}" =~ "${user_filters["$k"]}" ]]; then
-                        cechot "$CYAN'${paths[*]}'$YELLOW is under"\
-                               "$CYAN'${user_filters["$k"]}'$YELLOW and will be"\
-                               "omitted. $MSG."
-                        ((match=1))
-                        break
-                    fi
+                # if new filter is dir and "fits" into existing
+                # filter, remove existing
+                ((i=${#paths[@]}))
+                if [[ "${paths[i-1]: -1}" == "/" && \
+                        "${user_filters["$k"]}" =~ "${paths[*]}" ]]; then
+                    cechot "$CYAN'${user_filters["$k"]}'$YELLOW is under"\
+                            "$CYAN'${paths[*]}'$YELLOW and will be omitted. $MSG."
+                    for i in ${filters["$k"]}; do # remove filter entries
+                        unset entries[i]
+                    done
                     
-                    # if new filter is dir and "fits" into existing
-                    # filter, remove existing
-                    ((i=${#paths[@]}))
-                    if [[ "${paths[i-1]: -1}" == "/" && \
-                          "${user_filters["$k"]}" =~ "${paths[*]}" ]]; then
-                        cechot "$CYAN'${user_filters["$k"]}'$YELLOW is under"\
-                               "$CYAN'${paths[*]}'$YELLOW and will be omitted. $MSG."
-                        for i in ${filters["$k"]}; do # remove filter entries
-                            unset entries[i]
-                        done
-                        
-                        # remove rsync & user filters
-                        unset filters["$k"] user_filters["$k"]
-                    fi                    
-                fi
-            done 
-            (( match )) && continue
-
-            for i in "${!next_entries[@]}"; do    
-                # add a backslash to each directory
-                [[ "${next_entries[i]: -1}" != "/" && -d "${next_entries[i]}" ]] &&
-                    next_entries[i]+="/"
-
-                next_entries[i]="${paths[0]::1}${next_entries[i]}" # add the sign
-            done
-
-            ((j=${#next_entries[@]})) # get new offset for entries
-            if (( j )); then
-                if (( ${#entries[@]} )); then
-                    abuf=("${!entries[@]}") # get indices
-                    ((i=abuf[-1]+1)) # get next index of entries
-                else
-                    ((i=0))
-                fi
-            
-                # add a space in the end so that all numbers are followed by it
-                buf="$(seq $i $((i+j-1)) | xargs) "
-                add_filter filters user_filters paths "$buf"
-
-                entries+=("${next_entries[@]}") # add next entries to existing
+                    # remove rsync & user filters
+                    unset filters["$k"] user_filters["$k"]
+                fi                    
             fi
-        else
-            cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source disk"\
-                   "and will be omitted. $MSG."
+        done 
+        (( match )) && continue
+
+        for i in "${!next_entries[@]}"; do    
+            # add a backslash to each directory
+            [[ "${next_entries[i]: -1}" != "/" && -d "${next_entries[i]}" ]] &&
+                next_entries[i]+="/"
+
+            next_entries[i]="${paths[0]::1}${next_entries[i]}" # add the sign
+        done
+
+        ((j=${#next_entries[@]})) # get new offset for entries
+        if (( j )); then
+            if (( ${#entries[@]} )); then
+                abuf=("${!entries[@]}") # get indices
+                ((i=abuf[-1]+1)) # get next index of entries
+            else
+                ((i=0))
+            fi
+        
+            # add a space in the end so that all numbers are followed by it
+            buf="$(seq $i $((i+j-1)) | xargs) "
+            add_filter filters user_filters paths "$buf"
+
+            entries+=("${next_entries[@]}") # add next entries to existing
         fi
     done
     exec {fd}<&- # close the filters file
@@ -1425,14 +1446,16 @@ calc_diskspace() {
     done
         
     # add mount points for removable media as an exclude entry
-    local MEDIA="-/media/*"
-    readonly MEDIA
+    if [[ "$BOOTPTN" =~ $srcdisk$SP ]]; then
+        local MEDIA="-/media/*"
+        readonly MEDIA
 
-    filters[$MEDIA]=
-    user_filters[$MEDIA]="$MEDIA"
-    buf="Exclude from cloning: $CYAN${MEDIA:1}"
-    buf+="$YELLOW (mount points for removable media)"
-    abuf+=("$buf")    
+        filters[$MEDIA]=
+        user_filters[$MEDIA]="$MEDIA"
+        buf="Exclude from cloning: $CYAN${MEDIA:1}"
+        buf+="$YELLOW (mount points for removable media)"
+        abuf+=("$buf")    
+    fi
 
     (( ${#abuf[@]} )) && echo
     for buf in "${abuf[@]}"; do # print reordered user filters
@@ -1460,19 +1483,20 @@ calc_diskspace() {
             # partiton the directory is on
             (( ! $? )) &&
                 for i in "${!src_ptn_data[@]}"; do
-                    if [[ $(field "${src_ptn_data[i]}" $SOURCE ' ') == "$srcptn" ]]
-                    then
-                        src_ptn_data[i]="$srcptn $(( $(field "${src_ptn_data[i]}" $USED ' ') - 
-                                                     exc_size ))"
+                    source=$(field "${src_ptn_data[i]}" $SOURCE ' ')
+                    if [[ "$source" == "$srcptn" ]]; then
+                        (( used = $(field "${src_ptn_data[i]}" $USED ' ') - exc_size ))
+                        pcent=$(field "${src_ptn_data[i]}" $PCENT ' ')
+                        src_ptn_data[i]="$source $used $pcent"
                         break
                     fi
                 done
         fi
     done
 
-    ((total_clone_size-=total_exc_size))
+    ((clone_size-=total_exc_size))
 
-    local -a sizes=("$total_src_size" "$total_exc_size" "$total_clone_size")
+    local -a sizes=("$src_data_size" "$total_exc_size" "$clone_size")
     sizes+=("$dst_disk_size")
     
     # convert sizes to appropriate units, e.g. GB, MB, etc.
@@ -1488,7 +1512,7 @@ calc_diskspace() {
                "$OFF${sizes[0]} - $CYAN${sizes[1]}$OFF = ${sizes[2]}$YELLOW."
     fi
     cechot "Total space on destination disk: $OFF${sizes[3]}$YELLOW."
-    if (( total_clone_size > dst_disk_size )); then
+    if (( clone_size > dst_disk_size )); then
         cechot "${RED}Data on source disk does not fit on destination disk"\
                "${RED}($YELLOW${sizes[2]} > ${sizes[3]}$RED). Exiting."\
             | tee -a "$ERRFILE"
@@ -1507,8 +1531,8 @@ calc_diskspace() {
         sign="${k::1}"
         k="${k:1}"
 
-        # unless 'dirname' is used it crashes if k=/dev/* (no idea why
-        # this happens)
+        # unless 'dirname' is used it crashes if k=/dev/* (no idea why this
+        # happens)
         buf="$(dirname "$k")"
         
         # get source partition for the filter
@@ -1558,8 +1582,7 @@ create_partitions() {
     echo -e "\tGetting source partition table type..."
     
     # extract src partition table type
-    local ptn_tbl
-    ptn_tbl=$(field "${disks_info[${OPTIONS[0]}]}" "$DPTN_TBL_TYPE")
+    local ptn_tbl=$(field "${disks_info[${OPTIONS[0]}]}" "$DPTN_TBL_TYPE")
 
     # if partition table on dst != src mark dst for wipe
     [[ "$ptn_tbl" != $(field "${disks_info[${OPTIONS[1]}]}" "$DPTN_TBL_TYPE") ]] && 
@@ -1578,53 +1601,81 @@ create_partitions() {
         cmds+=("umount '${upartitions[i]}'")
     done
 
-    local -i SRC_DISK_SIZE
-    SRC_DISK_SIZE=$(field "${disks_info[${OPTIONS[0]}]}" "$DSIZE")
+    local -i SRC_DISK_SIZE=$(field "${disks_info[${OPTIONS[0]}]}" "$DSIZE")
     readonly SRC_DISK_SIZE
     local ptn
-    local -i leftover_space=0
+    local -i src_ptn_data_size=0
+    local -i resize_for_data=0
+    local -i disk_num
+    local flags
+    local fstype
+    local -i bytes
+    local -i SRC_DISK_RESIZE=SRC_DISK_SIZE-no_resize
+    readonly SRC_DISK_RESIZE
+    local -i dst_space_left=0
     
-    # the following calculations are necessary if dst disk size < src disk size
     if (( dst_disk_size < SRC_DISK_SIZE )); then
-        # Partitions in dst are created based on the size percentage they occupy
-        # in src. However, using this method, data in a src partition may not 
-        # fit in its dst partition if src part data > dst part size. In this
-        # case, the dst partition size is calculated based on DATA SIZE of src
-        # partition. After this, any leftover space on dst is allocated equally
-        # to all resized dst partitions to increase their size.
-        (( leftover_space = (rem_dst_size - total_clone_size) / rsz_ptn_num ))
-
-        # find esp, boot & bios partitions and subtract their data size from
-        # total clone size, as esp, boot & bios partitions are not resizeable
+        # update clone size if dst partition size is based on src partition
+        # data size
         for i in "${!src_ptn_data[@]}"; do
             ptn=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
+            ((src_ptn_data_size = $(field "${src_ptn_data[i]}" "$USED" ' ')))
             [[ "$ptn" == "$srcdisk$SP${esp_ptn_nums[0]}" || \
-               "$ptn" == "$srcdisk$SP${bios_ptn_nums[0]}" || \
-               "$ptn" == "$srcdisk$SP${boot_ptn_nums[0]}" ]] &&
-                ((total_clone_size-=$(field "${src_ptn_data[i]}" "$USED" ' ')))
+               "$ptn" == "$srcdisk$SP${bios_ptn_nums[0]}" ]] &&
+                ((clone_size -= src_ptn_data_size))
+        done
+
+        # normally, the code within the for loop below should be within the loop
+        # above but there's no guarantee that the ESP will be before any other 
+        # partitions except the bios one
+        for i in "${!src_ptn_data[@]}"; do
+            if (( resize_for_data )); then
+                break
+            else
+                # check if dst partition size is based on src partition data
+                # size
+                for ptn in "${partitions[@]}"; do
+                    # extract disk number to find if partition is src or dst
+                    ((disk_num=$(field "$ptn" "$PDISK_NUM")))
+
+                    # if src partition
+                    if (( disk_num == OPTIONS[0] )); then
+                        flags=$(field "$ptn" "$PFLAGS")   # extract partition flags
+                        fstype=$(field "$ptn" "$PFSTYPE") # extract filesystem type
+
+                        # all partitions except esp, bios & swap can be resized
+                        if [[ ! "$flags" =~ esp && ! "$flags" =~ bios && \
+                              ! "$fstype" =~ swap ]]
+                        then
+                            get_ptn_size bytes # get ptn size in bytes variable
+
+                            # get data size of src partition
+                            ((src_ptn_data_size=$(field "${src_ptn_data[i]}" "$USED" ' ')))
+
+                            # calculate space left on dst if dst partition size
+                            # is based on src partition data size
+                            if (( src_ptn_data_size > bytes )); then
+                                (( dst_space_left = dst_space_avail - clone_size ))
+                                (( resize_for_data = 1 ))
+                                break
+                            fi
+                        fi
+                    fi
+                done
+            fi
         done
     fi
 
-    local -i REM_SRC_SIZE=SRC_DISK_SIZE-no_resize
-    readonly REM_SRC_SIZE
-    local -i disk_num
-    local name
-    local flags
     local flag
-    local fstype
     local -i end
     local -i ptn_num
-    local -i j=0
-    local -i bytes
     local pct
-    local -i create_ptn=0
+    local cmd
+    local -i j=0
     local dst_ptn
     local -a dst_ptns=()
-    local -i src_ptn_data_size
-    local -i alloc_space=0
+    local -i alloc_bytes=0
     local -i ptn_tbl_flag=0
-    local -i data_rsz
-    local cmd
     local -i fd
 
     # iterate over all partitions to create commands that delete and create
@@ -1633,7 +1684,6 @@ create_partitions() {
         # extract disk number to find if partition src or dst
         ((disk_num=$(field "$ptn" "$PDISK_NUM")))
         ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
-        ((data_rsz=0))
         fstype=$(field "$ptn" "$PFSTYPE")       # extract filesystem type
         
         # if src partition, create commands that:
@@ -1645,47 +1695,38 @@ create_partitions() {
             flags=$(field "$ptn" "$PFLAGS")         # extract partition flags
             ((ptn_cnt=$(field "$ptn" "$PPTN_CNT"))) # extract partition counter
 
-            # all partitions except esp, boot, bios & swap can be resized
-            if [[ ! "$flags" =~ esp && ! "$flags" == boot && 
-                  ! "$flags" =~ bios && ! "$fstype" =~ swap ]]
+            # all partitions except esp, bios & swap can be resized
+            if [[ ! "$flags" =~ esp && ! "$flags" =~ bios && ! "$fstype" =~ swap ]]
             then
-                # adjust partition size to that of dst:
-                # 1. convert src partition size to percentage of remaining src size
-                #    note: remaining src size excludes esp, boot, bios, swap,
-                #          pre and postamble of src disk
-                # 2. convert that percentage to bytes in remaining dst size
-                #    note: remaining dst size excludes esp, boot, bios, swap, 
-                #          pre and postamble of dst disk
-                ((bytes=$(field "$ptn" "$PSIZE"))) # get size of src in bytes
-                pct=$(echo "$bytes $REM_SRC_SIZE" | awk '{printf "%.2f", $1 / $2}')
-                cmd='{printf "%.0f", ($1 * $2 == int($1 * $2)) ? $1 * $2 : int($1 * $2) + 1}'
-                ((bytes=$(echo "$pct $rem_dst_size" | awk "$cmd")))
-
-                if (( dst_disk_size < SRC_DISK_SIZE )); then
-                    # get the data size of the src partition and update the 
-                    # total clone size as well
+                # dst ptn size is calculated based on src ptn data size
+                if (( resize_for_data )); then
                     ((src_ptn_data_size=0))
                     for i in "${!src_ptn_data[@]}"; do
                         if [[ "$(field "${src_ptn_data[i]}" "$SOURCE" ' ')" == \
                               "$srcdisk$SP$ptn_num" ]]
                         then
+                            # get data size of src partition
                             ((src_ptn_data_size=$(field "${src_ptn_data[i]}" "$USED" ' ')))
-                            ((total_clone_size-=src_ptn_data_size))
+
+                            # get the percentage of scr disk partition data
+                            pct=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
+
+                            # calculate the bytes of the percentage above for
+                            # space left on dst
+                            cmd='{printf "%.0f", ($1 * $2 == int($1 * $2)) '
+                            cmd+='? $1 * $2 : int($1 * $2) + 1}'
+                            pct=$(awk "$cmd" <<< "$pct $dst_space_left")
+
+                            # dst partition size = src partition data size +
+                            #                      percentage of space left on dst
+                            ((bytes=src_ptn_data_size+pct))
                             break
                         fi
                     done
-
-                    # the bytes value needs to be adjusted 
-                    # if src partition data size > estimated dst partition size OR
-                    #    remaining dst space < remaining clone size
-                    if (( src_ptn_data_size > 0 && 
-                          ( src_ptn_data_size > bytes || 
-                            rem_dst_size - alloc_space - bytes < total_clone_size) ))
-                    then
-                        # add leftover space for each partition
-                        ((bytes=src_ptn_data_size+leftover_space))
-                        ((data_rsz=1))
-                    fi
+                # dst ptn size is calculated based on percentage of src ptn size
+                # with respect to src disk size
+                else
+                    get_ptn_size bytes # get ptn size in bytes variable
                 fi
 
                 # align partition size
@@ -1709,22 +1750,7 @@ create_partitions() {
                 done
 
             # update allocated space for dst disk
-            (( data_rsz == 1 )) && ((alloc_space+=bytes))
-
-            for i in "${!src_ptn_data[@]}"; do
-                if [[ "$(field "${src_ptn_data[i]}" "$SOURCE" ' ')" == \
-                      "$srcdisk$SP$ptn_num" && \
-                      $(field "${src_ptn_data[i]}" "$USED" ' ') -gt $bytes ]]
-                then
-                    cecho -e "\n${RED}After calculating data size on destination"\
-                             "${RED}partition $YELLOW'$dstdisk$DP$ptn_cnt'$RED,"\
-                             "${RED}data from source partition"\
-                             "$YELLOW'$srcdisk$SP$ptn_num'"\
-                             "${RED}does not fit on destination. Exiting."\
-                        | tee -a "$ERRFILE"
-                    return 1
-                fi
-            done
+            (( resize_for_data )) && ((alloc_bytes+=bytes))
 
             ((end=start+bytes-1)) # set the end byte for the partition
 
@@ -1795,7 +1821,7 @@ create_partitions() {
         else
             # to remove swap partition it has to be off first
             [[ "$fstype" =~ swap ]] && 
-            swapon | grep "$dstdisk$DP$ptn_num" &> /dev/null &&
+            swapon | grep "$dstdisk$DP$ptn_num" > /dev/null 2>> "$ERRFILE" &&
                 cmds+=("swapoff '$dstdisk$DP$ptn_num'")            
 
             # this is a dst partition therefore, create commands to delete it
@@ -1902,115 +1928,142 @@ clone() {
     echo -e "\tCreating list of files created by clone script to exclude from cloning..."
 
     local srcptn
-    local srcmnt_dir
+    local srcdir
 
     # log directory created by the script is excluded from cloning 
     srcptn=$(df -ak --sync --output=source "$(dirname "$LOGDIR")" | tail -1)
-    srcmnt_dir=$(mount | grep "$srcptn" | cut -d ' ' -f 3)
-    rsync_filters[$srcmnt_dir]+="-f \"- $(dirname "${LOGDIR//\"/\\\"}")/\" "
+    srcdir=$(mount | grep "$srcptn" | cut -d ' ' -f 3)
+    rsync_filters[$srcdir]+="-f \"- $(dirname "${LOGDIR//\"/\\\"}")/\" "
 
-    # find swap files listed in fstab file
     local -a swap_entries
-    mapfile -t swap_entries < <(grep swap "$fstab_file")
-
-    # find swap files that are active as some of these may not be listed in
-    # fstab file
-    mapfile -t -O ${#swap_entries[@]} swap_entries < <(swapon --noheadings | grep file)
-
-    echo -e "\tCreating list of swap files, if any, to create on destination disk..."
-
     local ptn_pair # src partition and its corresponding dst partition
     local swap_file
-    local -a swap_files=()
     local -a swap_file_cmds=()
-    local -i found
     local -i size
-    local -i count
-    local dst_dir
+    local dstdir
 
-    # iterate over swap file names and add commands to create them on dst
-    for swap_entry in "${swap_entries[@]}"; do
-        # if swap entry is a file and not a partition
-        if [[ "${swap_entry::1}" == "/" ]]; then
-            swap_file="${swap_entry%%+( *)}" # get swap filename
-            ((found=0))
+    if [[ "$BOOTPTN" =~ $srcdisk$SP ]]; then
+        # find swap files listed in fstab file
+        mapfile -t swap_entries < <(grep swap "$fstab_file")
 
-            # check if swap file has been added to swap file list
-            for added_swap_file in "${swap_files[@]}"; do
-                [[ "$added_swap_file" == "$swap_file" ]] && found=1 && break
-            done
-            (( found )) && continue    # swap file has been added so skip it
-            swap_files+=("$swap_file") # add swap file to swap file list
+        # find swap files that are active as some of these may not be listed in
+        # fstab file
+        mapfile -t -O ${#swap_entries[@]} swap_entries < <(swapon --noheadings | grep file)
 
-            srcptn=$(df -ak --sync --output=source "$swap_file" | tail -1)
+        echo -e "\tCreating list of swap files, if any, to create on destination disk..."
 
-            # add the swap file only if it exists on the src disk
-            if [[ "$srcptn" =~ $srcdisk$SP ]]; then
-                srcmnt_dir=$(mount | grep "$srcptn" | cut -d ' ' -f 3)
-                
-                # don't clone swap file (add to rsync filters)
-                rsync_filters[$srcmnt_dir]+="-f \"- ${swap_file//\"/\\\"}\" "
-                
-                if [[ -s "$swap_file" && -r "$swap_file" && -w "$swap_file" ]]
-                then
-                    # add commands to create swap files on dst
-                    ((size=$(find "$swap_file" -printf %s)))
+        local -a swap_files=()
+        local -i found
+        local -i count
+
+        # iterate over swap file names and add commands to create them on dst
+        for swap_entry in "${swap_entries[@]}"; do
+            # if swap entry is a file and not a partition
+            if [[ "${swap_entry::1}" == "/" ]]; then
+                swap_file="${swap_entry%%+( *)}" # get swap filename
+                ((found=0))
+
+                # check if swap file has been added to swap file list
+                for added_swap_file in "${swap_files[@]}"; do
+                    [[ "$added_swap_file" == "$swap_file" ]] && found=1 && break
+                done
+                (( found )) && continue    # swap file has been added so skip it
+                swap_files+=("$swap_file") # add swap file to swap file list
+
+                srcptn=$(df -ak --sync --output=source "$swap_file" | tail -1)
+
+                # add the swap file only if it exists on the src disk
+                if [[ "$srcptn" =~ $srcdisk$SP ]]; then
+                    srcdir=$(mount | grep "$srcptn" | cut -d ' ' -f 3)
                     
-                    ((count=size/MIBIBYTE))
-
-                    # get partition swap file resides on
-                    ptn=$(df "$swap_file" | awk '/^\/dev/ {print $1}')
+                    # don't clone swap file (add to rsync filters)
+                    rsync_filters[$srcdir]+="-f \"- ${swap_file//\"/\\\"}\" "
                     
-                    for ptn_pair in "${rsync_params[@]}"; do
-                        if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
-                            dst_dir=$(field "$ptn_pair" $((MDIR+MDST)))
+                    if [[ -s "$swap_file" && -r "$swap_file" && -w "$swap_file" ]]
+                    then
+                        # add commands to create swap files on dst
+                        ((size=$(find "$swap_file" -printf %s)))
+                        
+                        ((count=size/MIBIBYTE))
 
-                            # the following three numbers at the beginning of 
-                            # the command are parsed as follows:
-                            # 1: run in the background
-                            # 1: redirect stdout
-                            # 0: don't redirect stderr
-                            cmd="110 dd if=/dev/zero of='$dst_dir'/'$swap_file' "
-                            cmd+="bs=1M count=$count status=progress"
-                            swap_file_cmds+=("$cmd")
-                            swap_file_cmds+=("chmod 0600 '$dst_dir'/'$swap_file'")
-                            swap_file_cmds+=("mkswap -U clear '$dst_dir'/'$swap_file'")
-                            break
-                        fi
-                    done
+                        # get partition swap file resides on
+                        ptn=$(df "$swap_file" | awk '/^\/dev/ {print $1}')
+                        
+                        for ptn_pair in "${rsync_params[@]}"; do
+                            if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
+                                dstdir=$(field "$ptn_pair" $((MDIR+MDST)))
+
+                                # the following three numbers at the beginning of 
+                                # the command are parsed as follows:
+                                # 1: run in the background
+                                # 1: redirect stdout
+                                # 0: don't redirect stderr
+                                cmd="110 dd if=/dev/zero of='$dstdir'/'$swap_file' "
+                                cmd+="bs=1M count=$count status=progress"
+                                swap_file_cmds+=("$cmd")
+                                swap_file_cmds+=("chmod 0600 '$dstdir'/'$swap_file'")
+                                swap_file_cmds+=("mkswap -U clear '$dstdir'/'$swap_file'")
+                                break
+                            fi
+                        done
+                    fi
                 fi
             fi
-        fi
-    done
+        done
+    fi
 
     echo -e "\tCreating commands for cloning..."
 
     local key
+    local -i used
 
     # iterate over partitions and create commands for cloning
     for ptn_pair in "${rsync_params[@]}"; do
-        # create clone command
-        srcmnt_dir=$(field "$ptn_pair" "$MDIR")
+        srcdir=$(field "$ptn_pair" "$MDIR") # get src dir
 
-        if [[ "$srcmnt_dir" == "/" ]]; then
-            key="$srcmnt_dir"
+        if [[ "$srcdir" == "/" ]]; then
+            key="$srcdir"
         else
             # remove trailing '/' as it's not part of key of associative array
-            key="${srcmnt_dir::-1}"
+            key="${srcdir::-1}"
 
             # remove src mount directory from filtered directories/files to
             # comply with rsync rules
             rsync_filters[$key]="${rsync_filters["$key"]//$key}"
         fi
-                
-        # the following two numbers at the beginning of the command are parsed
-        # as follows:
+
+        # get size of dst partition
+        dstdir="$(field "$ptn_pair" $((MDIR+MDST)))"
+
+        if (( create_ptn )); then
+            (( size = $(df -ak --block-size=KiB --sync --output=avail "$dstdir" \
+                        2> "$ERRFILE" | tail -1 | tr -d [:alpha:]) ))
+
+            # get size of src partition data
+            (( used = $(df -ak --block-size=KiB --sync --output=used "$srcdir" \
+                        2> "$ERRFILE" | tail -1 | tr -d [:alpha:]) ))
+
+            # check if src partition data fits on dst partition size
+            if (( size <= used )); then
+                cecho -e "\n${RED}Destination partition"\
+                         "$(field "$ptn_pair" "$((MPTN+MDST))")$RED mounted on"\
+                         "$dstdir$RED is too small. It is $YELLOW$size KiB"\
+                         "${RED}but should be $YELLOW> $used KiB$RED. Delete"\
+                         "${RED}some data in source partition"\
+                         "$YELLOW$(field "$ptn_pair" $((MPTN)))$RED mounted on"\
+                         "$srcdir$RED. Exiting.\n"
+                return 1
+            fi
+        fi
+
+        # create clone command; the following two numbers at the beginning of the 
+        # command are parsed as follows:
         # 1: run in the background
         # 0: don't redirect stdout
         cmds+=("10 rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
-                         -aAhHxXlzDEU --no-i-r --numeric-ids \
-                         --delete-excluded ${rsync_filters["$key"]} \
-                         '$srcmnt_dir' '$(field "$ptn_pair" $((MDIR+MDST)))'")
+                         --temp-dir=/tmp -aAhHxXlzDEU --numeric-ids \
+                         --delete-before --delete-excluded ${rsync_filters["$key"]} \
+                         '$srcdir' '$dstdir'")
     done
 
     # add commands to create swap files, if any, on dst
@@ -2022,8 +2075,8 @@ clone() {
     ((err=$?))
     if (( err )); then return $err; fi
 
-    # if src is bootable make dst bootable as well
-    if (( esp_ptn_nums[0] || bios_ptn_nums[0] || boot_ptn_nums[0] )); then
+    # if src was used to boot the system make dst bootable as well
+    if [[ "$BOOTPTN" =~ $srcdisk$SP ]]; then
         echo -e "\tCreating commands to make destination disk bootable..."
         echo -e "\tCreating command to update fstab file on destination disk..."
 
@@ -2062,7 +2115,7 @@ clone() {
         cmd+="'$fstab_file'"
         cmds+=("$cmd")
 
-        local grubcfg_file="grub/grub.cfg"
+        local grubcfg_file="/grub/grub.cfg"
 
         # find location of dst grub.cfg file
         grubcfg_file=$(dst_pathname "$grubcfg_file" "${rsync_params[@]}")
@@ -2070,7 +2123,7 @@ clone() {
             stack "\n$YELLOW$grubcfg_file$RED file not found! Exiting."
             return $?
         fi
-
+        
         echo -e "\tCreating commands to update grub cfg file on destination disk..."
 
         local UUID
@@ -2080,7 +2133,7 @@ clone() {
         cmd="sed -i "
         for ptn_pair in "${rsync_params[@]}"; do
             UUID=$(field "$ptn_pair" "$MUUID")
-            if grep "$UUID" "$grubcfg_file" > /dev/null; then
+            if grep "$UUID" "$grubcfg_file" > /dev/null 2>> "$ERRFILE"; then
                 # add sed command to replace src UUID with dst UUID
                 cmd+="-e 's|$UUID|$(field "$ptn_pair" $((MUUID+MDST)))|g' "
             fi
@@ -2088,7 +2141,7 @@ clone() {
         
         echo -e "\tCreating commands to update grub default file on destination disk..."
 
-        local grubdef_file="etc/default/grub"
+        local grubdef_file="/etc/default/grub"
 
         # find location of dst default grub file
         grubdef_file=$(dst_pathname "$grubdef_file" "${rsync_params[@]}")
@@ -2117,7 +2170,13 @@ clone() {
         local -i swap_file_offset
         
         mapfile -t swap_entries < <(grep swap "$fstab_file")
-        
+
+        local STR_UUID="resume=UUID="
+        local RE_SEARCH_UUID="${STR_UUID}[a-fA-F0-9-]\+"
+        local STR_OFFSET="resume_offset="
+        local RE_SEARCH_OFFSET="${STR_OFFSET}[0-9]\+"
+        readonly STR_UUID RE_SEARCH_UUID STR_OFFSET RE_SEARCH_OFFSET
+
         for swap_entry in "${swap_entries[@]}"; do
             # if swap entry is a file and not a partition
             if [[ "${swap_entry::1}" == "/" ]]; then
@@ -2140,14 +2199,9 @@ clone() {
                            '$swap_file_offset' =~ ^[0-9]+$ && \
                            '$swap_file_offset' -gt 0 ]]")
                       
-                local STR_UUID="resume=UUID="
-                local RE_SEARCH_UUID="${STR_UUID}[a-fA-F0-9-]\+"
                 local REPLACE_UUID="$STR_UUID$swap_file_UUID"
-                local STR_OFFSET="resume_offset="
-                local RE_SEARCH_OFFSET="${STR_OFFSET}[0-9]\+"
                 local REPLACE_OFFSET="$STR_OFFSET$swap_file_offset"
-                readonly STR_UUID RE_SEARCH_UUID REPLACE_UUID STR_OFFSET
-                readonly RE_SEARCH_OFFSET REPLACE_OFFSET
+                readonly REPLACE_UUID REPLACE_OFFSET
                 
                 # replace UUID and offset with that of dst in grub cfg default file
                 cmds+=("sed -i 's|$RE_SEARCH_UUID|$REPLACE_UUID|g' '$grubdef_file'")
@@ -2159,99 +2213,93 @@ clone() {
             fi
         done
 
-        if [[ "$BOOTPTN" =~ $srcdisk$SP ]]; then
-            local -a dstinfo
-            
-            # get dst info
-            mapfile -d ' ' -t dstinfo < <(lsblk -nr --nodeps --output NAME,TRAN,RM | 
-                                          grep "${dstdisk//\/dev\/}")
+        local -a dstinfo
+        
+        # get dst info
+        mapfile -d ' ' -t dstinfo < <(lsblk -nr --nodeps --output NAME,TRAN,RM | 
+                                        grep "${dstdisk//\/dev\/}")
 
-            # find if dst is removable disk
-            local -i removable=0
-            [[ "${dstinfo[1]}" == usb || "${dstinfo[2]}" -eq 1 ]] && 
-                ((removable=1))
+        # find if dst is removable disk
+        local -i removable=0
+        [[ "${dstinfo[1]}" == usb || "${dstinfo[2]}" -eq 1 ]] && 
+            ((removable=1))
 
-            local dstdir
-            local dstptn
-            local buf                    
-            local -a entries
-            local entry
-            local distro
-            local SHIM="[Ss][Hh][Ii][Mm]"
-            readonly SHIM
-            local EFI="[Ee][Ff][Ii]"
-            readonly EFI
+        local dstptn
+        local buf                    
+        local -a entries
+        local entry
+        local distro
+        local SHIM="[Ss][Hh][Ii][Mm]"
+        readonly SHIM
 
-            for ptn_pair in "${rsync_params[@]}"; do
-                dstdir=$(field "$ptn_pair" $((MDIR+MDST)))
-                dstptn=$(field "$ptn_pair" $((MPTN+MDST)))
+        for ptn_pair in "${rsync_params[@]}"; do
+            dstptn=$(field "$ptn_pair" $((MPTN+MDST)))
 
-                # if boot partition and bios flag is set, install grub on bios
-                # partition
-                if [[ "$dstptn" == "$dstdisk$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]]
-                then
-                    echo -e "\tCreating command to install grub on bios "\
-                            "partition on destination disk..."
-                    
-                    # the following three numbers at the beginning of the command
-                    # are parsed as follows:
-                    # 1: run in the background
-                    # 1: redirect stdout
-                    # 0: don't redirect stderr
-                    cmds+=("110 grub-install --target=i386-pc \
-                                             --boot-directory='$dstdir' \
-                                             --recheck '$dstdisk'")
-                fi
+            # if boot partition and bios flag is set, install grub on bios
+            # partition
+            if [[ "$dstptn" == "$dstdisk$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]]
+            then
+                echo -e "\tCreating command to install grub on bios "\
+                        "partition on destination disk..."
                 
-                # if esp partition and UEFI boot is enabled, install UEFI boot
-                # entries if required
-                if [[ "$dstptn" == "$dstdisk$DP${esp_ptn_nums[1]}" ]]; then
-                    buf="$(efibootmgr 2> "$ERRFILE")"
-                    ((err=$?))
-                    if (( ! err && ! removable )); then
-                        echo
-                        # get dst boot partition UUID
-                        UUID="$(field "$ptn_pair" $((MUUID+MDST)))"
+                # the following three numbers at the beginning of the command
+                # are parsed as follows:
+                # 1: run in the background
+                # 1: redirect stdout
+                # 0: don't redirect stderr
+                dstdir=$(field "$ptn_pair" $((MDIR+MDST)))
+                cmds+=("110 grub-install --target=i386-pc \
+                                         --boot-directory='$dstdir' \
+                                         --recheck '$dstdisk'")
+            fi
+            
+            # if esp partition and UEFI boot is enabled, install UEFI boot
+            # entries if required
+            if [[ "$dstptn" == "$dstdisk$DP${esp_ptn_nums[1]}" ]]; then
+                buf="$(efibootmgr 2> "$ERRFILE")"
+                ((err=$?))
+                if (( ! err && ! removable )); then
+                    echo
+                    # get dst boot partition UUID
+                    UUID="$(field "$ptn_pair" $((MUUID+MDST)))"
 
-                        # get dst boot partition UUID entry
-                        UUID="$(lsblk -nro +UUID,PARTUUID | grep "$UUID")"
-                        UUID="${UUID//+(* )}" # extract partition UUID
+                    # get dst boot partition UUID entry
+                    UUID="$(lsblk -nro +UUID,PARTUUID | grep "$UUID")"
+                    UUID="${UUID//+(* )}" # extract partition UUID
+                    
+                    # get boot entries (they contain 'EFI' string)
+                    mapfile -t entries < <(find "$BOOTDIR"/$EFI -name "*.$EFI")
+
+                    for entry in "${entries[@]}"; do
+                        entry="${entry#$BOOTDIR}" # remove bootdir
                         
-                        # get boot entries (they contain 'EFI' string)
-                        mapfile -t entries < <(find "$BOOTDIR"/$EFI -name "*.$EFI")
+                        # skip entries that contain '/BOOT/' (it's for
+                        # removable media) or not 'shim'
+                        [[ "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ && ! "$entry" =~ $SHIM ]] && 
+                            continue
 
-                        for entry in "${entries[@]}"; do
-                            entry="${entry#$BOOTDIR}" # remove bootdir
-                            
-                            # skip entries that contain '/BOOT/' (it's for
-                            # removable media) or not 'shim'
-                            if [[ ! "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ && \
-                                  "$entry" =~ $SHIM ]]
-                            then
-                                # remove suffix up to and including last '/'
-                                distro="${entry%+(/*)}"
-                                
-                                # remove prefix up to and including last '/'
-                                distro="${distro##+(*/)}"
+                        # remove suffix up to and including last '/'
+                        distro="${entry%+(/*)}"
+                        
+                        # remove prefix up to and including last '/'
+                        distro="${distro##+(*/)}"
 
-                                # if no shim boot entries for dst, add them
-                                entry="${entry//'/'/'\'}"
-                                if [[ ! "$buf" =~ .+${esp_ptn_nums[1]}.+$UUID.+"$entry" ]]
-                                then
-                                    echo -e "\tCreating command to add UEFI" \
-                                            "boot entry '$entry' ..."
-                                    cmds+=("efibootmgr --create --disk '$dstdisk' \
-                                                       --loader '$entry' \
-                                                       --label 'Shim-$distro' \
-                                                       --part ${esp_ptn_nums[1]} \
-                                                       --unicode")
-                                fi
-                            fi
-                        done
-                    fi
+                        # if no shim boot entries for dst, add them
+                        entry="${entry//'/'/'\'}"
+                        if [[ ! "$buf" =~ .+${esp_ptn_nums[1]}.+$UUID.+"$entry" ]]
+                        then
+                            echo -e "\tCreating command to add UEFI" \
+                                    "boot entry '$entry' ..."
+                            cmds+=("efibootmgr --create --disk '$dstdisk' \
+                                                --loader '$entry' \
+                                                --label 'Shim-$distro' \
+                                                --part ${esp_ptn_nums[1]} \
+                                                --unicode")
+                        fi
+                    done
                 fi
-            done
-        fi
+            fi
+        done
         
         exec_cmds "${cmds[@]}" # execute commands created above
     fi
@@ -2284,8 +2332,8 @@ cleanup() {
         
         signame=$(expr "$(kill -l | grep "$signame")" : "^.*$signame\([A-Z]\+\)")
         
-        cecho -e "\n\nReceived signal '$signame'. Please let cleanup finish"\
-                 "and then press any key to exit.\nCleanup in progress..."
+        cecho -e "\n\nReceived signal '$signame'. Please let cleanup finish."\
+                 "\nCleanup in progress..."
 
         # pids of processes running in background
         local -a pids
