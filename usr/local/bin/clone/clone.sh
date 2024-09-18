@@ -1622,10 +1622,9 @@ create_partitions() {
         # data size
         for i in "${!src_ptn_data[@]}"; do
             ptn=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
-            ((src_ptn_data_size = $(field "${src_ptn_data[i]}" "$USED" ' ')))
             [[ "$ptn" == "$srcdisk$SP${esp_ptn_nums[0]}" || \
                "$ptn" == "$srcdisk$SP${bios_ptn_nums[0]}" ]] &&
-                ((clone_size -= src_ptn_data_size))
+                (( clone_size -= $(field "${src_ptn_data[i]}" "$USED" ' ') ))
         done
 
         # normally, the code within the for loop below should be within the loop
@@ -2041,10 +2040,20 @@ clone() {
         if (( create_ptn )); then
             (( size = $(df -ak --block-size=KiB --sync --output=avail "$dstdir" \
                         2> "$ERRFILE" | tail -1 | tr -d [:alpha:]) ))
+            (( size *= 1024 )) # convert to bytes
 
             # get size of src partition data
-            (( used = $(df -ak --block-size=KiB --sync --output=used "$srcdir" \
-                        2> "$ERRFILE" | tail -1 | tr -d [:alpha:]) ))
+            for i in "${!src_ptn_data[@]}"; do
+                srcptn=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
+                [[ "$srcptn" == "$srcdisk$SP${esp_ptn_nums[0]}" || \
+                   "$srcptn" == "$srcdisk$SP${bios_ptn_nums[0]}" ]] &&
+                    continue
+
+                if [[ "$srcptn" == $(field "$ptn_pair" "$MPTN") ]]; then
+                    (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') ))
+                    break
+                fi
+            done
 
             # check if src partition data fits on dst partition size
             if (( size <= used )); then
