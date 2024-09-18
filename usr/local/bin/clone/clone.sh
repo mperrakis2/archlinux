@@ -4,19 +4,19 @@
 # script with no parameters. Clone options are entered by the user after the
 # the script is run.
 
-# the following is a description of the script's functionality
+# the following describe the script's functionality
 #
 # legend
 # ------
 # src: disk to be cloned (source)
-# dst: destination disk
+# dst: disk to clone to  (destination)
 #
 # the user selects src & dst AFTER the script is launched
 # 
 # prerequisites
 # -------------
-# * will NOT work with Logical Volume Management (LVM)
-# * grub 2 bootloader must be installed on src if src is bootable
+# * does NOT support Logical Volume Management (LVM)
+# * if src was used to boot the system, the src bootloader must be grub 2
 # * systemd must be used as init
 # * all src partitions must have UUIDs
 #
@@ -62,8 +62,9 @@
 #     remove partitions on dst, if any
 #     create src partitions on dst
 # format swap partitions on dst, if any
+# if partitions created on dst, exit if dst does not have enough disk space
 # clone using rsync
-# if src is bootable and booted the system, apply the following on dst
+# if src was used to boot the system, apply the following on dst
 #     update grub cfg file
 #     update fstab file
 #     if swap partitions exist and/or swap files exist 
@@ -495,8 +496,8 @@ error_msg
         
         declare -i err
         
-        chmod go=+r "$LCKFILE" && # set access rights of lock file
-        echo "$$_$OPTIONS_S" >&$fd 2>> "$ERRFILE" # add entry to lock file
+        chmod go=+r "$LCKFILE" &&  # set access rights of lock file
+        echo "$$_$OPTIONS_S" >&$fd # add entry to lock file
         ((err=$?))
 
         echo
@@ -934,9 +935,9 @@ mask_hibernation() {
 
                 # add entry to hibernation lock file
                 if (( ! err )); then
-                    echo "$$_$OPTIONS_S" >&$fd 2>> "$ERRFILE"
-                    echo -n "$HBN_CFG_MNT_DIR $SEP " >&$fd 2>> "$ERRFILE"
-                    echo "${rsync_filters[$HBN_CFG_MNT_DIR]}" >&$fd 2>> "$ERRFILE"
+                    echo "$$_$OPTIONS_S" >&$fd
+                    echo -n "$HBN_CFG_MNT_DIR $SEP " >&$fd
+                    echo "${rsync_filters[$HBN_CFG_MNT_DIR]}" >&$fd
                 fi
             fi
         else
@@ -988,12 +989,12 @@ calc_diskspace() {
     # get mount points for src partitions
     for ptn in "${partitions[@]}"; do
         # extract disk number to find if partition is src or dst
-        ((disk_num=$(field "$ptn" $PDISK_NUM)))
-        fstype=$(field "$ptn" $PFSTYPE)           # extract filesystem type
+        ((disk_num=$(field "$ptn" "$PDISK_NUM")))
+        fstype=$(field "$ptn" "$PFSTYPE")           # extract filesystem type
         
         if (( disk_num == OPTIONS[0] )); then     # if is src partition
-            ((ptn_num=$(field "$ptn" $PPTN_NUM))) # extract partition number
-            flags=$(field "$ptn" $PFLAGS)         # extract flags
+            ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
+            flags=$(field "$ptn" "$PFLAGS")         # extract flags
             
             # mount all src partitions other than swap and bios_grub
             if [[ ! "$fstype" =~ swap && ! "$flags" =~ bios ]]; then
@@ -1007,7 +1008,7 @@ calc_diskspace() {
                 if [[ -z "$flags" ]]; then
                     cecho -e "\n${RED}The $YELLOW$srcdisk$SP$ptn_num$RED source"\
                              "${RED}partition mounted on"\
-                             "$YELLOW$(field "$srcmnt" $MDIR)${RED} does not"\
+                             "$YELLOW$(field "$srcmnt" "$MDIR")${RED} does not"\
                              "${RED}have a UUID. Exiting." | tee -a "$ERRFILE"
                     return 1
                 fi
@@ -1051,7 +1052,7 @@ calc_diskspace() {
         fi
         src_ptn_data[i]="$source $used $pcent"
         (( total_pcent += pcent ))
-        (( src_data_size += $used ))
+        (( src_data_size += used ))
     done
 
     ((clone_size=src_data_size))
@@ -1483,10 +1484,10 @@ calc_diskspace() {
             # partiton the directory is on
             (( ! $? )) &&
                 for i in "${!src_ptn_data[@]}"; do
-                    source=$(field "${src_ptn_data[i]}" $SOURCE ' ')
+                    source=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
                     if [[ "$source" == "$srcptn" ]]; then
-                        (( used = $(field "${src_ptn_data[i]}" $USED ' ') - exc_size ))
-                        pcent=$(field "${src_ptn_data[i]}" $PCENT ' ')
+                        (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') - exc_size ))
+                        pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
                         src_ptn_data[i]="$source $used $pcent"
                         break
                     fi
@@ -1556,7 +1557,7 @@ calc_diskspace() {
         if [[ "${srcptn::1}" != "/" ]]; then
             srcmnt_dir="/" # located on root (/) partition                    
         else
-            srcmnt_dir="$(mount | grep "$srcptn" | cut -d ' ' -f 3)"
+            srcmnt_dir="$(lsblk -no MOUNTPOINT "$srcptn")"
         fi
 
         k="${k//'"'/'\"'}" # escape double quotes
@@ -1582,7 +1583,8 @@ create_partitions() {
     echo -e "\tGetting source partition table type..."
     
     # extract src partition table type
-    local ptn_tbl=$(field "${disks_info[${OPTIONS[0]}]}" "$DPTN_TBL_TYPE")
+    local ptn_tbl
+    ptn_tbl=$(field "${disks_info[${OPTIONS[0]}]}" "$DPTN_TBL_TYPE")
 
     # if partition table on dst != src mark dst for wipe
     [[ "$ptn_tbl" != $(field "${disks_info[${OPTIONS[1]}]}" "$DPTN_TBL_TYPE") ]] && 
@@ -1591,7 +1593,7 @@ create_partitions() {
     local -a upartitions
 
     # get partitions to unmount on dst
-    mapfile -t upartitions < <(mount | grep "$dstdisk" | cut -f 1 -d ' ')
+    mapfile -t upartitions < <(findmnt -An -o source | grep "$dstdisk")
     
     local -a cmds # contains cmds to create partitions on dst
     local -i i
@@ -1601,7 +1603,8 @@ create_partitions() {
         cmds+=("umount '${upartitions[i]}'")
     done
 
-    local -i SRC_DISK_SIZE=$(field "${disks_info[${OPTIONS[0]}]}" "$DSIZE")
+    local -i SRC_DISK_SIZE
+    SRC_DISK_SIZE=$(field "${disks_info[${OPTIONS[0]}]}" "$DSIZE")
     readonly SRC_DISK_SIZE
     local ptn
     local -i src_ptn_data_size=0
@@ -1735,8 +1738,8 @@ create_partitions() {
                 # if next partition exists, align existing partition to next
                 # partition's filesystem alignment
                 if (( ptn_cnt < ${#alignments[@]} )); then
-                    ((bytes=$(realign_size $start $bytes ${alignments[$ptn_num]} \
-                                           ${alignments[$((ptn_num+1))]})))
+                    ((bytes=$(realign_size "$start" $bytes "${alignments[$ptn_num]}" \
+                                           "${alignments[$((ptn_num+1))]}")))
                 fi
             else
                 # extract src partition size in bytes
@@ -1881,7 +1884,7 @@ clone() {
     for ptn in "${partitions[@]}"; do
         # extract disk number to find if partition is src or dst
         ((disk_num=$(field "$ptn" "$PDISK_NUM")))
-        if (( disk_num == OPTIONS[0] )); then  # if is src partition
+        if (( disk_num == OPTIONS[0] )); then # if is src partition
             fstype=$(field "$ptn" "$PFSTYPE")       # extract filesystem type
             flags=$(field "$ptn" "$PFLAGS")         # extract flags
             ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
@@ -1932,7 +1935,7 @@ clone() {
 
     # log directory created by the script is excluded from cloning 
     srcptn=$(df -ak --sync --output=source "$(dirname "$LOGDIR")" | tail -1)
-    srcdir=$(mount | grep "$srcptn" | cut -d ' ' -f 3)
+    srcdir=$(lsblk -no MOUNTPOINT "$srcptn")
     rsync_filters[$srcdir]+="-f \"- $(dirname "${LOGDIR//\"/\\\"}")/\" "
 
     local -a swap_entries
@@ -1974,7 +1977,7 @@ clone() {
 
                 # add the swap file only if it exists on the src disk
                 if [[ "$srcptn" =~ $srcdisk$SP ]]; then
-                    srcdir=$(mount | grep "$srcptn" | cut -d ' ' -f 3)
+                    srcdir=$(lsblk -no MOUNTPOINT "$srcptn")
                     
                     # don't clone swap file (add to rsync filters)
                     rsync_filters[$srcdir]+="-f \"- ${swap_file//\"/\\\"}\" "
@@ -2056,13 +2059,22 @@ clone() {
             fi
         fi
 
+        flags="aAhHxlzEUtX"
+
+        # After tests, rsync does not support extended attributes on HFS
+        # filesystems so that option is removed below. After mounting an HFS
+        # volume, executing a 'ls' command on the mounted volume produces the
+        # following message "ls: '<mount_dir>': No data available" yet the
+        # contents are displayed correctly.
+        [[ "$(findmnt -no FSTYPE "$srcdir")" =~ hfs ]] && flags="${flags:0:-1}"
+
         # create clone command; the following two numbers at the beginning of the 
         # command are parsed as follows:
         # 1: run in the background
         # 0: don't redirect stdout
         cmds+=("10 rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
-                         --temp-dir=/tmp -aAhHxXlzDEU --numeric-ids \
-                         --delete-before --delete-excluded ${rsync_filters["$key"]} \
+                         -'$flags' --numeric-ids --temp-dir=/tmp --delete-before \
+                         --delete-excluded ${rsync_filters["$key"]} \
                          '$srcdir' '$dstdir'")
     done
 
@@ -2271,7 +2283,7 @@ clone() {
                     mapfile -t entries < <(find "$BOOTDIR"/$EFI -name "*.$EFI")
 
                     for entry in "${entries[@]}"; do
-                        entry="${entry#$BOOTDIR}" # remove bootdir
+                        entry="${entry#"$BOOTDIR"}" # remove bootdir
                         
                         # skip entries that contain '/BOOT/' (it's for
                         # removable media) or not 'shim'

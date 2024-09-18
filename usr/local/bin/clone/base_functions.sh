@@ -121,7 +121,7 @@ stack() {
 
 	    stack+=("\t($i) $func $src:$line")
     done
-    (IFS=$'\n'; cecho -e "$RED$@${stack[*]}\n")
+    (IFS=$'\n'; cecho -e "$RED$*${stack[*]}\n")
     
     return 1
 }
@@ -349,13 +349,13 @@ update_matched() {
         # create new match with updated indices and delete existing
         elif (( idx1 > $1 )); then
             if (( idx2 < $1 )); then
-                ref_matched[$(($idx1-1)),$idx2]="${ref_matched[$idx_pair]}"
+                ref_matched[$((idx1-1)),$idx2]="${ref_matched[$idx_pair]}"
             else
-                ref_matched[$(($idx1-1)),$(($idx2-1))]="${ref_matched[$idx_pair]}"            
+                ref_matched[$((idx1-1)),$((idx2-1))]="${ref_matched[$idx_pair]}"            
             fi
             unset ref_matched[$idx_pair]
         elif (( idx2 > $1 )); then
-            ref_matched[$idx1,$(($idx2-1))]="${ref_matched[$idx_pair]}"            
+            ref_matched[$idx1,$((idx2-1))]="${ref_matched[$idx_pair]}"            
             unset ref_matched[$idx_pair]
         fi    
     done
@@ -636,7 +636,7 @@ get_sector_size() {
             done
             exec {fd}<&- # close the FSTYPES file
 
-            ((size=$(field "${partitions[i]}" $PALIGN_START)))
+            ((size=$(field "${partitions[i]}" "$PALIGN_START")))
             ((size=$(align_sector_size $min_size $max_size $size)))
         fi
     fi
@@ -658,11 +658,11 @@ align_ptn() {
     fi
     
     if [[ "$2" =~ swap ]]; then
-        echo "$(lcm "$1" "$page_size")"
+        lcm "$1" "$page_size"
     elif [[ "$3" =~ bios ]]; then # keep existing alignment as bios_grub
         echo "$1"                 # partition has no fstype and is unformatted
     else
-        echo "$(lcm "$1" "$sector_size")"
+        lcm "$1" "$sector_size"
     fi
 }
 
@@ -736,7 +736,7 @@ align_size() {
 readonly HBN_CFG_DIR="/etc/systemd/system"
 HBN_CFG_PTN=$(df -ak --sync --output=source "$HBN_CFG_DIR" | tail -1)
 readonly HBN_CFG_PTN
-HBN_CFG_MNT_DIR=$(mount | grep "$HBN_CFG_PTN" | cut -d ' ' -f 3)
+HBN_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$HBN_CFG_PTN")
 readonly HBN_CFG_MNT_DIR
 declare -a hibernate_cmds=()
 
@@ -818,8 +818,6 @@ mount_ptn() {
     local UUID
     local mnt_dir
     local fstype
-    local EVIL_MICROSOFT="ntfs|msdos"
-    readonly EVIL_MICROSOFT
     local -i is_mnt=0
     
     if [[ "$1" == "$srcdisk" ]]; then p="$SP"; else p="$DP"; fi
@@ -827,17 +825,15 @@ mount_ptn() {
     # get partition UUID
     UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\([^\"]*\)\"")
 
-    # find mount directory of partition if it exists
-    mnt_dir=$(mount | grep "$1$p$2" | cut -f 3 -d ' ')
+    mnt_dir=$(lsblk -no MOUNTPOINT "$1$p$2") # get partition mount directory
+    fstype="$(lsblk -no FSTYPE "$1$p$2")"    # get partition filesystem
 
-    # if filesystem ntfs or msdos unmount partition in order to mount it with
-    # user and group id
-    if [[ "$mnt_dir" ]]; then
-        fstype="$(lsblk -no FSTYPE "$1$p$2" 2> "$ERRFILE")"
-        if [[ "$fstype" =~ ($EVIL_MICROSOFT) ]]; then
-            umount "$mnt_dir"
-            mnt_dir=""
-        fi
+    # For reasons unknown if a ntfs filesystem is mounted already by the system
+    # errors are produced during cloning. Therefore, it has to be unmounted and
+    # then re-mounted.
+    if [[ "$mnt_dir" && "$fstype" =~ ntfs ]]; then
+        umount "$mnt_dir"
+        mnt_dir=""
     fi
 
     # if partition not mounted, mount it based on its partition UUID under
@@ -848,9 +844,10 @@ mount_ptn() {
         # create command to create directory for mounting if one does not exist
         [[ ! -d /media/$UUID ]] && cmds+=("mkdir -p /media/$UUID")
 
-        # check if device has 'msdos' partition table type and create command to
-        # mount partition
-        if parted -m "$1$p$2" print | grep -E "$EVIL_MICROSOFT" > /dev/null 2>> "$ERRFILE"
+        # if partition has one of the following filesystems or a 'dos' partition
+        # table type, create cmd to mount with 'uid' and 'gid'
+        if [[ "ntfs udf hfsplus" =~ "$fstype" || \
+              "$(lsblk -no PTTYPE "$1$p$2")" =~ dos ]]
         then
             local uid
             local gid
@@ -948,7 +945,7 @@ exec_cmds() {
     local -a cmds=("$@")
     local -i i
 
-    for i in ${!cmds[@]}; do # remove empty commands
+    for i in "${!cmds[@]}"; do # remove empty commands
         [[ -z "${cmds[i]//[[:space:]]}" ]] && unset cmds[i]
     done
     if (( ! ${#cmds[@]} )); then return 0; fi # return if no commands
@@ -1014,7 +1011,7 @@ exec_cmds() {
             # arguments but not within each argument
             eval "wait $pid" "${fd[1]}" "${fd[2]}"
             ((err=$?))
-            if (( err && err < $SIGMASK )); then
+            if (( err && err < SIGMASK )); then
                 # ignore if 'rsync' failed and err=24, i.e. partial transfer due
                 # to vanished source files
                 if [[ "${cmds[i]}" =~ ^[[:blank:]]*rsync && $err -eq 24 ]]
@@ -1182,7 +1179,7 @@ get_pids() {
         mapfile -t pids < <(cat "$LCKFILE" 2>> "$ERRFILE")
         
         # extract pids
-        for pid in ${pids[@]}; do
+        for pid in "${pids[@]}"; do
             pid=$(expr "$pid" : "^\([0-9]\+\)")
             (( pid == $$ )) && continue # skip own pid
 
@@ -1252,7 +1249,7 @@ lcm() {
     # the LCM of two numbers x,y is GCD * factorsX * factorsY
     # where x = GCD * factorsX, y = GCD * factorsY
     # thus, LCM = GCD * (x / GCD) * (y / GCD) = x * y / GCD
-    echo $(( $1 * $2 / $(gcd $1 $2) ))
+    echo $(( $1 * $2 / $(gcd "$1" "$2") ))
 }
 
 # calculate the Greatest Common Divisor (GCD) of two numbers

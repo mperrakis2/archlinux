@@ -1,9 +1,10 @@
 # maps filesystem names of 'parted' command to 'mkfs' command
-# the last two fields are the min & max sector size respectively
-# for btrfs the min & max sector size are the page size
-# for swap there's no min & max sector size
+# the last two fields are the min & max sector size respectively; if any of them
+# are zero the page size is assumed
+# to support comments after the end of a line the last field MUST be delimited
+# by a colon
 
-btrfs:mkfs.btrfs --force -q:0:0
+btrfs:mkfs.btrfs --force -q:0:0: # no subvolumes supported!
 ext2:mkfs.ext2 -q -F -F:1024:4096
 ext3:mkfs.ext3 -q -F -F:1024:4096
 ext4:mkfs.ext4 -q -F -F:1024:4096
@@ -12,8 +13,9 @@ fat16:mkfs.fat -I -F16:512:4096
 fat32:mkfs.fat -I -F32:512:4096
 jfs:mkfs.jfs -q:512:4096
 linux-swap(v1):mkswap -f
-minix:mkfs.minix -3:1024:8192
 ntfs:mkfs.ntfs --force -q:256:4096
 reiserfs:mkfs.reiserfs -ffq:512:8192
-udf:mkfs.udf --spartable:512:32768
+udf:mkfs.udf --utf8:512:32768
 xfs:mkfs.xfs -fq:512:32768
+hfs+:mkfs.hfsplus:0:0:    # case insensitive
+hfsx:mkfs.hfsplus -s:0:0: # case sensitive
