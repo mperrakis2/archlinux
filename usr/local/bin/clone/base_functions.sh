@@ -619,7 +619,7 @@ get_sector_size() {
             exec {fd}< "$FSTYPES" # open FSTYPES file
             while read -ru $fd; do
                 # remove leading and trailing whitespace
-                REPLY="$(echo "$REPLY" | xargs 2>> "$ERRFILE")" 
+                REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
 
                 # ignore empty lines & comments
                 (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
@@ -826,7 +826,7 @@ mount_ptn() {
     UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\([^\"]*\)\"")
 
     mnt_dir=$(lsblk -no MOUNTPOINT "$1$p$2") # get partition mount directory
-    fstype="$(lsblk -no FSTYPE "$1$p$2")"    # get partition filesystem
+    fstype=$(lsblk -no FSTYPE "$1$p$2")    # get partition filesystem
 
     # For reasons unknown if a ntfs filesystem is mounted already by the system
     # errors are produced during cloning. Therefore, it has to be unmounted and
@@ -1121,7 +1121,7 @@ unmask_hibernation() {
             local user
             local -i uid
 
-            user="$(logname)"
+            user=$(logname)
             uid=$(id -u "$user")
             
             # send dummy notification to get the latest notification id

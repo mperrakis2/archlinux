@@ -115,7 +115,7 @@ HBNFILE="$LCKDIR/hbn_clone_pid"
 readonly HBNFILE
 
 # bold colors foreground
-BOLD="$(tput bold)"
+BOLD=$(tput bold)
 readonly BOLD
 RED="$BOLD$(tput setaf 1)"
 readonly RED
@@ -125,7 +125,7 @@ YELLOW="$BOLD$(tput setaf 3)"
 readonly YELLOW
 CYAN="$BOLD$(tput setaf 6)"   
 readonly CYAN
-OFF="$(tput sgr0)" # turn off all attributes
+OFF=$(tput sgr0) # turn off all attributes
 readonly OFF
 
 # bold colors background
@@ -176,7 +176,7 @@ readonly SPTN SUUID SDST
 # END
 # the variables above are field numbers used by the field() function
 
-BOOTDIR="$(bootctl -p)" # get boot directory
+BOOTDIR=$(bootctl -p) # get boot directory
 readonly BOOTDIR
 
 # get partition of boot directory
@@ -260,7 +260,7 @@ usage() {
     exec {num}< "$FILTERS" # open filters file
     while read -r -u $num; do
         # remove leading & trailing spaces and tabs
-        REPLY="$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')"
+        REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
         (( ! ${#REPLY} ))  && continue  # skip empty lines
 
         REPLY=$(expr "$REPLY" : "\(^[^#].*$\)") # get lines that are not comments
@@ -348,7 +348,7 @@ user_input() {
              "cleanup and\nget exit message): "
     read -r -a OPTIONS # read cloning options into array
 
-    START_DATE="$(date)" # timestamp will be used to calculate the clone run time
+    START_DATE=$(date) # timestamp will be used to calculate the clone run time
 
     # return if text files needed by script don't exist
     if ! files_exist LOOP; then return 1; fi
@@ -1004,7 +1004,7 @@ calc_diskspace() {
                 mount_points+=("$srcmnt")
                 
                 # return if any src partition does not have UUID
-                flags="$(lsblk -no UUID "$srcdisk$SP$ptn_num" 2>> "$ERRFILE")"
+                flags=$(lsblk -no UUID "$srcdisk$SP$ptn_num" 2>> "$ERRFILE")
                 if [[ -z "$flags" ]]; then
                     cecho -e "\n${RED}The $YELLOW$srcdisk$SP$ptn_num$RED source"\
                              "${RED}partition mounted on"\
@@ -1060,7 +1060,7 @@ calc_diskspace() {
     # normalize percentages
     for i in "${!src_ptn_data[@]}"; do
         pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
-        pcent="$(bc <<< "scale=5; $pcent / $total_pcent")"
+        pcent=$(bc <<< "scale=5; $pcent / $total_pcent")
         src_ptn_data[i]="${src_ptn_data[i]%' '[0-9]*} $pcent"
     done
 
@@ -1095,7 +1095,7 @@ calc_diskspace() {
     exec {fd}< "$FILTERS" # open filters file
     while read -r -u $fd; do
         # remove leading & trailing spaces and tabs
-        REPLY="$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')"
+        REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
         (( ! ${#REPLY} )) && continue       # ignore empty lines
         [[ "$REPLY" =~ ^#.*$ ]] && continue # ignore comments
 
@@ -1135,10 +1135,9 @@ calc_diskspace() {
         esac
 
         # Check if pathname is on src disk. 'paths' may include spaces so use
-        # 'eval' to treat it as a single argument. Unless 'dirname' is used it
-        # crashes if paths[0]:1=/dev/* (no idea why this happens)
-        srcptn=$(eval \
-                 df -ak --sync --output=source "$(dirname "${paths[0]:1}")" | tail -1)
+        # 'eval' to treat it as a single argument.
+        srcptn=$(eval df -ak --sync --output=source "${paths[0]:1}" \
+                         2>> "$ERRFILE" | tail -1)
 
         # skip files/dirs not on source disk. e.g. virtual file systems like
         # /sys, /proc, etc
@@ -1270,9 +1269,10 @@ calc_diskspace() {
                 ((i=0))
             fi
         
+            buf=$(seq $i $((i+j-1)) | xargs)
+
             # add a space in the end so that all numbers are followed by it
-            buf="$(seq $i $((i+j-1)) | xargs) "
-            add_filter filters user_filters paths "$buf"
+            add_filter filters user_filters paths "$buf "
 
             entries+=("${next_entries[@]}") # add next entries to existing
         fi
@@ -1532,22 +1532,18 @@ calc_diskspace() {
         sign="${k::1}"
         k="${k:1}"
 
-        # unless 'dirname' is used it crashes if k=/dev/* (no idea why this
-        # happens)
-        buf="$(dirname "$k")"
-        
         # get source partition for the filter
         while true; do
             # use 'eval' to treat filter as a single argument in case it
             # includes spaces
-            srcptn=$(eval df -ak --sync --output=source "$buf" 2>> "$ERRFILE" | tail -1)
+            srcptn=$(eval df -ak --sync --output=source "$k" 2>> "$ERRFILE" | tail -1)
             if (( $? )); then
-                if [[ "$buf" == "/" ]]; then
+                if [[ "$k" == "/" ]]; then
                     cecho "No souce partition found for '$k'. Exiting."\
                         | tee -a "$ERRFILE"
                     return 1
                 else
-                    buf="$(dirname "$buf" | tail -1)"
+                    k=$(dirname "$k" | tail -1)
                 fi
             else
                 break            
@@ -1557,7 +1553,7 @@ calc_diskspace() {
         if [[ "${srcptn::1}" != "/" ]]; then
             srcmnt_dir="/" # located on root (/) partition                    
         else
-            srcmnt_dir="$(lsblk -no MOUNTPOINT "$srcptn")"
+            srcmnt_dir=$(lsblk -no MOUNTPOINT "$srcptn")
         fi
 
         k="${k//'"'/'\"'}" # escape double quotes
@@ -1793,7 +1789,7 @@ create_partitions() {
             # find filesystem command that applies to partition fstype
             while read -r -u $fd; do
                 # remove leading and trailing whitespace
-                REPLY="$(echo "$REPLY" | xargs 2>> "$ERRFILE")"
+                REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
 
                 # ignore empty lines & comments
                 (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
@@ -1837,8 +1833,8 @@ create_partitions() {
                 flags=$(rm_lba_flag "$ptn_tbl" "$flags")
 
                 # get dst partition data as "$name$fstype$start$end$flags"
-                dst_ptn="$(field "$ptn" "$PNAME")$(field "$ptn" "$PFSTYPE")"
-                dst_ptn+="$(field "$ptn" "$PSTART")$(field "$ptn" "$PEND")$flags"
+                dst_ptn=$(field "$ptn" "$PNAME")$(field "$ptn" "$PFSTYPE")
+                dst_ptn+=$(field "$ptn" "$PSTART")$(field "$ptn" "$PEND")$flags
                 dst_ptn=$(echo "$dst_ptn" | xargs) # remove whitespace
                 dst_ptns+=("$dst_ptn")
             fi
@@ -2035,7 +2031,7 @@ clone() {
         fi
 
         # get size of dst partition
-        dstdir="$(field "$ptn_pair" $((MDIR+MDST)))"
+        dstdir=$(field "$ptn_pair" $((MDIR+MDST)))
 
         if (( create_ptn )); then
             (( size = $(df -ak --block-size=KiB --sync --output=avail "$dstdir" \
@@ -2277,15 +2273,15 @@ clone() {
             # if esp partition and UEFI boot is enabled, install UEFI boot
             # entries if required
             if [[ "$dstptn" == "$dstdisk$DP${esp_ptn_nums[1]}" ]]; then
-                buf="$(efibootmgr 2> "$ERRFILE")"
+                buf=$(efibootmgr 2> "$ERRFILE")
                 ((err=$?))
                 if (( ! err && ! removable )); then
                     echo
                     # get dst boot partition UUID
-                    UUID="$(field "$ptn_pair" $((MUUID+MDST)))"
+                    UUID=$(field "$ptn_pair" $((MUUID+MDST)))
 
                     # get dst boot partition UUID entry
-                    UUID="$(lsblk -nro +UUID,PARTUUID | grep "$UUID")"
+                    UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
                     UUID="${UUID//+(* )}" # extract partition UUID
                     
                     # get boot entries (they contain 'EFI' string)
@@ -2463,7 +2459,7 @@ result() {
     if [[ "$START_DATE" ]]; then
         # the timestamp will be used to calculate the clone run time
         local end_date
-        end_date="$(date)"
+        end_date=$(date)
         local -i runtime
         ((runtime=$(date -d "$end_date" +%s)-$(date -d "$START_DATE" +%s)))
         local -i seconds=runtime%60
