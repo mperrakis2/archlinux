@@ -1135,9 +1135,10 @@ calc_diskspace() {
         esac
 
         # Check if pathname is on src disk. 'paths' may include spaces so use
-        # 'eval' to treat it as a single argument.
-        srcptn=$(eval df -ak --sync --output=source "${paths[0]:1}" \
-                         2>> "$ERRFILE" | tail -1)
+        # 'eval' to treat it as a single argument. Also, use 'dirname' in case
+        # 'paths' includes a pattern that will expand to more than one entry.
+        srcptn=$(eval \
+                 df -ak --sync --output=source "$(dirname "${paths[0]:1}")" | tail -1)
 
         # skip files/dirs not on source disk. e.g. virtual file systems like
         # /sys, /proc, etc
@@ -1532,18 +1533,22 @@ calc_diskspace() {
         sign="${k::1}"
         k="${k:1}"
 
+        # use 'dirname' in case 'k' includes a pattern that will expand to more
+        # than one entry.        
+        buf=$(dirname "$k")
+        
         # get source partition for the filter
         while true; do
             # use 'eval' to treat filter as a single argument in case it
             # includes spaces
-            srcptn=$(eval df -ak --sync --output=source "$k" 2>> "$ERRFILE" | tail -1)
+            srcptn=$(eval df -ak --sync --output=source "$buf" 2>> "$ERRFILE" | tail -1)
             if (( $? )); then
-                if [[ "$k" == "/" ]]; then
+                if [[ "$buf" == "/" ]]; then
                     cecho "No souce partition found for '$k'. Exiting."\
                         | tee -a "$ERRFILE"
                     return 1
                 else
-                    k=$(dirname "$k" | tail -1)
+                    buf=$(dirname "$buf" | tail -1)
                 fi
             else
                 break            
