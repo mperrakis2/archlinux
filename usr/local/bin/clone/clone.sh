@@ -199,7 +199,6 @@ declare -a src_ptn_data=()
 srcdisk=""
 dstdisk=""
 declare -ia esp_ptn_nums=(0 0)
-declare -ia boot_ptn_nums=(0 0)
 declare -ia bios_ptn_nums=(0 0)
 
 declare -i start=0
@@ -635,7 +634,6 @@ populate_arrays() {
     partitions=()
     ((no_resize=0))
     esp_ptn_nums=(0 0)
-    boot_ptn_nums=(0 0)
     bios_ptn_nums=(0 0)
     local -i ptn_num
     local -i ptn_cnt
@@ -719,10 +717,6 @@ populate_arrays() {
                             ((bios_ptn_nums[0]=ptn_num))
                             ((bios_ptn_nums[1]=ptn_cnt))
                         fi
-                    elif [[ "$flags" =~ boot ]]; then
-                        # save partition number of boot partition
-                        ((boot_ptn_nums[0]=ptn_num))
-                        ((boot_ptn_nums[1]=ptn_cnt))
                     fi
                 fi
             fi
@@ -1873,7 +1867,6 @@ clone() {
     local -a cmds=()
     local swap_ptn_UUIDs
     local -a swap_ptns_UUIDs=()
-    local -i bios=0
     local -i err
 
     rsync_params=()
@@ -1908,9 +1901,7 @@ clone() {
                 swap_ptn_UUIDs+=$(expr "$($cmd)" : ".* UUID=\"\(.*\)\" TYPE")
                 swap_ptns_UUIDs+=("$swap_ptn_UUIDs")
                 cmds+=("mkswap -f '$dstdisk$DP$ptn_cnt'")
-            elif [[ "$flags" =~ bios ]]; then
-                ((bios=1)) # set flag if bios partition
-            else
+            elif [[ ! "$flags" =~ bios ]]; then
                 mount_ptn "$srcdisk" "$ptn_num" srcmnt # mount src partition
                 ((err=$?))
                 if (( err )); then return $err; fi                
@@ -2255,9 +2246,8 @@ clone() {
         for ptn_pair in "${rsync_params[@]}"; do
             dstptn=$(field "$ptn_pair" $((MPTN+MDST)))
 
-            # if boot partition and bios flag is set, install grub on bios
-            # partition
-            if [[ "$dstptn" == "$dstdisk$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]]
+            # if bios partition is set, install grub on bios partition
+            if [[ "$dstptn" == "$dstdisk$DP${bios_ptn_nums[1]}" ]]
             then
                 echo -e "\tCreating command to install grub on bios "\
                         "partition on destination disk..."
