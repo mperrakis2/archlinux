@@ -199,6 +199,7 @@ declare -a src_ptn_data=()
 srcdisk=""
 dstdisk=""
 declare -ia esp_ptn_nums=(0 0)
+declare -ia boot_ptn_nums=(0 0)
 declare -ia bios_ptn_nums=(0 0)
 
 declare -i start=0
@@ -634,6 +635,7 @@ populate_arrays() {
     partitions=()
     ((no_resize=0))
     esp_ptn_nums=(0 0)
+    boot_ptn_nums=(0 0)
     bios_ptn_nums=(0 0)
     local -i ptn_num
     local -i ptn_cnt
@@ -701,22 +703,27 @@ populate_arrays() {
                     # add size of partition 1 start byte
                     (( ptn_cnt == 1 )) && ((no_resize+=startb))
 
-                    # add size of esp, bios and swap partitions
-                    if [[ "$flags" =~ esp || "$flags" =~ bios || "$fstype" =~ swap ]]
-                    then
+                    # add size of swap partitions
+                    [[ "$fstype" =~ swap ]] && ((no_resize+=size))
+                    
+                    # save partition number of ESP partition and add its size
+                    if [[ "$flags" =~ esp ]]; then
                         ((no_resize+=size))
+                        ((esp_ptn_nums[0]=ptn_num))
+                        ((esp_ptn_nums[1]=ptn_cnt))
+                    fi
 
-                        # save partition number of ESP partition
-                        if [[ "$flags" =~ esp ]]; then
-                            ((esp_ptn_nums[0]=ptn_num))
-                            ((esp_ptn_nums[1]=ptn_cnt))
-                        fi
+                    # save partition number of bios grub partition and add its size
+                    if [[ "$flags" =~ bios ]]; then
+                        ((no_resize+=size))
+                        ((bios_ptn_nums[0]=ptn_num))
+                        ((bios_ptn_nums[1]=ptn_cnt))
+                    fi
 
-                        # save partition number of bios grub partition
-                        if [[ "$flags" =~ bios ]]; then
-                            ((bios_ptn_nums[0]=ptn_num))
-                            ((bios_ptn_nums[1]=ptn_cnt))
-                        fi
+                    # save partition number of boot partition
+                    if [[ "$flags" =~ boot ]]; then
+                        ((boot_ptn_nums[0]=ptn_num))
+                        ((boot_ptn_nums[1]=ptn_cnt))
                     fi
                 fi
             fi
@@ -1867,6 +1874,7 @@ clone() {
     local -a cmds=()
     local swap_ptn_UUIDs
     local -a swap_ptns_UUIDs=()
+    local -i bios=0
     local -i err
 
     rsync_params=()
@@ -1901,7 +1909,9 @@ clone() {
                 swap_ptn_UUIDs+=$(expr "$($cmd)" : ".* UUID=\"\(.*\)\" TYPE")
                 swap_ptns_UUIDs+=("$swap_ptn_UUIDs")
                 cmds+=("mkswap -f '$dstdisk$DP$ptn_cnt'")
-            elif [[ ! "$flags" =~ bios ]]; then
+            elif [[ "$flags" =~ bios ]]; then
+                ((bios=1)) # set flag if bios partition
+            else
                 mount_ptn "$srcdisk" "$ptn_num" srcmnt # mount src partition
                 ((err=$?))
                 if (( err )); then return $err; fi                
@@ -2246,8 +2256,9 @@ clone() {
         for ptn_pair in "${rsync_params[@]}"; do
             dstptn=$(field "$ptn_pair" $((MPTN+MDST)))
 
-            # if bios partition is set, install grub on bios partition
-            if [[ "$dstptn" == "$dstdisk$DP${bios_ptn_nums[1]}" ]]
+            # if boot partition and bios flag is set, install grub on bios
+            # partition
+            if [[ "$dstptn" == "$dstdisk$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]]
             then
                 echo -e "\tCreating command to install grub on bios "\
                         "partition on destination disk..."
