@@ -113,8 +113,11 @@ readonly ERRFILE+="$$.err" # errors if any (stderr)
 readonly CMDFILE+="$$.cmd" # the commands themselves
 
 cmds+=("rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
-              --chown='$NEWUSER':'$NEWUSER' -aAhHxXlzDEU --no-i-r --numeric-ids \
+              --chown='$NEWUSER':'$NEWUSER' -aAhHxlzEUtX --no-i-r --numeric-ids \
               /usr/local/bin/useradd/new_user/ /home/'$NEWUSER'/" \
+       "rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
+              --chown='$NEWUSER':'$NEWUSER' -aAhHxlzEUtX --no-i-r --numeric-ids \
+              /etc/skel/.bash* /home/'$NEWUSER'/" \
        "if groups '$NEWUSER' | grep --quiet sudo; then \
             rm /home/$NEWUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xmlE; \
         else \
