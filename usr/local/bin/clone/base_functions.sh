@@ -926,10 +926,10 @@ get_ptn_size() {
     local cmd
 
     # get size of src partition in bytes
-    ((ref=$(field "$ptn" "$PSIZE")))
+    (( ref = $(field "$ptn" "$PSIZE") ))
 
     # calculate percentage of src partition based on src disk size
-    pct=$(bc <<< "scale=2; $ref / $SRC_DISK_RESIZE")
+    pct=$(bc <<< "scale=3; $ref / $SRC_DISK_RESIZE")
 
     # calculate dst partition size based on percentage above
     cmd='{printf "%.0f", ($1 * $2 == int($1 * $2)) '

@@ -703,10 +703,10 @@ populate_arrays() {
                     # add size of partition 1 start byte
                     (( ptn_cnt == 1 )) && ((no_resize+=startb))
 
-                    # add size of esp, boot, bios and swap partitions
-                    if [[ "$flags" =~ esp || "$flags" =~ boot || \
-                          "$flags" =~ bios || "$fstype" =~ swap ]]; then
-                        [[ ! "$flags" =~ boot ]] && ((no_resize+=size))
+                    # add size of esp, bios and swap partitions
+                    if [[ "$flags" =~ esp || "$flags" =~ bios || "$fstype" =~ swap ]]
+                    then
+                        ((no_resize+=size))
 
                         # save partition number of ESP partition
                         if [[ "$flags" =~ esp ]]; then
@@ -714,17 +714,15 @@ populate_arrays() {
                             ((esp_ptn_nums[1]=ptn_cnt))
                         fi
 
-                        # save partition number of boot (BIOS) partition
-                        if [[ "$flags" =~ boot ]]; then
-                            ((boot_ptn_nums[0]=ptn_num))
-                            ((boot_ptn_nums[1]=ptn_cnt))
-                        fi
-                        
                         # save partition number of bios grub partition
                         if [[ "$flags" =~ bios ]]; then
                             ((bios_ptn_nums[0]=ptn_num))
                             ((bios_ptn_nums[1]=ptn_cnt))
                         fi
+                    elif [[ "$flags" =~ boot ]]; then
+                        # save partition number of boot partition
+                        ((boot_ptn_nums[0]=ptn_num))
+                        ((boot_ptn_nums[1]=ptn_cnt))
                     fi
                 fi
             fi
