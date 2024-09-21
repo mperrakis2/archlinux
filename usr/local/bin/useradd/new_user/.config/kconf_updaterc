@@ -1,0 +1,15 @@
+updateInfoAdded=true
+
+[filepicker.upd]
+ctime=1668849145
+done=filepicker-remove-old-previews-entry
+mtime=1667745240
+
+[kgthemeprovider-migration.upd]
+ctime=1668849205
+mtime=1667292179
+
+[okular.upd]
+ctime=1668849430
+done=annotation-toolbar,builtin-annotations
+mtime=1667300278

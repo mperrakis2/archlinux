@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<channel name="xfce4-panel" version="1.0">
+  <property name="configver" type="int" value="2"/>
+  <property name="panels" type="array">
+    <value type="int" value="1"/>
+    <property name="panel-1" type="empty">
+      <property name="autohide-behavior" type="uint" value="0"/>
+      <property name="background-alpha" type="int" value="100"/>
+      <property name="background-color" type="array">
+        <value type="uint" value="56540"/>
+        <value type="uint" value="56026"/>
+        <value type="uint" value="54741"/>
+        <value type="uint" value="65535"/>
+      </property>
+      <property name="background-image" type="string" value="file:///home/admin/Pictures/VenusOcean-GiantCauseway.jpg"/>
+      <property name="background-style" type="uint" value="0"/>
+      <property name="enter-opacity" type="uint" value="100"/>
+      <property name="length" type="uint" value="100"/>
+      <property name="plugin-ids" type="array">
+        <value type="int" value="1"/>
+        <value type="int" value="6"/>
+        <value type="int" value="4"/>
+        <value type="int" value="20"/>
+        <value type="int" value="18"/>
+        <value type="int" value="26"/>
+        <value type="int" value="27"/>
+        <value type="int" value="7"/>
+        <value type="int" value="17"/>
+        <value type="int" value="22"/>
+        <value type="int" value="2"/>
+        <value type="int" value="23"/>
+        <value type="int" value="30"/>
+        <value type="int" value="14"/>
+        <value type="int" value="9"/>
+        <value type="int" value="12"/>
+        <value type="int" value="8"/>
+        <value type="int" value="33"/>
+        <value type="int" value="24"/>
+        <value type="int" value="25"/>
+        <value type="int" value="13"/>
+        <value type="int" value="3"/>
+        <value type="int" value="10"/>
+        <value type="int" value="15"/>
+        <value type="int" value="19"/>
+        <value type="int" value="11"/>
+        <value type="int" value="16"/>
+        <value type="int" value="37"/>
+        <value type="int" value="5"/>
+      </property>
+      <property name="position" type="string" value="p=8;x=960;y=1058"/>
+      <property name="position-locked" type="bool" value="false"/>
+      <property name="size" type="uint" value="40"/>
+      <property name="mode" type="uint" value="0"/>
+      <property name="enable-struts" type="bool" value="true"/>
+      <property name="leave-opacity" type="uint" value="100"/>
+    </property>
+    <property name="dark-mode" type="bool" value="true"/>
+  </property>
+  <property name="plugins" type="empty">
+    <property name="clipman" type="empty">
+      <property name="settings" type="empty">
+        <property name="add-primary-clipboard" type="bool" value="true"/>
+        <property name="enable-actions" type="bool" value="true"/>
+        <property name="max-texts-in-history" type="uint" value="1000"/>
+        <property name="show-qr-code" type="bool" value="true"/>
+      </property>
+      <property name="tweaks" type="empty">
+        <property name="never-confirm-history-clear" type="bool" value="true"/>
+        <property name="paste-on-activate" type="uint" value="1"/>
+        <property name="popup-at-pointer" type="bool" value="true"/>
+        <property name="reorder-items" type="bool" value="false"/>
+        <property name="skip-action-on-key-down" type="bool" value="true"/>
+        <property name="max-menu-items" type="uint" value="100"/>
+      </property>
+    </property>
+    <property name="notes" type="empty">
+      <property name="global" type="empty">
+        <property name="font-description" type="string" value="Liberation Mono 12"/>
+        <property name="skip-taskbar-hint" type="bool" value="false"/>
+        <property name="tabs-position" type="int" value="1"/>
+        <property name="version" type="string" value="1.11.0"/>
+        <property name="background-color" type="string" value="#88B7E3"/>
+      </property>
+      <property name="new-window" type="empty">
+        <property name="width" type="int" value="240"/>
+        <property name="height" type="int" value="300"/>
+        <property name="always-on-top" type="bool" value="false"/>
+        <property name="sticky" type="bool" value="false"/>
+      </property>
+    </property>
+    <property name="plugin-1" type="string" value="whiskermenu">
+      <property name="button-icon" type="string" value="show-hidden"/>
+      <property name="button-single-row" type="bool" value="true"/>
+      <property name="launcher-show-name" type="bool" value="false"/>
+      <property name="launcher-icon-size" type="int" value="2"/>
+      <property name="hover-switch-category" type="bool" value="true"/>
+      <property name="category-icon-size" type="int" value="2"/>
+      <property name="view-mode" type="int" value="2"/>
+      <property name="recent-items-max" type="int" value="100"/>
+      <property name="favorites-in-recent" type="bool" value="true"/>
+      <property name="position-search-alternate" type="bool" value="true"/>
+      <property name="position-commands-alternate" type="bool" value="true"/>
+      <property name="position-categories-alternate" type="bool" value="true"/>
+      <property name="confirm-session-command" type="bool" value="false"/>
+      <property name="menu-width" type="int" value="550"/>
+      <property name="menu-height" type="int" value="700"/>
+      <property name="command-switchuser" type="string" value="gdmflexiserver"/>
+      <property name="show-command-switchuser" type="bool" value="true"/>
+      <property name="favorites" type="array">
+        <value type="string" value="brave-browser.desktop"/>
+        <value type="string" value="org.strawberrymusicplayer.strawberry.desktop"/>
+        <value type="string" value="kodi.desktop"/>
+        <value type="string" value="org.qbittorrent.qBittorrent.desktop"/>
+        <value type="string" value="skypeforlinux.desktop"/>
+        <value type="string" value="android-file-transfer.desktop"/>
+        <value type="string" value="xfce4-notes.desktop"/>
+        <value type="string" value="thunar.desktop"/>
+      </property>
+      <property name="recent" type="array">
+      </property>
+      <property name="default-category" type="int" value="0"/>
+    </property>
+    <property name="plugin-12" type="string" value="showdesktop"/>
+    <property name="plugin-16" type="string" value="pulseaudio">
+      <property name="blacklisted-players" type="string" value=""/>
+      <property name="enable-keyboard-shortcuts" type="bool" value="true"/>
+      <property name="mpris-players" type="string" value="brave.instance1488;chromium.instance10464;chromium.instance1430;chromium.instance149641;chromium.instance1508;chromium.instance15400;chromium.instance155933;chromium.instance1577;chromium.instance1588;chromium.instance1594;chromium.instance1603;chromium.instance1681;chromium.instance1696;chromium.instance1703;chromium.instance1723;chromium.instance1883;chromium.instance1929;chromium.instance19747;chromium.instance197510;chromium.instance209678;chromium.instance213204;chromium.instance22173;chromium.instance22190;chromium.instance2434;chromium.instance2700;chromium.instance3082;chromium.instance3247;chromium.instance3274;chromium.instance34658;chromium.instance4240;chromium.instance43751;chromium.instance48090;chromium.instance53327;chromium.instance5589;chromium.instance56068;chromium.instance56298;chromium.instance5683;chromium.instance56972;chromium.instance5792;chromium.instance66961;chromium.instance6711;chromium.instance6888;chromium.instance72584;chromium.instance72685;chromium.instance82093;chromium.instance94877;clementine;vlc;vlc.instance6481"/>
+      <property name="show-notifications" type="uint" value="0"/>
+      <property name="known-players" type="string" value="audacious;Brave;Chrome;Chromium;org.strawberrymusicplayer.strawberry.desktop;vlc"/>
+    </property>
+    <property name="plugin-17" type="string" value="xfce4-notes-plugin"/>
+    <property name="plugin-3" type="string" value="tasklist">
+      <property name="flat-buttons" type="bool" value="false"/>
+      <property name="include-all-workspaces" type="bool" value="false"/>
+      <property name="show-labels" type="bool" value="false"/>
+      <property name="sort-order" type="uint" value="4"/>
+      <property name="switch-workspace-on-unminimize" type="bool" value="false"/>
+      <property name="show-handle" type="bool" value="false"/>
+      <property name="middle-click" type="uint" value="2"/>
+      <property name="grouping" type="bool" value="true"/>
+      <property name="include-all-monitors" type="bool" value="false"/>
+    </property>
+    <property name="plugin-37" type="string" value="xkb">
+      <property name="display-name" type="uint" value="1"/>
+      <property name="display-type" type="uint" value="1"/>
+      <property name="group-policy" type="uint" value="0"/>
+      <property name="show-notifications" type="bool" value="false"/>
+    </property>
+    <property name="plugin-4" type="string" value="pager">
+      <property name="rows" type="uint" value="2"/>
+      <property name="miniature-view" type="bool" value="false"/>
+      <property name="wrap-workspaces" type="bool" value="true"/>
+    </property>
+    <property name="plugin-5" type="string" value="clock">
+      <property name="digital-format" type="string" value="%I:%M %p"/>
+      <property name="mode" type="uint" value="2"/>
+      <property name="timezone" type="string" value="Europe/Athens"/>
+      <property name="digital-time-format" type="string" value="%I:%M %p"/>
+      <property name="digital-layout" type="uint" value="3"/>
+      <property name="digital-time-font" type="string" value="Ubuntu 18"/>
+      <property name="digital-date-font" type="string" value="Ubuntu 12"/>
+      <property name="digital-date-format" type="string" value="%B %d, %Y"/>
+    </property>
+    <property name="plugin-6" type="string" value="xfce4-verve-plugin"/>
+    <property name="plugin-9" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="15410920222.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-2" type="string" value="weather">
+      <property name="msl" type="int" value="0"/>
+      <property name="timezone" type="string" value=""/>
+      <property name="offset" type="string" value="+03:00"/>
+      <property name="cache-max-age" type="int" value="172800"/>
+      <property name="power-saving" type="bool" value="true"/>
+      <property name="units" type="empty">
+        <property name="temperature" type="int" value="0"/>
+        <property name="pressure" type="int" value="2"/>
+        <property name="windspeed" type="int" value="0"/>
+        <property name="precipitation" type="int" value="0"/>
+        <property name="altitude" type="int" value="0"/>
+        <property name="apparent-temperature" type="int" value="1"/>
+      </property>
+      <property name="round" type="bool" value="true"/>
+      <property name="single-row" type="bool" value="true"/>
+      <property name="tooltip-style" type="int" value="1"/>
+      <property name="forecast" type="empty">
+        <property name="layout" type="int" value="0"/>
+        <property name="days" type="int" value="10"/>
+      </property>
+      <property name="theme-dir" type="string" value="/usr/share/xfce4/weather/icons/liquid"/>
+      <property name="scrollbox" type="empty">
+        <property name="show" type="bool" value="true"/>
+        <property name="animate" type="bool" value="true"/>
+        <property name="lines" type="int" value="10"/>
+        <property name="color" type="string" value="rgba(0,0,0,0)"/>
+        <property name="use-color" type="bool" value="false"/>
+        <property name="font" type="string" value="Ubuntu 10"/>
+      </property>
+      <property name="location" type="empty">
+        <property name="name" type="string" value=""/>
+        <property name="latitude" type="string" value="0.000000"/>
+        <property name="longitude" type="string" value="0.000000"/>
+      </property>
+    </property>
+    <property name="plugin-26" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="16690412891.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-27" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="16690413102.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-30" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="16690421565.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-33" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="16690427618.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-20" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="16774426921.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-10" type="string" value="separator">
+      <property name="expand" type="bool" value="true"/>
+      <property name="style" type="uint" value="0"/>
+    </property>
+    <property name="plugin-13" type="string" value="separator"/>
+    <property name="plugin-15" type="string" value="separator"/>
+    <property name="plugin-14" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17110268501.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-19" type="string" value="xfce4-clipman-plugin"/>
+    <property name="plugin-7" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17133686211.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-11" type="string" value="systray">
+      <property name="known-legacy-items" type="array">
+        <value type="string" value="pamac-tray"/>
+        <value type="string" value="wi-fi network connection “mathioswifi” active: mathioswifi (92%)"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (95%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (89%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (79%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (85%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (87%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (94%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (100%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (82%)"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (95%)"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (72%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (85%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (75%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (80%) vpn connection active"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (87%)"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (85%)"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (94%)"/>
+        <value type="string" value="skypeforlinux"/>
+        <value type="string" value="xfce4-power-manager"/>
+        <value type="string" value="wi-fi network connection “mathioswifi 1” active: mathioswifi (92%)"/>
+        <value type="string" value="blueman"/>
+      </property>
+      <property name="known-items" type="array">
+        <value type="string" value="blueman"/>
+        <value type="string" value="Skype1"/>
+      </property>
+      <property name="icon-size" type="int" value="0"/>
+      <property name="menu-is-primary" type="bool" value="true"/>
+      <property name="symbolic-icons" type="bool" value="true"/>
+    </property>
+    <property name="plugin-18" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17133699671.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-22" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17133699912.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-23" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17133700953.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-24" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17133701344.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-25" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17133701585.desktop"/>
+      </property>
+    </property>
+    <property name="plugin-8" type="string" value="launcher">
+      <property name="items" type="array">
+        <value type="string" value="17133702511.desktop"/>
+      </property>
+    </property>
+  </property>
+</channel>

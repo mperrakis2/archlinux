@@ -1,0 +1,8 @@
+[Data]
+Name=CobiBird
+Thumbnail=/home/admin/.config/XfceThemeManager/meta/CobiBird.png
+GtkTheme=CobiBird
+Xfwm4Theme=CobiBird
+IconTheme=elementary-xfce-dark
+CursorTheme=DMZ-White
+

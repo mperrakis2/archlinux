@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE documentInfo>
+<documentInfo url="/home/admin/games/priv/docs/Wing Commander Privateer reference guide.pdf">
+ <generalInfo>
+  <history>
+   <oldPage viewport="0;C2:0.499351:0.266251:1"/>
+   <oldPage viewport="4;C2:0.499351:0.203028:1"/>
+   <oldPage viewport="0"/>
+   <oldPage viewport="1"/>
+   <oldPage viewport="2;C2:0.499351:0.859305:1"/>
+   <oldPage viewport="6;C2:0.499351:0.149599:1"/>
+   <oldPage viewport="6;C2:0.499351:0.587711:1"/>
+   <oldPage viewport="1"/>
+   <current viewport="4"/>
+  </history>
+  <views>
+   <view name="PageView">
+    <zoom mode="1" value="1.33587"/>
+    <continuous mode="1"/>
+    <viewMode mode="0"/>
+    <trimMargins value="0"/>
+   </view>
+  </views>
+ </generalInfo>
+</documentInfo>

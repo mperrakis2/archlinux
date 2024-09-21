@@ -1,0 +1,79 @@
+[xfdesktop-version-4.10.3+-rcfile_format]
+4.10.3+=true
+
+[/home/admin/Επιφάνεια εργασίας/clone.desktop]
+row=8
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/htop.desktop]
+row=2
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/add-user.desktop]
+row=7
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/google-chrome.desktop]
+row=5
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/system-config-printer.desktop]
+row=3
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/gsmartcontrol.desktop]
+row=3
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/anti-virus.desktop]
+row=10
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/calibre-gui.desktop]
+row=9
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/org.kde.okular.desktop]
+row=6
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/del-user.desktop]
+row=6
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/org.xfce.ristretto.desktop]
+row=5
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/xfce-settings-manager.desktop]
+row=0
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/vlc.desktop]
+row=2
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/grsync.desktop]
+row=4
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/org.gnome.Cheese.desktop]
+row=7
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/simple-scan.desktop]
+row=4
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/xfce4-taskmanager.desktop]
+row=1
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/org.gnome.baobab.desktop]
+row=1
+col=0
+
+[Απορρίμματα]
+row=0
+col=0
+

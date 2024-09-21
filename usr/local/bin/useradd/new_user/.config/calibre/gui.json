@@ -1,0 +1,369 @@
+{
+  "book_details_splitter_horizontal_state": [
+    true,
+    200
+  ],
+  "book_info_dialog_splitter_state": {
+    "__class__": "bytearray",
+    "__value__": "AAAA/wAAAAEAAAACAAABXgAAAV4B/////wEAAAABAA=="
+  },
+  "book_list_pin_splitter_state": {
+    "__class__": "bytearray",
+    "__value__": "AAAA/wAAAAEAAAACAAABAAAAAEYA/////wEAAAABAA=="
+  },
+  "cover_browser_splitter_vertical_state": [
+    false,
+    300
+  ],
+  "custom_colors_for_color_dialog": [
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ],
+    [
+      255,
+      255,
+      255,
+      255
+    ]
+  ],
+  "duplicates-question-dialog-geometry": {
+    "__class__": "bytearray",
+    "__value__": "AdnQywADAAAAAAGhAAAAlQAAA+wAAAIoAAABowAAAK0AAAPqAAACJgAAAAAAAAAABVYAAAGjAAAArQAAA+oAAAIm"
+  },
+  "geometry-of-book_info_dialog_geometry": {
+    "frame_geometry": {
+      "height": 1009,
+      "width": 934,
+      "x": 582,
+      "y": 0
+    },
+    "full_screened": false,
+    "geometry": {
+      "height": 939,
+      "width": 910,
+      "x": 594,
+      "y": 58
+    },
+    "maximized": false,
+    "normal_geometry": {
+      "height": 939,
+      "width": 910,
+      "x": 594,
+      "y": 58
+    },
+    "qt": {
+      "__class__": "bytearray",
+      "__value__": "AdnQywADAAAAAAJGAAAAAAAABesAAAPwAAACUgAAADoAAAXfAAAD5AAAAAAAAAAAB4AAAAJSAAAAOgAABd8AAAPk"
+    },
+    "screen": {
+      "depth": 24,
+      "device_pixel_ratio": 1.0,
+      "geometry_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "index_in_screens_list": 0,
+      "manufacturer": "BOE",
+      "model": "",
+      "name": "eDP1",
+      "serial": "",
+      "size_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920
+      },
+      "virtual_geometry": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      }
+    }
+  },
+  "geometry-of-calibre_main_window_geometry": {
+    "frame_geometry": {
+      "height": 957,
+      "width": 1665,
+      "x": 227,
+      "y": 64
+    },
+    "full_screened": false,
+    "geometry": {
+      "height": 923,
+      "width": 1655,
+      "x": 232,
+      "y": 93
+    },
+    "maximized": false,
+    "normal_geometry": {
+      "height": 923,
+      "width": 1655,
+      "x": 232,
+      "y": 93
+    },
+    "qt": {
+      "__class__": "bytearray",
+      "__value__": "AdnQywADAAAAAADjAAAAQAAAB2MAAAP8AAAA6AAAAF0AAAdeAAAD9wAAAAAAAAAAB4AAAADoAAAAXQAAB14AAAP3"
+    },
+    "screen": {
+      "depth": 24,
+      "device_pixel_ratio": 1.0,
+      "geometry_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "index_in_screens_list": 0,
+      "manufacturer": "BOE",
+      "model": "",
+      "name": "eDP1",
+      "serial": "",
+      "size_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920
+      },
+      "virtual_geometry": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      }
+    }
+  },
+  "geometry-of-duplicates-question-dialog-geometry": {
+    "frame_geometry": {
+      "height": 452,
+      "width": 772,
+      "x": 653,
+      "y": 225
+    },
+    "full_screened": false,
+    "geometry": {
+      "height": 382,
+      "width": 748,
+      "x": 665,
+      "y": 283
+    },
+    "maximized": false,
+    "normal_geometry": {
+      "height": 382,
+      "width": 748,
+      "x": 665,
+      "y": 283
+    },
+    "qt": {
+      "__class__": "bytearray",
+      "__value__": "AdnQywADAAAAAAKNAAAA4QAABZAAAAKkAAACmQAAARsAAAWEAAACmAAAAAAAAAAAB4AAAAKZAAABGwAABYQAAAKY"
+    },
+    "screen": {
+      "depth": 24,
+      "device_pixel_ratio": 1.0,
+      "geometry_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "index_in_screens_list": 0,
+      "manufacturer": "BOE",
+      "model": "",
+      "name": "eDP1",
+      "serial": "",
+      "size_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920
+      },
+      "virtual_geometry": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      }
+    }
+  },
+  "geometry-of-preferences dialog geometry": {
+    "frame_geometry": {
+      "height": 790,
+      "width": 1444,
+      "x": 256,
+      "y": 67
+    },
+    "full_screened": false,
+    "geometry": {
+      "height": 720,
+      "width": 1420,
+      "x": 268,
+      "y": 125
+    },
+    "maximized": false,
+    "normal_geometry": {
+      "height": 720,
+      "width": 1420,
+      "x": 268,
+      "y": 125
+    },
+    "qt": {
+      "__class__": "bytearray",
+      "__value__": "AdnQywADAAAAAAEAAAAAQwAABqMAAANYAAABDAAAAH0AAAaXAAADTAAAAAAAAAAAB4AAAAEMAAAAfQAABpcAAANM"
+    },
+    "screen": {
+      "depth": 24,
+      "device_pixel_ratio": 1.0,
+      "geometry_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      },
+      "index_in_screens_list": 0,
+      "manufacturer": "BOE",
+      "model": "",
+      "name": "eDP1",
+      "serial": "",
+      "size_in_logical_pixels": {
+        "height": 1080,
+        "width": 1920
+      },
+      "virtual_geometry": {
+        "height": 1080,
+        "width": 1920,
+        "x": 0,
+        "y": 0
+      }
+    }
+  },
+  "grid view visible": false,
+  "library_usage_stats": {
+    "/home/admin/Library_calibre": 57
+  },
+  "main_window_central_widget_state": {
+    "layout": "wide",
+    "narrow_desires": {
+      "book_details_height": 0.2301980198019802,
+      "cover_browser_width": 0.34963325183374083,
+      "quick_view_height": 0.2561881188118812,
+      "tag_browser_width": 0.24938875305623473
+    },
+    "narrow_visibility": {
+      "book_details": true,
+      "book_list": true,
+      "cover_browser": false,
+      "quick_view": false,
+      "tag_browser": true
+    },
+    "wide_desires": {
+      "book_details_width": 0.17462235649546828,
+      "cover_browser_height": 0.32537960954446854,
+      "quick_view_height": 0.2245119305856833,
+      "tag_browser_width": 0.1824773413897281
+    },
+    "wide_visibility": {
+      "book_details": true,
+      "book_list": true,
+      "cover_browser": false,
+      "quick_view": false,
+      "tag_browser": true
+    }
+  },
+  "quick_start_guide_added": true,
+  "quickview visible": false,
+  "search bar visible": true,
+  "tag browser search box visible": false,
+  "tag_browser_splitter_horizontal_state": [
+    true,
+    200
+  ],
+  "viewer_image_popup_geometry": {
+    "__class__": "bytearray",
+    "__value__": "AdnQywADAAAAAAGWAAAAHgAAA7sAAALnAAABmAAAADYAAAO5AAAC5QAAAAAAAAAABVYAAAGYAAAANgAAA7kAAALl"
+  }
+}

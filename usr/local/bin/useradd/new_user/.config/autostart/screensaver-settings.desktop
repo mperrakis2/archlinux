@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Screensaver
+Comment=Set screensaver timeouts
+Exec=xset s 900 dpms 1200 1200 1200

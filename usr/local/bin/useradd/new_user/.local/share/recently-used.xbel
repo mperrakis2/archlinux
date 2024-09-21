@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbel version="1.0"
+      xmlns:bookmark="http://www.freedesktop.org/standards/desktop-bookmarks"
+      xmlns:mime="http://www.freedesktop.org/standards/shared-mime-info"
+>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82/vfs.rar-Omega.zip" added="2024-04-19T15:57:58.292398Z" modified="2024-04-19T15:57:58.292406Z" visited="2024-04-19T15:57:58.292400Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="application/zip"/>
+        <bookmark:applications>
+          <bookmark:application name="brave" exec="&apos;brave %u&apos;" modified="2024-04-19T15:57:58.292402Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82" added="2024-04-19T16:00:58.812135Z" modified="2024-04-19T16:00:58.812140Z" visited="2024-04-19T16:00:58.812136Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Thunar" exec="&apos;Thunar %u&apos;" modified="2024-04-19T16:00:58.812138Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82/a4kSubtitles-repository.zip" added="2024-04-19T16:02:11.086544Z" modified="2024-04-19T16:49:26.621481Z" visited="2024-04-19T16:02:11.086545Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="application/zip"/>
+        <bookmark:applications>
+          <bookmark:application name="brave" exec="&apos;brave %u&apos;" modified="2024-04-19T16:49:26.621477Z" count="2"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82/repository.denimnani-0.0.2.zip" added="2024-04-19T16:35:37.196188Z" modified="2024-04-19T16:35:37.196199Z" visited="2024-04-19T16:35:37.196190Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="application/zip"/>
+        <bookmark:applications>
+          <bookmark:application name="brave" exec="&apos;brave %u&apos;" modified="2024-04-19T16:35:37.196194Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82/repository.bugatsinho-2.7.zip" added="2024-04-19T16:48:15.982321Z" modified="2024-04-19T16:48:15.982328Z" visited="2024-04-19T16:48:15.982322Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="application/zip"/>
+        <bookmark:applications>
+          <bookmark:application name="brave" exec="&apos;brave %u&apos;" modified="2024-04-19T16:48:15.982324Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82/repository.twilight0.zip" added="2024-04-19T16:51:14.779246Z" modified="2024-04-19T16:51:14.779255Z" visited="2024-04-19T16:51:14.779248Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="application/zip"/>
+        <bookmark:applications>
+          <bookmark:application name="brave" exec="&apos;brave %u&apos;" modified="2024-04-19T16:51:14.779251Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82/repository.frenchdj.zip" added="2024-04-19T16:51:20.570511Z" modified="2024-04-19T16:51:20.570520Z" visited="2024-04-19T16:51:20.570513Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="application/zip"/>
+        <bookmark:applications>
+          <bookmark:application name="brave" exec="&apos;brave %u&apos;" modified="2024-04-19T16:51:20.570516Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/%CE%9B%CE%AE%CF%88%CE%B5%CE%B9%CF%82/a4k-openproject.github.io-master.zip" added="2024-04-19T21:46:38.502061Z" modified="2024-04-19T21:46:38.502065Z" visited="2024-04-19T21:46:38.502062Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="application/zip"/>
+        <bookmark:applications>
+          <bookmark:application name="brave" exec="&apos;brave %u&apos;" modified="2024-04-19T21:46:38.502063Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/.pki" added="2024-04-24T19:19:40.087249Z" modified="2024-04-24T19:19:40.087252Z" visited="2024-04-24T19:19:40.087250Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Thunar" exec="&apos;Thunar %u&apos;" modified="2024-04-24T19:19:40.087251Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/.pki/nssdb" added="2024-04-24T19:19:41.663829Z" modified="2024-04-24T19:19:41.663832Z" visited="2024-04-24T19:19:41.663830Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Thunar" exec="&apos;Thunar %u&apos;" modified="2024-04-24T19:19:41.663831Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/.ssh" added="2024-04-24T19:19:58.950919Z" modified="2024-04-24T19:19:58.950922Z" visited="2024-04-24T19:19:58.950920Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Thunar" exec="&apos;Thunar %u&apos;" modified="2024-04-24T19:19:58.950921Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/.gnupg" added="2024-04-24T19:20:17.486063Z" modified="2024-04-24T19:20:17.486066Z" visited="2024-04-24T19:20:17.486064Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Thunar" exec="&apos;Thunar %u&apos;" modified="2024-04-24T19:20:17.486065Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/.gnupg/private-keys-v1.d" added="2024-04-24T19:20:22.172411Z" modified="2024-04-24T19:20:22.172414Z" visited="2024-04-24T19:20:22.172412Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Thunar" exec="&apos;Thunar %u&apos;" modified="2024-04-24T19:20:22.172412Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+  <bookmark href="file:///home/admin/.password-store" added="2024-04-24T19:20:32.059457Z" modified="2024-04-24T19:20:32.059461Z" visited="2024-04-24T19:20:32.059458Z">
+    <info>
+      <metadata owner="http://freedesktop.org">
+        <mime:mime-type type="inode/directory"/>
+        <bookmark:applications>
+          <bookmark:application name="Thunar" exec="&apos;Thunar %u&apos;" modified="2024-04-24T19:20:32.059459Z" count="1"/>
+        </bookmark:applications>
+      </metadata>
+    </info>
+  </bookmark>
+</xbel>

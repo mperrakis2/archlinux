@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Arch Linux: Recent news updates</title><link>https://archlinux.org/news/</link><description>The latest and greatest news from the Arch Linux distribution.</description><atom:link href="https://archlinux.org/feeds/news/" rel="self"/><language>en-us</language><lastBuildDate>Mon, 04 Mar 2024 17:40:24 +0000</lastBuildDate><item><title>mkinitcpio hook migration and early microcode</title><link>https://archlinux.org/news/mkinitcpio-hook-migration-and-early-microcode/</link><description>&lt;p&gt;With the release of &lt;a href="https://lists.archlinux.org/hyperkitty/list/arch-projects@lists.archlinux.org/thread/PZHWLVJLN5EPW6EVK2HEKVBDBNZWHREN/"&gt;mkinitcpio v38&lt;/a&gt;, several hooks previously provided by Arch packages have been
+moved to the mkinitcpio upstream project. The hooks are: systemd, udev, encrypt,
+sd-encrypt, lvm2 and mdadm_udev.&lt;/p&gt;
+&lt;p&gt;To ensure no breakage of users' setup occurs, temporary
+conflicts have been introduced into the respective packages to prevent installing packages
+that are no longer compatible.&lt;/p&gt;
+&lt;p&gt;The following packages needs to be upgraded together:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;mkinitcpio 38-3&lt;/li&gt;
+&lt;li&gt;systemd 255.4-2&lt;/li&gt;
+&lt;li&gt;lvm2 2.03.23-3&lt;/li&gt;
+&lt;li&gt;mdadm 4.3-2&lt;/li&gt;
+&lt;li&gt;cryptsetup 2.7.0-3&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Please note that the &lt;code&gt;mkinitcpio&lt;/code&gt; flag &lt;code&gt;--microcode&lt;/code&gt;, and the &lt;code&gt;microcode&lt;/code&gt; option in the preset files,  has been deprecated in favour of
+a new &lt;code&gt;microcode&lt;/code&gt; hook. This also allows you to drop the microcode &lt;code&gt;initrd&lt;/code&gt;
+lines from your boot configuration as they are now packed together with the main initramfs image.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Morten Linderud</dc:creator><pubDate>Mon, 04 Mar 2024 17:14:12 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2024-03-04:/news/mkinitcpio-hook-migration-and-early-microcode/</guid></item><item><title>Making dbus-broker our default D-Bus daemon</title><link>https://archlinux.org/news/making-dbus-broker-our-default-d-bus-daemon/</link><description>&lt;p&gt;We are making &lt;code&gt;dbus-broker&lt;/code&gt; our default implementation of D-Bus, for
+improved performance, reliability and integration with systemd.&lt;/p&gt;
+&lt;p&gt;For the foreseeable future we will still support the use of &lt;code&gt;dbus-daemon&lt;/code&gt;,
+the previous implementation. Pacman will ask you whether to install
+&lt;code&gt;dbus-broker-units&lt;/code&gt; or &lt;code&gt;dbus-daemon-units&lt;/code&gt;. We recommend picking the
+default.&lt;/p&gt;
+&lt;p&gt;For a more detailed rationale, please see our &lt;a href="https://gitlab.archlinux.org/archlinux/rfcs/-/blob/master/rfcs/0025-dbus-broker-default.rst"&gt;RFC 25&lt;/a&gt;.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Jan Alexander Steffens</dc:creator><pubDate>Tue, 09 Jan 2024 16:59:30 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2024-01-09:/news/making-dbus-broker-our-default-d-bus-daemon/</guid></item><item><title>Bugtracker migration to GitLab completed</title><link>https://archlinux.org/news/bugtracker-migration-to-gitlab-completed/</link><description>&lt;p&gt;We are happy to announce that the &lt;a href="https://lists.archlinux.org/hyperkitty/list/arch-dev-public@lists.archlinux.org/thread/WYXDTJ3TR2DWRQCDZK44BQDH67IDVGTS/"&gt;migration of the bugtracker to GitLab&lt;/a&gt; is done! 🥳 &lt;/p&gt;
+&lt;p&gt;Thanks to everyone who has helped during the migration!&lt;/p&gt;
+&lt;p&gt;This means the issue tracker and merge requests on the GitLab package repos are now enabled.&lt;/p&gt;
+&lt;p&gt;The old bugtracker will subsequently be closed down. For archiving reasons there will be a static copy so that links (for example the randomly picked &lt;a href="https://bugs.archlinux.org/task/56716"&gt;Task #56716&lt;/a&gt;) are still stable, migrated bugs have a closing comment pointing to the new URL on GitLab.&lt;/p&gt;
+&lt;p&gt;Packaging bugs are now opened on the repo hosting the corresponding packaging sources, the "Add a new Bug" button on the package page on archlinux.org will automatically direct you to the correct place to open the issue. The workflow afterwards is mostly the same, first our &lt;a href="https://gitlab.archlinux.org/groups/archlinux/teams/bug-wranglers/-/group_members"&gt;Bug Wranglers&lt;/a&gt; will have a look at the issues and triage them, and then they will be handed over to the respective &lt;a href="https://gitlab.archlinux.org/archlinux/teams/package-maintainer-team"&gt;Package Maintainers&lt;/a&gt; to fix. A list of all issues can be found &lt;a href="https://gitlab.archlinux.org/groups/archlinux/packaging/-/issues"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;If you do not have an account for GitLab already (which authenticates against our &lt;a href="https://accounts.archlinux.org/"&gt;SSO service&lt;/a&gt;), please write us a mail with your desired username to accountsupport@archlinux.org as advised in the banner.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Christian Heusel</dc:creator><pubDate>Sun, 03 Dec 2023 23:01:42 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-12-03:/news/bugtracker-migration-to-gitlab-completed/</guid></item><item><title>Incoming changes in JDK / JRE 21 packages may require manual intervention</title><link>https://archlinux.org/news/incoming-changes-in-jdk-jre-21-packages-may-require-manual-intervention/</link><description>&lt;p&gt;We are introducing a change in JDK/JRE packages of our distro. This is
+triggered from the way a JRE is build in modern versions of Java (&amp;gt;9). We are
+introducing this change in Java 21.&lt;/p&gt;
+&lt;p&gt;To sum it up instead of having JDK and JRE packages coexist in the same system
+we will be making them conflict. The JDK variant package includes the runtime
+environment to execute Java applications so if one needs compilation and
+runtime of Java they need only the JDK package in the future. If, on the other
+hand, they need just runtime of Java then JRE (or jre-headless) will work.&lt;/p&gt;
+&lt;p&gt;This will (potentially) require a manual user action during upgrade:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;If you have both JDK and JRE installed you can manually install the JDK
+with &lt;code&gt;pacman -Sy jdk-openjdk &amp;amp;&amp;amp; pacman -Su&lt;/code&gt; and this removes the JRE related packages.&lt;/li&gt;
+&lt;li&gt;If you have both JRE and JRE-headless you will need to choose one of
+them and install it manually since they would conflict each other now.&lt;/li&gt;
+&lt;li&gt;If you only have one of the JDK/JRE/JRE-headless pacman should resolve
+dependencies normally and no action is needed.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;At the moment this is only valid for the upcoming JDK 21 release.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Frederik Schwan</dc:creator><pubDate>Thu, 02 Nov 2023 10:51:53 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-11-02:/news/incoming-changes-in-jdk-jre-21-packages-may-require-manual-intervention/</guid></item><item><title>Changes to default password hashing algorithm and umask settings</title><link>https://archlinux.org/news/changes-to-default-password-hashing-algorithm-and-umask-settings/</link><description>&lt;p&gt;With &lt;em&gt;shadow&lt;/em&gt; &amp;gt;= &lt;code&gt;4.14.0&lt;/code&gt;, Arch Linux's default password hashing algorithm changed from &lt;strong&gt;SHA512&lt;/strong&gt; to &lt;a href="https://www.openwall.com/yescrypt/"&gt;&lt;strong&gt;yescrypt&lt;/strong&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Furthermore, the &lt;a href="https://man.archlinux.org/man/umask.1p"&gt;&lt;code&gt;umask&lt;/code&gt;&lt;/a&gt; settings are now configured in &lt;code&gt;/etc/login.defs&lt;/code&gt; instead of &lt;code&gt;/etc/profile&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;This should not require any manual intervention.&lt;/p&gt;
+&lt;h2&gt;Reasons for Yescrypt&lt;/h2&gt;
+&lt;p&gt;The password-based key derivation function (KDF) and password hashing scheme &lt;strong&gt;yescrypt&lt;/strong&gt; has been chosen due to its adoption (readily available in &lt;em&gt;libxcrypt&lt;/em&gt;, which is used by &lt;a href="https://wiki.archlinux.org/title/PAM"&gt;&lt;em&gt;pam&lt;/em&gt;&lt;/a&gt;) and its stronger resilience towards password cracking attempts over &lt;strong&gt;SHA512&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Although the winner of the &lt;a href="https://www.password-hashing.net/"&gt;Password Hashing Competition&lt;/a&gt; has been &lt;strong&gt;argon2&lt;/strong&gt;, this algorithm is not yet available in &lt;em&gt;libxcrypt&lt;/em&gt; (&lt;a href="https://github.com/besser82/libxcrypt/pull/113"&gt;attempt one&lt;/a&gt;, &lt;a href="https://github.com/besser82/libxcrypt/pull/150"&gt;attempt two&lt;/a&gt;).&lt;/p&gt;
+&lt;h2&gt;Configuring yescrypt&lt;/h2&gt;
+&lt;p&gt;The &lt;code&gt;YESCRYPT_COST_FACTOR&lt;/code&gt; setting in &lt;code&gt;/etc/login.defs&lt;/code&gt; is currently without effect, &lt;a href="https://github.com/linux-pam/linux-pam/issues/607"&gt;until &lt;em&gt;pam&lt;/em&gt; implements reading its value&lt;/a&gt;. If a &lt;code&gt;YESCRYPT_COST_FACTOR&lt;/code&gt; higher (or lower) than the default (&lt;code&gt;5&lt;/code&gt;) is needed, it can be set using the &lt;code&gt;rounds&lt;/code&gt; option of the &lt;a href="https://man.archlinux.org/man/pam_unix.8"&gt;&lt;code&gt;pam_unix&lt;/code&gt;&lt;/a&gt; module (i.e. in &lt;code&gt;/etc/pam.d/system-auth&lt;/code&gt;).&lt;/p&gt;
+&lt;h2&gt;General list of changes&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;yescrypt&lt;/strong&gt; is used as default password hashing algorithm, instead of &lt;strong&gt;SHA512&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;pam&lt;/em&gt; honors the chosen &lt;code&gt;ENCRYPT_METHOD&lt;/code&gt; in &lt;code&gt;/etc/login.defs&lt;/code&gt; and does not override the chosen method anymore&lt;/li&gt;
+&lt;li&gt;changes in the &lt;em&gt;filesystem&lt;/em&gt; (&amp;gt;= &lt;code&gt;2023.09.18&lt;/code&gt;) and &lt;em&gt;pambase&lt;/em&gt; (&amp;gt;= &lt;code&gt;20230918&lt;/code&gt;) packages ensure, that &lt;code&gt;umask&lt;/code&gt; is set centrally in &lt;code&gt;/etc/login.defs&lt;/code&gt; instead of &lt;code&gt;/etc/profile&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">David Runge</dc:creator><pubDate>Fri, 22 Sep 2023 20:26:30 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-09-22:/news/changes-to-default-password-hashing-algorithm-and-umask-settings/</guid></item><item><title>ansible-core &gt;= 2.15.3-1 update may require manual intervention</title><link>https://archlinux.org/news/ansible-core-2153-1-update-may-require-manual-intervention/</link><description>&lt;p&gt;As of &lt;code&gt;ansible-core 2.15.3&lt;/code&gt;, upstream moved documentation and examples to a separate &lt;a href="https://github.com/ansible/ansible-documentation"&gt;dedicated repository&lt;/a&gt; (see the &lt;a href="https://github.com/ansible/ansible/blob/v2.15.3/changelogs/CHANGELOG-v2.15.rst#minor-changes"&gt;related changelogs&lt;/a&gt;).&lt;br /&gt;
+This means that, starting from version &lt;code&gt;2.15.3&lt;/code&gt; the &lt;code&gt;ansible-core&lt;/code&gt; package will stop shipping documentation and a default configuration example under &lt;code&gt;/etc/ansible/ansible.cfg&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Regarding the documentation, it is available online: &lt;a href="https://docs.ansible.com/"&gt;https://docs.ansible.com/&lt;/a&gt;&lt;br /&gt;
+As for the configuration file, as explained in the &lt;a href="https://wiki.archlinux.org/title/Ansible#Configuration"&gt;wiki&lt;/a&gt;, a base config can be generated with the following command:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;ansible-config init --disabled &amp;gt; ansible.cfg&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;After updating from &lt;code&gt;ansible-core&lt;/code&gt; &amp;lt;= &lt;code&gt;2.15.2-1&lt;/code&gt; to &amp;gt;= &lt;code&gt;2.15.3-1&lt;/code&gt;, everyone using a &lt;strong&gt;custom&lt;/strong&gt; global Ansible configuration file stored under &lt;code&gt;/etc/ansible/ansible.cfg&lt;/code&gt; will have their configuration saved as a &lt;code&gt;pacsave&lt;/code&gt; file.&lt;br /&gt;
+To restore it, run the following command:&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;mv /etc/ansible/ansible.cfg.pacsave /etc/ansible/ansible.cfg&lt;/code&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Robin Candau</dc:creator><pubDate>Sat, 19 Aug 2023 10:41:34 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-08-19:/news/ansible-core-2153-1-update-may-require-manual-intervention/</guid></item><item><title>budgie-desktop &gt;= 10.7.2-6 update requires manual intervention</title><link>https://archlinux.org/news/budgie-desktop-1072-6-update-requires-manual-intervention/</link><description>&lt;p&gt;When upgrading from budgie-desktop 10.7.2-5 to 10.7.2-6, the package mutter43 must be replaced with magpie-wm, which currently depends on mutter. As mutter43 conflicts with mutter, manual intervention is required to complete the upgrade.&lt;/p&gt;
+&lt;p&gt;First remove mutter43, then immediately perform the upgrade. Do not relog or
+reboot between these steps.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;pacman -Rdd mutter43&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;pacman -Syu&lt;/code&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Campbell Jones</dc:creator><pubDate>Fri, 11 Aug 2023 14:55:16 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-08-11:/news/budgie-desktop-1072-6-update-requires-manual-intervention/</guid></item><item><title>TeX Live package reorganization</title><link>https://archlinux.org/news/tex-live-package-reorganization/</link><description>&lt;p&gt;Starting from version 2023.66594-9, TeX Live packages have been reorganized to mirror upstream collections. Even though the new &lt;code&gt;texlive-basic&lt;/code&gt; replaces the old &lt;code&gt;texlive-core&lt;/code&gt;, many of the texlive-core contents (including language specific files) are now split between different packages. To find out which Arch package contains a specific CTAN package, you can use the &lt;code&gt;tlmgr&lt;/code&gt; utility, eg.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ tlmgr info euler | grep collection
+collection:  collection-latexrecommended
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;which means the euler CTAN package is contained in &lt;code&gt;texlive-latexrecommended&lt;/code&gt;. You may also use &lt;code&gt;pacman -F&lt;/code&gt; to query for specific files.&lt;/p&gt;
+&lt;p&gt;A new metapackage texlive-meta is available to install all subpackages (except for language specific ones), and the new texlive-doc package provides the full documentation for offline use.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Antonio Rojas</dc:creator><pubDate>Sun, 18 Jun 2023 09:14:37 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-06-18:/news/tex-live-package-reorganization/</guid></item><item><title>OpenBLAS &gt;= 0.3.23-2 update requires manual intervention</title><link>https://archlinux.org/news/openblas-0323-2-update-requires-manual-intervention/</link><description>&lt;p&gt;The openblas package prior to version 0.3.23-2 doesn't ship optimized
+LAPACK routine and CBLAS/LAPACKE interfaces for compatibility. This
+decision has been reverted now, and the ability to choose a different
+default system BLAS/LAPACK implementation while keeping openblas
+installed is now provided to allow future co-installation of BLIS,
+ATLAS, etc.&lt;/p&gt;
+&lt;p&gt;The default BLAS implementation will be used for most packages like
+NumPy or R. Please install "blas-openblas" and "blas64-openblas" to make
+OpenBLAS the default BLAS implementation, just like the old behavior.&lt;/p&gt;
+&lt;p&gt;Unfortunately you will get errors on updating if you currently have
+OpenBLAS installed as the default BLAS implementation:&lt;/p&gt;
+&lt;p&gt;error: failed to prepare transaction (could not satisfy dependencies)
+:: installing openblas (0.3.23-2) breaks dependency 'blas' required by cblas
+:: installing openblas (0.3.23-2) breaks dependency 'blas' required by
+lapack&lt;/p&gt;
+&lt;p&gt;Please append your preferred default BLAS implementation to the regular
+-Syu command line to get around it. For example:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pacman -Syu blas-openblas
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;or&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;pacman -Syu blas
+&lt;/code&gt;&lt;/pre&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Felix Yan</dc:creator><pubDate>Wed, 14 Jun 2023 20:27:28 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-06-14:/news/openblas-0323-2-update-requires-manual-intervention/</guid></item><item><title>Git migration completed</title><link>https://archlinux.org/news/git-migration-completed/</link><description>&lt;p&gt;We are proud to announce that the migration to Git packaging succeeded! 🥳&lt;/p&gt;
+&lt;p&gt;Thanks to everyone who has helped during the migration!&lt;/p&gt;
+&lt;p&gt;Package sources are now available on &lt;a href="https://gitlab.archlinux.org/archlinux/packaging/packages"&gt;GitLab&lt;/a&gt;. Note that the bugtracker is still &lt;a href="https://bugs.archlinux.org"&gt;flyspray&lt;/a&gt; and that merge requests are not accepted as of now. 
+We intend to open the issue tracker and merge requests on the Gitlab package repos in the near future.&lt;/p&gt;
+&lt;p&gt;Mirrors are syncing again, but it may take a bit of time until your mirror of choice has caught up.&lt;/p&gt;
+&lt;h2&gt;For users&lt;/h2&gt;
+&lt;p&gt;Update your system and merge the pacman pacnew &lt;code&gt;/etc/pacman.conf.pacnew&lt;/code&gt; file. This is required as we have moved the &lt;code&gt;[community]&lt;/code&gt; repository into &lt;code&gt;[extra]&lt;/code&gt;.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ pacman -Syu "pacman&amp;gt;=6.0.2-7"
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For users of the now deprecated &lt;code&gt;asp&lt;/code&gt; tool, you will need to switch to &lt;code&gt;pkgctl&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ pacman -Syu "devtools&amp;gt;=1:1.0.0-1"
+$ pkgctl repo clone linux
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For some more detailed instructions on how to obtain PKGBUILDs see the corresponding wiki &lt;a href="https://wiki.archlinux.org/title/Arch_build_system#Retrieve_PKGBUILD_source"&gt;article&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;For packagers&lt;/h2&gt;
+&lt;p&gt;Before starting, first uninstall &lt;code&gt;devtools-git-poc&lt;/code&gt; and remove any repos from your filesystem that you cloned during the git proof-of-concept testing.&lt;/p&gt;
+&lt;p&gt;Make sure you have both, an updated devtools and pacman on your system:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ pacman -Syu "devtools&amp;gt;=1:1.0.0-1" "pacman&amp;gt;=6.0.2-7"
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Additionally clean up old chroots in &lt;code&gt;/var/lib/archbuild/&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ rm -rf /var/lib/archbuild/
+# or optionally, use the --clean option for pkgctl build *ONCE*
+$ pkgctl build --clean
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;For instruction on how to use &lt;code&gt;pkgctl&lt;/code&gt;, please take a look at the "How to be a packager" wiki &lt;a href="https://wiki.archlinux.org/title/DeveloperWiki:HOWTO_Be_A_Packager"&gt;article&lt;/a&gt; and also consult the man page of each subcommand for further information:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ man pkgctl-build
+$ man pkgctl-repo-clone
+&lt;/code&gt;&lt;/pre&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Levente Polyak</dc:creator><pubDate>Sun, 21 May 2023 11:14:50 +0000</pubDate><guid isPermaLink="false">tag:archlinux.org,2023-05-21:/news/git-migration-completed/</guid></item></channel></rss>

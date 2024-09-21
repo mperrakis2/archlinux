@@ -1,0 +1,17 @@
+<settings version="2">
+    <setting id="general.timeout">15</setting>
+    <setting id="general.results_limit">20</setting>
+    <setting id="general.auto_search" default="true">false</setting>
+    <setting id="general.auto_download" default="true">false</setting>
+    <setting id="general.use_chardet">true</setting>
+    <setting id="general.auto_select">true</setting>
+    <setting id="general.prefer_sdh">true</setting>
+    <setting id="general.prefer_forced">true</setting>
+    <setting id="addic7ed.enabled">true</setting>
+    <setting id="bsplayer.enabled">true</setting>
+    <setting id="opensubtitles.enabled">true</setting>
+    <setting id="podnadpisi.enabled">true</setting>
+    <setting id="subscene.enabled">true</setting>
+    <setting id="opensubtitles.username" default="true" />
+    <setting id="opensubtitles.password" default="true" />
+</settings>

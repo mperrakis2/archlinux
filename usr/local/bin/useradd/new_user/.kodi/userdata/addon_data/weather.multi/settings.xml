@@ -1,0 +1,31 @@
+<settings version="2">
+    <setting id="loc1" default="true" />
+    <setting id="loc2" default="true" />
+    <setting id="loc3" default="true" />
+    <setting id="loc4" default="true" />
+    <setting id="loc5" default="true" />
+    <setting id="loc1id" default="true">-1</setting>
+    <setting id="loc2id" default="true">-1</setting>
+    <setting id="loc3id" default="true">-1</setting>
+    <setting id="loc4id" default="true">-1</setting>
+    <setting id="loc5id" default="true">-1</setting>
+    <setting id="loc1lat" default="true">0</setting>
+    <setting id="loc2lat" default="true">0</setting>
+    <setting id="loc3lat" default="true">0</setting>
+    <setting id="loc4lat" default="true">0</setting>
+    <setting id="loc5lat" default="true">0</setting>
+    <setting id="loc1lon" default="true">0</setting>
+    <setting id="loc2lon" default="true">0</setting>
+    <setting id="loc3lon" default="true">0</setting>
+    <setting id="loc4lon" default="true">0</setting>
+    <setting id="loc5lon" default="true">0</setting>
+    <setting id="ycookie" default="true" />
+    <setting id="ycrumb" default="true" />
+    <setting id="ystamp" default="true" />
+    <setting id="WAdd">true</setting>
+    <setting id="API" default="true" />
+    <setting id="WMaps">true</setting>
+    <setting id="MAPAPI" default="true" />
+    <setting id="Zoom" default="true">4</setting>
+    <setting id="Debug">true</setting>
+</settings>

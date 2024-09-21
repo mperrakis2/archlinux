@@ -1,0 +1,3 @@
+[State]
+timestamp=1682235361
+converted=org.gnome.crypto.cache.convert;org.gnome.crypto.pgp.convert;brasero.convert;wm-schemas.convert;gvfs-dns-sd.convert;org.gnome.crypto.pgp_keyservers.convert;totem.convert;pythonconsole.convert;nm-applet.convert;gsettings-desktop-schemas.convert;pulseaudio.convert;org.foxtrotgps.convert;opensubtitles.convert;gvfs-smb.convert;evince.convert;

@@ -1,0 +1,87 @@
+[xfdesktop-version-4.10.3+-rcfile_format]
+4.10.3+=true
+
+[/home/admin/Επιφάνεια εργασίας/org.kde.okular.desktop]
+row=4
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/simple-scan.desktop]
+row=8
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/xfce4-appfinder.desktop]
+row=3
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/grsync.desktop]
+row=1
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/xfce-settings-manager.desktop]
+row=2
+col=2
+
+[/home/admin/Επιφάνεια εργασίας/org.xfce.ristretto.desktop]
+row=7
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/dosbox.desktop]
+row=0
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/org.gnome.baobab.desktop]
+row=1
+col=2
+
+[/home/admin/Επιφάνεια εργασίας/gsmartcontrol.desktop]
+row=2
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/libreoffice-startcenter.desktop]
+row=3
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/AV.desktop]
+row=4
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/pacmanlogviewer.desktop]
+row=5
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/calibre-gui.desktop]
+row=5
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/conky-manager.desktop]
+row=8
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/android-file-transfer.desktop]
+row=2
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/vlc.desktop]
+row=0
+col=2
+
+[/home/admin/Επιφάνεια εργασίας/chromium.desktop]
+row=7
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/system-config-printer.desktop]
+row=6
+col=1
+
+[/home/admin/Επιφάνεια εργασίας/org.manjaro.pamac.manager.desktop]
+row=1
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/org.xfce.Catfish.desktop]
+row=6
+col=0
+
+[Trash]
+row=0
+col=0
+

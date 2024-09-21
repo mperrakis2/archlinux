@@ -1,0 +1,15 @@
+[Aisleriot Config]
+ShowToolbar=true
+ShowStatusbar=true
+Sound=true
+Animations=true
+Recent=klondike;freecell;auld-lang-syne;
+Variation=klondike.scm
+Theme=gnomangelo_bitmap.svgz
+
+[klondike.scm]
+Options=4
+Statistic=1;9;431;431;
+
+[freecell.scm]
+Statistic=0;1;0;0;

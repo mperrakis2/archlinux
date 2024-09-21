@@ -1,0 +1,11 @@
+[settings]
+toolbar-items=TabNew,Back,ReloadStop,Homepage,Location,BookmarkAdd,CompactMenu
+maximum-history-age=365
+enable-plugins=false
+enable-javascript=false
+auto-load-images=false
+
+[extensions]
+libcolorful-tabs.so=true
+libstatus-clock.so=true
+libstatusbar-features.so=true

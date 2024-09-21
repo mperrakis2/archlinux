@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Name=Numix Folders
+Exec=sudo numix-folders
+StartupWMClass=numix-folders
+Comment=Alternate folders for use with our base icon theme.
+Icon=folder-tag
+Categories=GNOME;GTK;Settings
+TryExec=gksudo
+Path=
+StartupNotify=false

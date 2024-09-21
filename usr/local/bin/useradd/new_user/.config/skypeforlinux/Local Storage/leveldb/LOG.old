@@ -1,0 +1,5 @@
+2024/04/24-21:34:48.245 24b1 Creating DB /home/admin/.config/skypeforlinux/Local Storage/leveldb since it was missing.
+2024/04/24-21:34:48.253 24b1 Reusing MANIFEST /home/admin/.config/skypeforlinux/Local Storage/leveldb/MANIFEST-000001
+2024/04/24-21:43:55.764 27d5 Level-0 table #5: started
+2024/04/24-21:43:55.769 27d5 Level-0 table #5: 117908 bytes OK
+2024/04/24-21:43:55.773 27d5 Delete type=0 #3

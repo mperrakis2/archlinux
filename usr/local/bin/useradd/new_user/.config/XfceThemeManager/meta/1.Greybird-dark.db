@@ -1,0 +1,8 @@
+[Data]
+Name=Greybird-dark
+Thumbnail=/home/admin/.config/XfceThemeManager/meta/Greybird-dark.png
+GtkTheme=Greybird-dark
+Xfwm4Theme=Greybird-dark
+IconTheme=elementary-xfce-dark
+CursorTheme=DMZ-Black
+

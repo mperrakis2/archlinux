@@ -1,0 +1,8 @@
+[Data]
+Name=Windows 10 Dark
+Thumbnail=/home/admin/.config/XfceThemeManager/meta/Windows10Dark.png
+GtkTheme=Windows 10 Dark
+Xfwm4Theme=Windows10Dark
+IconTheme=Windows 10
+CursorTheme=DMZ-White
+

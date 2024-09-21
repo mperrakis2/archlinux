@@ -1,0 +1,192 @@
+# Kodi Media Center language file
+# Addon Name: Sub Loader
+# Addon id: service.subloader
+# Addon Provider: DenimNani
+# Language: English
+
+msgid ""
+msgstr ""
+
+msgctxt "#32001"
+msgid "General"
+msgstr ""
+
+msgctxt "#32002"
+msgid "Enable debug mode"
+msgstr ""
+
+msgctxt "#32003"
+msgid "Enable notifications"
+msgstr ""
+
+msgctxt "#32004"
+msgid "Custom delay (seconds)"
+msgstr ""
+
+msgctxt "#32005"
+msgid "Exclude subtitle"
+msgstr ""
+
+msgctxt "#32006"
+msgid "     - Language"
+msgstr ""
+
+msgctxt "#32007"
+msgid "Exclusions"
+msgstr ""
+
+msgctxt "#32008"
+msgid "Exclude videos with less than (minutes)"
+msgstr ""
+
+msgctxt "#32009"
+msgid "Exclude words (comma separated)"
+msgstr ""
+
+msgctxt "#32010"
+msgid "Exclude live TV"
+msgstr ""
+
+msgctxt "#32011"
+msgid "Exclude http or https sources"
+msgstr ""
+
+msgctxt "#32012"
+msgid "Exclude path"
+msgstr ""
+
+msgctxt "#32013"
+msgid "     - Folder's path (and subfolders)"
+msgstr ""
+
+msgctxt "#32014"
+msgid "Subtitles"
+msgstr ""
+
+msgctxt "#32015"
+msgid "Default behaviour"
+msgstr ""
+
+msgctxt "#32016"
+msgid "Opening subtitle dialog..."
+msgstr ""
+
+msgctxt "#32017"
+msgid "- 2º Try secundary match"
+msgstr ""
+
+msgctxt "#32018"
+msgid "- 1º Language"
+msgstr ""
+
+msgctxt "#32019"
+msgid "- 2º Language"
+msgstr ""
+
+msgctxt "#32020"
+msgid "- 3º Language"
+msgstr ""
+
+msgctxt "#32021"
+msgid "- 4º Open subtitle dialog"
+msgstr ""
+
+msgctxt "#32022"
+msgid "- 3º Try any subtitle"
+msgstr ""
+
+msgctxt "#32023"
+msgid "Automatic subtitles"
+msgstr ""
+
+msgctxt "#32024"
+msgid "Open subtitle dialog"
+msgstr ""
+
+msgctxt "#32025"
+msgid "No release type detected"
+msgstr ""
+
+msgctxt "#32026"
+msgid "Aborting..."
+msgstr ""
+
+msgctxt "#32027"
+msgid "Languages to download"
+msgstr ""
+
+msgctxt "#32028"
+msgid "Enable OpenSubtitles.org custom user"
+msgstr ""
+
+msgctxt "#32029"
+msgid "     - User"
+msgstr ""
+
+msgctxt "#32030"
+msgid "     - Password"
+msgstr ""
+
+msgctxt "#32031"
+msgid "(Login not required)"
+msgstr ""
+
+msgctxt "#32032"
+msgid "Login"
+msgstr ""
+
+msgctxt "#32033"
+msgid "Login successful"
+msgstr ""
+
+msgctxt "#32034"
+msgid "Fail to login"
+msgstr ""
+
+msgctxt "#32035"
+msgid "Exclude addons"
+msgstr ""
+
+msgctxt "#32036"
+msgid "Exclude audio"
+msgstr ""
+
+msgctxt "#32037"
+msgid "Language exclusions"
+msgstr ""
+
+msgctxt "#32038"
+msgid "Variable exclusions"
+msgstr ""
+
+msgctxt "#32039"
+msgid "External sources exclusions"
+msgstr ""
+
+msgctxt "#32040"
+msgid "Internal sources exclusions"
+msgstr ""
+
+msgctxt "#32041"
+msgid "Sorting options"
+msgstr ""
+
+msgctxt "#32042"
+msgid "Users"
+msgstr ""
+
+msgctxt "#32043"
+msgid "Bypass "Undetermined" audio"
+msgstr ""
+
+msgctxt "#32044"
+msgid "- 1º Best match"
+msgstr ""
+
+msgctxt "#32045"
+msgid "Do nothing"
+msgstr ""
+
+msgctxt "#32046"
+msgid ""
+msgstr ""

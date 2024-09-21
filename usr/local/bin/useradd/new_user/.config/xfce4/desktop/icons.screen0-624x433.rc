@@ -1,0 +1,23 @@
+[xfdesktop-version-4.10.3+-rcfile_format]
+4.10.3+=true
+
+[/home/admin/Επιφάνεια εργασίας/restart_WIFI.desktop]
+row=4
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/simple-scan.desktop]
+row=2
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/iscan.desktop]
+row=3
+col=0
+
+[/home/admin/Επιφάνεια εργασίας/AV.desktop]
+row=1
+col=0
+
+[Trash]
+row=0
+col=0
+
