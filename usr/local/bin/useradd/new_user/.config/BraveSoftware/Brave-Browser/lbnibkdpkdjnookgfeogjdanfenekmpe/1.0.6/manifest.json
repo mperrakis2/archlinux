@@ -1,7 +1,0 @@
-{
-  "description": "Brave Ad Block Updater extension",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvLwepAP2UzEBpQraDyQ4rbGWmswgYLEyvEssFGmZ9uAHj3jtP2vE2w4AwpIsyg6zaD2Wx7fsgPTHxb1hZrT7lMK7RJzzrAeINlfbNwzxte7lkedxLdEaq+HrQunnBK9MY1fSonVmMohYCi7Gk+loUrGnQpuspVI6VJJ4N34sb8qiKueyx5+IyQpIBNPclhGs22yxohHN15r9sOcqsZ9XwNR1r7wZHE+pK1gu0a70zoY0WPPXFHZSHlbCz4VxLWeHwWdnx3yVOkgVOiacilCuutcptl+09IVFYHxTjquOZHZHcLFM78nju1K4R4V3IlEaXjxnYTfo+VJBQniBD/T81wIDAQAB",
-  "manifest_version": 2,
-  "name": "Brave Ad Block Updater (Blocklists Anti-Porn (plaintext))",
-  "version": "1.0.6"
-}

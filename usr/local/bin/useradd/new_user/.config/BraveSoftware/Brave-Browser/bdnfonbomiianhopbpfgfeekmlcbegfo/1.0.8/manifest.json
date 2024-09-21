@@ -1,7 +1,0 @@
-{
-  "description": "Brave Ad Block Updater extension",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA77Cpl7pDmqWRY8sjZhvJ+GxIHDmA7PvUZinQz0PoOz3wEuWmuFU6mOOx6uUi83onGMamcu5ofHWAZBNYRIXbbPcpC4a87YLbpfTegKi7TX9BTFrUMUZCKlO74z6LZO8R1APLAcse6rubCkpyyuvMZ4mcbCA+vKv8RPh4YLhSRWhIi/UvueiaTOew4QkAq2W2q1FtStK9w5uBtBJBFX8LR456AMKZ554bpZ9jea9/8kasXvrbujwyx6G1KueQW1QIUlXbVVxGs+fKMMj3UYxIODYQUqXkV1YvWmdZ3jNApnnOyeJJNEAfNlMw/KMJM2m+S9apXqOdR7VhE5SCZ99wlQIDAQAB",
-  "manifest_version": 2,
-  "name": "Brave Ad Block Updater (Oficjalne Polskie Filtry Przeciwko Alertom o Adblocku - Uzupełnienie (plaintext))",
-  "version": "1.0.8"
-}

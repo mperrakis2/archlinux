@@ -1,7 +1,0 @@
-{
-  "description": "Brave Ad Block Updater extension",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA85EG3eFmZn/VmRqgmfOzcqGNbCUIsj2ZKu/GfKG1cYz6N1Qyadmmx1slJhc3wqaSav9U15SaktcELk9d2dSXEsQPStluf2Vrw6ClqgTUmcxkjtni8PY8KRLd6ZKw1mUO29NonN7B8qEUWAiObqPP6dg25vSAoj1NXgnkq7WlA/JMZx+rijviam2Ya0HdXoUIOeuzYhNQERjH2R/Va2EDT+LsPXSjW3qGxfBabQfMuFFhjyTIvK5vRMNwoxTV1q7Z0o/zdB9HtXZlEWpkEEBiWFZo6F+4tUBopsCSICbSqbwAoJemo1O0BvR2suf+yIxuwbWMv4y36AtFBbhT4tiCqwIDAQAB",
-  "manifest_version": 2,
-  "name": "Brave Ad Block Updater (NoAds X Files Italian (plaintext))",
-  "version": "1.0.32"
-}
