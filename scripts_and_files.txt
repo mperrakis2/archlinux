@@ -13,8 +13,9 @@ useful scripts and config files (need sudo)
         new_user/             # directory that contains new user data
     userdel.sh                # delete a user
     upd_dbs_and_keyring.sh    # update pacman DBs, core & extra, and update keyring package in case there's a newer version
-    upd_grub_cfg.sh           # update grub.cfg when installing/upgrading linux kernels & grub, called from /usr/share/libalpm/hooks/upd_grub_cfg.hook
-    cpshim.sh                 # copy shim binaries to boot partition, called from /usr/share/libalpm/hooks/cpshim.hook
+    grub_sbsign.sh            # install and sign grub bootloader, create UEFI boot entry and update grub cfg file when installing/upgrading grub
+    upd_grub_cfg.sh           # update grub.cfg when installing/upgrading linux kernels
+    cpshim.sh                 # copy shim binaries to boot partition when installing/upgrading shim signed
     wait.sh                   # used in desktop launchers that launch scripts to prevent the script window from closing
 
 /usr/lib/systemd/scripts/
@@ -28,8 +29,9 @@ useful scripts and config files (need sudo)
 
 /etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
-/usr/share/libalpm/hooks/upd_grub_cfg.hook                           # update grub.cfg when installing/upgrading linux kernels & grub
-/usr/share/libalpm/hooks/cpshim.hook                                 # copy shim binaries to boot partition
+/usr/share/libalpm/hooks/upd_grub_cfg.hook                           # see respective script above
+/usr/share/libalpm/hooks/grub_sbsign.hook                            # see respective script above
+/usr/share/libalpm/hooks/cpshim.hook                                 # see respective script above
 /etc/systemd/system/lightdm.service.d/override.conf                  # override to display greeter in Greek
 /etc/systemd/system/pamac-cleancache.service.d/override.conf         # override to remove pamac build files
 /etc/systemd/system/archlinux-keyring-wkd-sync.timer.d/override.conf # override to run timer daily
