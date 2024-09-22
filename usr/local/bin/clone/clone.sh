@@ -2082,8 +2082,8 @@ clone() {
         # 1: run in the background
         # 0: don't redirect stdout
         cmds+=("10 rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
-                         -$flags --numeric-ids --temp-dir=/tmp --inc-recursive \
-                         --delete-during --delete-excluded ${rsync_filters["$key"]} \
+                         -$flags --numeric-ids --inc-recursive --delete-during \
+                         --delete-excluded ${rsync_filters["$key"]} \
                          '$srcdir' '$dstdir'")
     done
 
