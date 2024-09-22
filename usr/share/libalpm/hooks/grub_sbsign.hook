@@ -5,6 +5,6 @@ Type = Package
 Target = grub
 
 [Action]
-Description = After an install/update of grub, update grub.cfg.
+Description = After an install/update of grub, install and sign grub bootloader, create UEFI boot entry and update grub cfg file.
 When = PostTransaction
 Exec = /usr/local/bin/grub_sbsign.sh
