@@ -15,17 +15,40 @@ grub_modules="all_video boot btrfs cat chain configfile echo efifwsetup efinet "
 "gcry_twofish gcry_whirlpool luks lvm mdraid09 mdraid1x raid5rec "\
 "raid6rec http tftp"
 
-# install grub
+declare -i err
+
+# get boot dir
 bootdir="$(bootctl -p)"
+(( err = $? ))
+if (( err )); then exit $err; fi
+
+# get boot partition
+ptn="$(findmnt --noheadings --output SOURCE --target "$bootdir")"
+(( err = $? ))
+if (( err )); then exit $err; fi
+
+# get device name & boot partition number
+ptn_data=($(lsblk --noheadings --output PKNAME,PARTN "$ptn" | xargs))
+(( err = $? ))
+if (( err )); then exit $err; fi
+
+# install grub to ESP
 grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv \
              --efi-directory="$bootdir" --recheck --target=x86_64-efi
+(( err = $? ))
+if (( err )); then exit $err; fi
+
+# install grub to bios partition
+grub-install --boot-directory='$dstdir' --recheck --target=i386-pc /dev/"${ptn_data[0]}"
+(( err = $? ))
+if (( err )); then exit $err; fi
 
 # create new UEFI boot entry for shim
-ptn="$(findmnt --noheadings --output SOURCE --target "$bootdir")"
-ptn_data=($(lsblk --noheadings --output PKNAME,PARTN "$ptn" | xargs))
 distro="$(uname -n)"
 efibootmgr --unicode --disk /dev/"${ptn_data[0]}" --part "${ptn_data[1]}" \
            --create --label "Shim" --loader /EFI/"$distro"/shimx64.efi
+(( err = $? ))
+if (( err )); then exit $err; fi
 
 # copy grub bootloader to dir used by external devices to boot, i.e. EFI/BOOT
 # bl -> bootloader
@@ -34,20 +57,31 @@ def_bl_dir="$bl_dir/BOOT/"
 bl_name="grubx64.efi"
 full_bl_path="$bl_dir/$distro/$bl_name"
 cp "$full_bl_path" "$def_bl_dir"
+(( err = $? ))
+if (( err )); then exit $err; fi
 
-# sign grub bootloaders
+# sign grub bootloader used by internal device to boot, i.e. EFI/<distro>
 keyfile="MOK.key"
 crtfile="MOK.crt"
 cd "$bl_dir"
-! sbverify --cert "$crtfile" "$full_bl_path" &>/dev/null &&
+if ! sbverify --cert "$crtfile" "$full_bl_path" &>/dev/null; then
     sbsign --key "$keyfile" --cert "$crtfile" --output "$full_bl_path" "$full_bl_path"
+    (( err = $? ))
+    if (( err )); then exit $err; fi
+fi
 
+# sign grub bootloader used by external device to boot, i.e. EFI/BOOT
 full_bl_path="$def_bl_dir/$bl_name"
-! sbverify --cert "$crtfile" "$bootloader" &>/dev/null &&
+if ! sbverify --cert "$crtfile" "$bootloader" &>/dev/null; then
     sbsign --key "$keyfile" --cert "$crtfile" --output "$full_bl_path" "$full_bl_path"
+    (( err = $? ))
+    if (( err )); then exit $err; fi
+fi
 
 # update grub config file
 grub-mkconfig -o "$bootdir"/grub/grub.cfg
+(( err = $? ))
+if (( err )); then exit $err; fi
 
 # update linux kernel version in grub config file
 /usr/local/bin/upd_grub_cfg.sh
