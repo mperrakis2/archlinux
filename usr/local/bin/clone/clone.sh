@@ -79,21 +79,34 @@ set -o pipefail
 shopt -s extglob
 
 # global constants
+declare PWD
+PWD=$(pwd)
+
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
-UNIT=B # unit supplied to 'parted' command is bytes
-readonly UNIT
 
 # file that contains all filesystem types that 'parted' can handle
-FSTYPES="$SCRIPTDIR"/fstypes
+if [[ -s "$PWD/fstypes" ]]; then
+    FSTYPES="$PWD"/fstypes
+else
+    FSTYPES="$SCRIPTDIR"/fstypes
+fi
 readonly FSTYPES
 
 # files/dirs to exclude from or include in cloning
-FILTERS="$SCRIPTDIR"/exclude
+if [[ -s "$PWD/exclude" ]]; then
+    FILTERS="$PWD"/exclude
+else
+    FILTERS="$SCRIPTDIR"/exclude
+fi
 readonly FILTERS
+unset PWD
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
+
+UNIT=B # unit supplied to 'parted' command is bytes
+readonly UNIT
 
 SCRIPT_NAME=$(basename "${BASH_SOURCE:-$0}") # get name of script
 readonly SCRIPT_NAME
