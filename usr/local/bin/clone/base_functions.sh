@@ -1170,14 +1170,15 @@ get_pids() {
     (
         if ! flock $fd; then exit 1; fi
 
-        declare -i i=0
-        declare pid
-        declare -a cmds
-
         # get pids of all clone processes
         declare -a pids
         mapfile -t pids < <(cat "$LCKFILE" 2>> "$ERRFILE")
         
+        declare pid
+        declare cmd_line
+        declare -a cmds
+        declare -i i=0
+
         # extract pids
         for pid in "${pids[@]}"; do
             pid=$(expr "$pid" : "^\([0-9]\+\)")
