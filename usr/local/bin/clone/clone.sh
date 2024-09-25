@@ -2403,16 +2403,19 @@ cleanup() {
 
         rsync_params=()
         
+        echo -e "\tIgnore signal USR1 to mask/unmask hibernation..."
+
+        # ignore sig USR1 in order not to mask/unmask hibernation
+        cmds=("trap '' USR1")
+        exec_cmds "${cmds[@]}"
+
         unmask_hibernation
         ((tmp=$?))
         (( ! err )) && ((err=tmp))
         
-        echo -e "\tIgnore signal USR1 to mask/unmask hibernation and remove the"\
-                "entry of this clone process from the lock file..."
+        echo -e "\tRemove the entry of this clone process from the lock file..."
 
-        # ignore sig USR1 in order not to mask/unmask hibernation
-        cmds=("trap '' USR1")
-        cmds+=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
+        cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
     elif [[ "$OPTIONS_S" && "$CMDFILE" =~ $OPTIONS_S ]]; then
         echo -e "\tIgnoring trapped signals during cleanup..."
