@@ -1168,6 +1168,15 @@ unmask_hibernation() {
     return $err
 }        
 
+ignore_trapped_signals() {
+    echo -e "\tIgnoring trapped signals during cleanup..."
+
+    local -a cmds
+
+    cmds=("trap '' USR1 $CANCEL_SIGNALS")
+    exec_cmds "${cmds[@]}"
+}
+
 # get shell executable and script filenames
 SHELL_FNAME=$(expr "$(head -1 "$0")" : "^\s*#\!\s*\(.\+\)$")
 readonly SHELL_FNAME

@@ -2381,12 +2381,7 @@ cleanup() {
     local -i tmp
     
     if grep ^$$ "$LCKFILE" &> /dev/null; then
-        echo -e "\tIgnoring cancellation signals during cleanup..."
-
-        # while cleanup is running it should not be interrupted by signals
-        # trapped by the script
-        cmds=("trap '' USR1 $CANCEL_SIGNALS")
-        exec_cmds "${cmds[@]}"
+        ignore_trapped_signals
         ((err=$?))
 
         echo -e "\tUnmounting partitions on source and/or destination disks that"\
@@ -2411,6 +2406,11 @@ cleanup() {
 
         cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
+    elif [[ "$OPTIONS_S" && "$CMDFILE" =~ $OPTIONS_S ]]; then
+        ignore_trapped_signals
+    # if script was cancelled during usage message skip most of cleanup
+    else
+        trap '' USR1 $CANCEL_SIGNALS &> /dev/null # ignore trapped signals
     fi
     ((tmp=$?))
     (( ! err )) && ((err=tmp))
