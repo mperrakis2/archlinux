@@ -2261,7 +2261,7 @@ clone() {
             # partition
             if [[ "$dstptn" == "$dstdisk$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]]
             then
-                echo -e "\tCreating command to install grub on bios "\
+                echo -e "\tCreating command to install grub on bios"\
                         "partition on destination disk..."
                 
                 # the following three numbers at the beginning of the command
@@ -2310,13 +2310,13 @@ clone() {
                         entry="${entry//'/'/'\'}"
                         if [[ ! "$buf" =~ .+${esp_ptn_nums[1]}.+$UUID.+"$entry" ]]
                         then
-                            echo -e "\tCreating command to add UEFI" \
+                            echo -e "\tCreating command to add UEFI"\
                                     "boot entry '$entry' ..."
                             cmds+=("efibootmgr --create --disk '$dstdisk' \
-                                                --loader '$entry' \
-                                                --label 'Shim-$distro' \
-                                                --part ${esp_ptn_nums[1]} \
-                                                --unicode")
+                                               --loader '$entry' \
+                                               --label 'Shim-$distro' \
+                                               --part ${esp_ptn_nums[1]} \
+                                               --unicode")
                         fi
                     done
                 fi
@@ -2381,7 +2381,12 @@ cleanup() {
     local -i tmp
     
     if grep ^$$ "$LCKFILE" &> /dev/null; then
-        ignore_trapped_signals
+        echo -e "\tIgnoring trapped cancel signals during cleanup..."
+
+        # cleanup should not be interrupted by cancel signals in order to run
+        # cleanup!
+        cmds=("trap '' $CANCEL_SIGNALS")
+        exec_cmds "${cmds[@]}"
         ((err=$?))
 
         echo -e "\tUnmounting partitions on source and/or destination disks that"\
@@ -2402,12 +2407,18 @@ cleanup() {
         ((tmp=$?))
         (( ! err )) && ((err=tmp))
         
-        echo -e "\tRemove the entry of this clone process from the lock file..."
+        echo -e "\tIgnore signal USR1 to mask/unmask hibernation and remove the"\
+                "entry of this clone process from the lock file..."
 
-        cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
+        # ignore sig USR1 in order not to mask/unmask hibernation
+        cmds=("trap '' USR1")
+        cmds+=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
     elif [[ "$OPTIONS_S" && "$CMDFILE" =~ $OPTIONS_S ]]; then
-        ignore_trapped_signals
+        echo -e "\tIgnoring trapped signals during cleanup..."
+
+        cmds=("trap '' USR1 $CANCEL_SIGNALS")
+        exec_cmds "${cmds[@]}"
     # if script was cancelled during usage message skip most of cleanup
     else
         trap '' USR1 $CANCEL_SIGNALS &> /dev/null # ignore trapped signals

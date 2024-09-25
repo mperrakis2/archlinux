@@ -1168,15 +1168,6 @@ unmask_hibernation() {
     return $err
 }        
 
-ignore_trapped_signals() {
-    echo -e "\tIgnoring trapped signals during cleanup..."
-
-    local -a cmds
-
-    cmds=("trap '' USR1 $CANCEL_SIGNALS")
-    exec_cmds "${cmds[@]}"
-}
-
 # get shell executable and script filenames
 SHELL_FNAME=$(expr "$(head -1 "$0")" : "^\s*#\!\s*\(.\+\)$")
 readonly SHELL_FNAME
@@ -1226,7 +1217,7 @@ get_pids() {
                     if (( $# == 1 )); then
                         cmds=("kill -s USR1 $pid")
                         if exec_cmds "${cmds[@]}"; then
-                            cecho -e "\tSent signal USR1 to clone process"\
+                            cecho -e "\tSent signal USR1 to 'clone.sh' process"\
                                      "with ID $pid to mask/unmask hibernation...\n"
                         fi
                     else
