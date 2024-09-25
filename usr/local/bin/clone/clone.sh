@@ -2407,20 +2407,10 @@ cleanup() {
         ((tmp=$?))
         (( ! err )) && ((err=tmp))
         
-        echo -e "\tReseting signal(s) and remove the entry of this clone process" \
-                "from the lock file..."
+        echo -e "\tRemove the entry of this clone process from the lock file..."
 
-        cmds=("trap - USR1 $CANCEL_SIGNALS")
-        cmds+=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
+        cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
-    elif [[ "$OPTIONS_S" && "$CMDFILE" =~ $OPTIONS_S ]]; then
-        echo -e "\tReseting signal(s)..."
-
-        cmds=("trap - USR1 $CANCEL_SIGNALS")
-        exec_cmds "${cmds[@]}"
-    # if script was cancelled during usage message skip most of cleanup
-    else
-        trap - USR1 $CANCEL_SIGNALS &> /dev/null # reset trapped signals
     fi
     ((tmp=$?))
     (( ! err )) && ((err=tmp))
