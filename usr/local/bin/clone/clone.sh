@@ -51,18 +51,17 @@
 # overall script execution
 # ------------------------
 # source in helper functions
-# trap USR1 and cancellation signals
+# trap cancellation signals
 # display usage and get user input
 # initialize (create lock file, etc)
 # get partition data for src & dst
 # exit if src has no partitions or at least one partition does not have a UUID
-# mask hibernation if it is unmasked
 # exit if dst does not have enough disk space
 # if partition mismatch between src & dst
 #     remove partitions on dst, if any
-#     create src partitions on dst
-# format swap partitions on dst, if any
-# if partitions created on dst, exit if dst does not have enough disk space
+#     create src partitions on dst and format them
+# mask hibernation if it is unmasked and trap signal USR1
+# format swap partitions & files on dst, if any
 # clone using rsync
 # if src was used to boot the system, apply the following on dst
 #     update grub cfg file
@@ -236,25 +235,16 @@ declare -a g_parted_data=() # disk data retrieved from 'parted' command
 declare -i LOOP=1
 readonly EFI="[Ee][Ff][Ii]"
 
-# return: 0 on success else the error code of the command that failed
-trap_signals() {
-    local -i err
-    
-    # register signal hander to mask hibernation if another clone process has
-    # completed or was interrupted (signal USR1)
-    trap "mask_hibernation 1" USR1 &> /dev/null
-    ((err=$?))
-    
-    if (( ! err )); then
-        # register signal hander to clean up and exit if cancel signal is
-        # received
-        trap "cleanup 1" $CANCEL_SIGNALS &> /dev/null
-        ((err=$?))
-    fi
-    
-    (( err )) && cecho -e "\n${RED}Error while trapping signals, error code: $err. Exiting."
+init_signals() {
+    local signals
+    local D="[0-9]" # digit
+    local L=SIG     # literal
+    readonly D L
 
-    return $err
+    signals=$(kill -l | xargs) # get all signal names
+    signals="${signals//+($D\) $L|$D$D\) $L)}" # remove leading numbers & letters
+    trap "" $signals # ignore all signals
+    trap_signals "cleanup 1" "$CANCEL_SIGNALS" # signal handler for cancel
 }
 
 # display list of detected disks and cloning usage
@@ -411,9 +401,9 @@ validate_params
     fi
 }
 
-# initialize the clone session
+# setup clone variables
 # return: 0 on success else the error code of the command that failed
-init() {
+setup_env() {
     echo "Initializing..."
 
     OPTIONS_S=$(expr "$LOGDIR" : "^.\+\([0-9]\+_[0-9]\+\)$")
@@ -482,9 +472,9 @@ init() {
     chmod go=+r "$LOGFILE" "$ERRFILE" "$CMDFILE"
     ((fd=$?))
     if (( fd )); then
-        cechot "The log directory, $YELLOW'$LOGDIR'$RED, could not be created " \
-               "or set to read & execute or one of $YELLOW'$LOGFILE'$RED, " \
-               "$YELLOW'$ERRFILE'$RED or $YELLOW'$CMDFILE'$RED, could not be " \
+        cechot "The log directory, $YELLOW'$LOGDIR'$RED, could not be created "\
+               "or set to read & execute or one of $YELLOW'$LOGFILE'$RED, "\
+               "$YELLOW'$ERRFILE'$RED or $YELLOW'$CMDFILE'$RED, could not be "\
                "created or set to read. Exiting."
         return $fd
     fi
@@ -516,7 +506,7 @@ error_msg
         echo
         if ((err)); then
             cechot "The lock file, $YELLOW'$LCKFILE'$RED, could not be set to " \
-                   "read or appended to. Exiting." | tee -a "$ERRFILE"
+                   "read or append to. Exiting." | tee -a "$ERRFILE"
             exit 2
         fi
     ) {fd}>> "$LCKFILE" # open for append
@@ -894,92 +884,6 @@ populate_arrays() {
         return 1
     fi
     echo
-}
-
-# mask hibernation if it is unmasked
-# return: 0 on success, 1 if parameter error else the error code of the command
-#         that failed
-mask_hibernation() {
-    valid_opt_param "$1" # validate parameter
-    
-    # some other clone process has completed or was interrupted and sent signal
-    # USR1 so that this process can handle masking/unmasking hibernation
-    if (( $# == 1 )); then
-        # sync and restore stdout and stderr to the terminal
-        sync
-        exec &> /dev/tty
-
-        cecho -e "\n\nReceived signal USR1 from another clone process"\
-                 "to mask/unmask hibernation..."
-    fi  
-
-    # init array, as 'hibernate' may be called below which adds elements to this 
-    # array
-    rsync_filters=() 
-
-    local -i fd
-
-    exec {fd}>>"$HBNFILE" # append to the hibernation lock file
-    
-    # critical section follows
-    flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
-    local -i err=$?
-
-    if (( ! err )); then
-        local SEP="//"
-        readonly SEP
-        
-        # mask/unmask hibernation if no other clone process already does
-        if [[ ! -s "$HBNFILE" ]]; then
-            local -a cmds
-
-            hibernate cmds "mask" # add cmds to mask hibernation
-            if (( ${#cmds[@]} )); then
-                if (( $# == 1 )); then
-                    cecho "Masking hibernation..."
-                else
-                    echo "Masking hibernation..."
-                fi
-                
-                cmds+=("chmod go=+r $HBNFILE")
-                exec_cmds "${cmds[@]}"
-                ((err=$?))
-
-                # add entry to hibernation lock file
-                if (( ! err )); then
-                    echo "$$_$OPTIONS_S" >&$fd
-                    echo -n "$HBN_CFG_MNT_DIR $SEP " >&$fd
-                    echo "${rsync_filters[$HBN_CFG_MNT_DIR]}" >&$fd
-                fi
-            fi
-        else
-            # if some other clone process is masking/unmasking hibernation then
-            # hibernation files must be excluded from cloning
-            local hbn_entry
-            local mnt_dir
-            local excludes
-            
-            hbn_entry=$(tail -1 "$HBNFILE")
-            mnt_dir=$(expr "$hbn_entry" : "^\(.\+\) $SEP")
-            excludes=$(expr "$hbn_entry" : "^.\+ $SEP \(.\+\)$")
-            [[ ! "${rsync_filters[$mnt_dir]}" =~ $excludes ]] && 
-                rsync_filters[$mnt_dir]+="$excludes"
-        fi
-                 
-        flock -u $fd # release lock
-    fi
-    exec {fd}>&- # close hibernation lock file
-    
-    if (( $# == 1 )); then
-        if (( err )); then
-            cecho -e "${RED}Signal USR1 was handled unsuccessfully...\n"
-            cleanup 1
-        else
-            cecho -e "${GREEN}Signal USR1 was handled successfully...\n"
-        fi
-    fi
-
-    return $err
 }
 
 # calculate available disk space on dst and subtract any exlcuded dirs/files in
@@ -1867,6 +1771,90 @@ create_partitions() {
     fi
 }
 
+# mask hibernation if it is unmasked
+# return: 0 on success, 1 if parameter error else the error code of the command
+#         that failed
+mask_hibernation() {
+    valid_opt_param "$1" # validate parameter
+    
+    # some other clone process has completed or was interrupted and sent signal
+    # USR1 so that this process can handle masking/unmasking hibernation
+    if (( $# == 1 )); then
+        # sync and restore stdout and stderr to the terminal
+        sync
+        exec &> /dev/tty
+
+        cecho -e "\n\nReceived signal USR1 from another clone process"\
+                 "to mask/unmask hibernation..."
+    fi  
+
+    local -i fd
+
+    exec {fd}>>"$HBNFILE" # append to the hibernation lock file
+    
+    # critical section follows
+    flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
+    local -i err=$?
+
+    if (( ! err )); then
+        local SEP="//"
+        readonly SEP
+        
+        # mask/unmask hibernation if no other clone process already does
+        if [[ ! -s "$HBNFILE" ]]; then
+            local -a cmds
+
+            hibernate cmds "mask" # add cmds to mask hibernation
+            if (( ${#cmds[@]} )); then
+                if (( $# == 1 )); then
+                    cecho "Masking hibernation..."
+                else
+                    echo "Masking hibernation..."
+                fi
+                
+                cmds+=("chmod go=+r $HBNFILE")
+                exec_cmds "${cmds[@]}"
+                ((err=$?))
+
+                # add entry to hibernation lock file
+                if (( ! err )); then
+                    echo "$$_$OPTIONS_S" >&$fd
+                    echo -n "$HBN_CFG_MNT_DIR $SEP " >&$fd
+                    echo "${rsync_filters[$HBN_CFG_MNT_DIR]}" >&$fd
+                fi
+            fi
+        else
+            # if some other clone process is masking/unmasking hibernation then
+            # hibernation files must be excluded from cloning
+            local hbn_entry
+            local mnt_dir
+            local excludes
+            
+            hbn_entry=$(tail -1 "$HBNFILE")
+            mnt_dir=$(expr "$hbn_entry" : "^\(.\+\) $SEP")
+            excludes=$(expr "$hbn_entry" : "^.\+ $SEP \(.\+\)$")
+            [[ ! "${rsync_filters[$mnt_dir]}" =~ $excludes ]] && 
+                rsync_filters[$mnt_dir]+="$excludes"
+        fi
+
+        (( ! err )) &&
+            trap_signals "mask_hibernation 1" USR1 # signal handler for USR1
+
+        flock -u $fd # release lock
+    fi
+    exec {fd}>&- # close hibernation lock file
+    
+    (( $# == 1 )) &&
+        if (( err )); then
+            cecho -e "${RED}Signal USR1 was handled unsuccessfully...\n"
+            cleanup 1
+        else
+            cecho -e "${GREEN}Signal USR1 was handled successfully...\n"
+        fi
+
+    return $err
+}
+
 # find mount points for src and dst partitions and then clone files for each
 # dst partition
 # return: 0 on success, 1 if a function failed else the error code of the
@@ -2395,8 +2383,9 @@ cleanup() {
     if grep ^$$ "$LCKFILE" &> /dev/null; then
         echo -e "\tIgnoring cancellation signals during cleanup..."
 
-        # while cleanup is running it should not be interrupted by a cancel signal
-        cmds=("trap '' $CANCEL_SIGNALS")
+        # while cleanup is running it should not be interrupted by signals
+        # trapped by the script
+        cmds=("trap '' USR1 $CANCEL_SIGNALS")
         exec_cmds "${cmds[@]}"
         ((err=$?))
 
@@ -2431,7 +2420,7 @@ cleanup() {
         exec_cmds "${cmds[@]}"
     # if script was cancelled during usage message skip most of cleanup
     else
-        trap - USR1 $CANCEL_SIGNALS &> /dev/null # reset all signals
+        trap - USR1 $CANCEL_SIGNALS &> /dev/null # reset trapped signals
     fi
     ((tmp=$?))
     (( ! err )) && ((err=tmp))
@@ -2495,17 +2484,18 @@ result() {
 
 declare -i err=0
 
-source "$SCRIPTDIR"/base_functions.sh && trap_signals
+source "$SCRIPTDIR"/base_functions.sh && init_signals
 ((err=$?))
+
 (( ! err )) &&
     while (( LOOP )); do
         usage             &&
-        user_input        && 
-        init              && 
+        user_input        &&
+        setup_env         &&
         populate_arrays   && # create data structures used for cloning
-        mask_hibernation  && 
         calc_diskspace    && # check if src fits on dst
-        create_partitions && # create partitions on dst if different on src
+        create_partitions && # create partitions on dst if different than src
+        mask_hibernation  &&
         clone
         ((err=$?))
     done

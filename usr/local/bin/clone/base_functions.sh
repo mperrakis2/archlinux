@@ -2,6 +2,27 @@
 
 # base functions for clone.sh
 
+# $1    : str, function name and its params
+# $2    : str, list of signals
+# return: 0 on success else the error code of the command that failed
+trap_signals() {
+    if (( $# != 2 )); then
+        local msg="\nTwo params required: function and its params (first param) "
+        
+        msg+="and list of signals (second param). Exiting."
+        exit_with_stack "$msg"
+    fi
+
+    local -i err
+    
+    trap "$1" $2 &> /dev/null # register signal handler
+    ((err=$?))
+    
+    (( err )) && cecho -e "\n${RED}Error while trapping signals, error code: $err. Exiting."
+
+    return $err
+}
+
 # check that all files exist, are readable and have size != 0
 # $1    : int, 0 or 1, loop or not
 # return: 0 on success, 1 if a file does not exist, not readable or zero size
@@ -69,11 +90,6 @@ prompt() {
         cmds+=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")        
         exec_cmds "${cmds[@]}"
         ((err=$?))
-        
-        if (( ! err )); then
-            unmask_hibernation
-            ((err=$?))
-        fi
         
         if (( err )); then return $err; fi
     fi
@@ -996,34 +1012,41 @@ exec_cmds() {
             break
         fi
         
-        # If a command was launched in the background and the script receives a
-        # termination signal then the command must be terminated and the script
-        # should exit gracefully. Thus, when a command was launched in the
-        # background, 'wait' is used to wait on the command, and if the script
-        # receives a termination signal, a signal handler will terminate the
-        # command.
-        
+        # if the command currently running takes a long time to complete and the
+        # script receives a signal, the handler wouldn't get called unless the
+        # command completed. To avoid this, long running commands are executed
+        # in the background and 'wait' is used to wait on them. If the script
+        # receives a signal, 'wait' exits with an error > 128 and the following
+        # code keeps looping until the command exits on its own. Of course, if
+        # a cancel signal is received, e.g. INT, TERM, HUP, etc., its handler
+        # would exit the script.
         if (( ${#fd[0]} )); then
             ((pid=$!))
-            printf "\t%s\n" "wait $pid" >> "$CMDFILE" # update cmds file
+            while true; do
+                printf "\t%s\n" "wait $pid" >> "$CMDFILE" # update cmds file
 
-            # run cmd and use 'eval' to take into account spaces between
-            # arguments but not within each argument
-            eval "wait $pid" "${fd[1]}" "${fd[2]}"
-            ((err=$?))
-            if (( err && err < SIGMASK )); then
-                # ignore if 'rsync' failed and err=24, i.e. partial transfer due
-                # to vanished source files
-                if [[ "${cmds[i]}" =~ ^[[:blank:]]*rsync && $err -eq 24 ]]
-                then
-                    ((err=0))
+                # run cmd and use 'eval' to take into account spaces between
+                # arguments but not within each argument
+                eval wait $pid "${fd[1]}" "${fd[2]}"
+                ((err=$?))
+                if (( err )); then
+                    if (( err < SIGMASK )); then
+                        # ignore if 'rsync' failed and err=24, i.e. partial
+                        # transfer due to vanished source files
+                        if [[ "${cmds[i]}" =~ ^[[:blank:]]*rsync && $err -eq 24 ]]
+                        then
+                            ((err=0))
+                        else
+                            print_err_msg "wait $pid"
+                        fi
+                        break
+                    fi
                 else
-                    print_err_msg "wait $pid"
+                    break
                 fi
-            fi
+            done
             (( err )) && break
-        fi
-            
+        fi           
         sync
     done
     echo | tee -a "$CMDFILE"
