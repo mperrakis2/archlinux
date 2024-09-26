@@ -242,7 +242,7 @@ init_signals() {
     readonly D L
 
     signals=$(kill -l | xargs) # get all signal names
-    signals="${signals//+($D\) $L|$D$D\) $L)}" # remove leading numbers & letters
+    signals="${signals//@($D|$D$D)) $L}" # remove leading numbers & letters
     trap "" $signals # ignore all signals
     trap_signals "cleanup 1" "$CANCEL_SIGNALS" # signal handler for cancel
 }
