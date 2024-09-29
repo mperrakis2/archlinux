@@ -119,6 +119,7 @@ if (( is_esp )); then
 fi
 
 # update grub config file
+rm -f "$bootdir"/grub/grub.cfg
 res=$(grub-mkconfig -o "$bootdir"/grub/grub.cfg)
 exit_on_error $? "$res"
 
