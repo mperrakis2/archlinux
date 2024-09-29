@@ -34,7 +34,7 @@ files_exist() {
     local -A fdata=([$FSTYPES]="It is needed when formatting partitions. Exiting.")
     local -i err=0
     
-    fdata[$FILTERS]="It is needed to exclude system directories from cloning. Exiting."
+    fdata[$FILTERS]="It is needed to exclude/include files/dirs when cloning. Exiting."
     for key in "${!fdata[@]}"; do
         file_exists "$key" "${fdata["$key"]}" "$1"
         ((err+=$?))
@@ -60,7 +60,7 @@ file_exists() {
     
     if [[ ! -s "$1" || ! -r "$1" ]]; then
         cecho -e "\n${RED}The $YELLOW$1$RED file does not exist or has zero size or"\
-                 "is not readable. Exiting.\n$2"
+                 "${RED}is not readable.\n$RED$2"
         ((ref_loop=0))
         return 1
     fi

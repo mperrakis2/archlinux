@@ -22,7 +22,7 @@
 #
 # text files used by the script
 # -----------------------------
-# the following files are located in the script's directory
+# the following files are located in /etc/clone and optionally in ~/.config/clone
 #
 # 'fstypes' : maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude': files and/or dirs to be excluded from or included in cloning
@@ -84,22 +84,24 @@ PWD=$(pwd)
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
-# file that contains all filesystem types that 'parted' can handle
-if [[ -s "$PWD/fstypes" ]]; then
-    FSTYPES="$PWD"/fstypes
-else
-    FSTYPES="$SCRIPTDIR"/fstypes
-fi
-readonly FSTYPES
+GBL_CFGDIR="/etc/clone/" # global cfg dir
+LCL_CFGDIR=$(eval echo ~$(logname))"/.config/clone/" # local cfg dir
 
-# files/dirs to exclude from or include in cloning
-if [[ -s "$PWD/exclude" ]]; then
-    FILTERS="$PWD"/exclude
+# if script not run from script dir then read cfg files from local
+# account if they exist else from global dir
+if [[ "$PWD" != "$SCRIPTDIR" && -s "$LCL_CFGDIR"/fstypes ]]; then
+    FSTYPES="$LCL_CFGDIR"/fstypes # filesystems that 'parted' can handle
 else
-    FILTERS="$SCRIPTDIR"/exclude
+    FSTYPES="$GBL_CFGDIR"/fstypes
 fi
-readonly FILTERS
-unset PWD
+
+if [[ "$PWD" != "$SCRIPTDIR" && -s "$LCL_CFGDIR"/exclude ]]; then
+    FILTERS="$LCL_CFGDIR"/exclude # files/dirs to exclude/include when cloning
+else
+    FILTERS="$GBL_CFGDIR"/exclude
+fi
+readonly FSTYPES FILTERS
+unset PWD GBL_CFGDIR LCL_CFGDIR
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE

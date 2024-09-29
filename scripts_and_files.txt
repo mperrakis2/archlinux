@@ -5,8 +5,6 @@ useful scripts and config files (need sudo)
     clone/
         clone.sh              # clone the entire hard drive to another
         base_functions.sh     # don't run this (used only by clone.sh)
-        fstypes               # text file that maps filesystem names to the command that creates them (don't modify it)
-        exclude               # text file that contains dirs/files to exclude from cloning if src does not fit on dst (modifiable)
     cp_kodi_cfg.sh            # copy kodi config files from one user account to another
     useradd/
         useradd.sh            # add a new user; delete destination if it exists
@@ -27,6 +25,8 @@ useful scripts and config files (need sudo)
 /etc/skel/.config/locale.conf # default language for new user
 /etc/sudoers.d/override       # users added to the sudo group don't have to use their password
 
+/etc/clone/fstypes            # text file that maps filesystem names to the command that creates them, used by clone.sh (see above)
+/etc/clone/exclude            # text file that contains dirs/files to exclude from cloning if src does not fit on dst, used by clone.sh (see above)
 /etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
 /usr/share/libalpm/hooks/upd_grub_cfg.hook                           # see respective script above
