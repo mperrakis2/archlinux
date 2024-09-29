@@ -2,6 +2,28 @@
 
 # base functions for clone.sh
 
+# echo full path name of config file
+# $1: str, filename
+get_cfg_fname() {
+    (( $# != 1 )) &&
+        exit_with_stack "\nOne param required: filename. Exiting."
+
+    local cwd
+    local gbl_cfgdir="/etc/clone/" # global cfg dir
+    local lcl_cfgdir
+
+    cwd=$(pwd)
+    lcl_cfgdir=$(eval echo ~$(logname))"/.config/clone/" # local cfg dir
+
+    # if script not run from script dir then get cfg filename from local account
+    # if it exists else from global dir
+    if [[ "$cwd" != "$SCRIPTDIR" && -s "$lcl_cfgdir/$1" ]]; then
+        echo "$lcl_cfgdir/$1"
+    else
+        echo "$gbl_cfgdir/$1"
+    fi
+}
+
 # $1    : str, function name and its params
 # $2    : str, list of signals
 # return: 0 on success else the error code of the command that failed

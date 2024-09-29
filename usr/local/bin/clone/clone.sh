@@ -50,8 +50,8 @@
 #
 # overall script execution
 # ------------------------
-# source in helper functions
-# trap cancellation signals
+# source in base functions
+# init (get cfg file names & trap cancellation signals)
 # display usage and get user input
 # initialize (create lock file, etc)
 # get partition data for src & dst
@@ -78,30 +78,11 @@ set -o pipefail
 shopt -s extglob
 
 # global constants
-declare PWD
-PWD=$(pwd)
-
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
-GBL_CFGDIR="/etc/clone/" # global cfg dir
-LCL_CFGDIR=$(eval echo ~$(logname))"/.config/clone/" # local cfg dir
-
-# if script not run from script dir then read cfg files from local
-# account if they exist else from global dir
-if [[ "$PWD" != "$SCRIPTDIR" && -s "$LCL_CFGDIR"/fstypes ]]; then
-    FSTYPES="$LCL_CFGDIR"/fstypes # filesystems that 'parted' can handle
-else
-    FSTYPES="$GBL_CFGDIR"/fstypes
-fi
-
-if [[ "$PWD" != "$SCRIPTDIR" && -s "$LCL_CFGDIR"/exclude ]]; then
-    FILTERS="$LCL_CFGDIR"/exclude # files/dirs to exclude/include when cloning
-else
-    FILTERS="$GBL_CFGDIR"/exclude
-fi
-readonly FSTYPES FILTERS
-unset PWD GBL_CFGDIR LCL_CFGDIR
+declare FSTYPES
+declare FILTERS
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
@@ -237,7 +218,10 @@ declare -a g_parted_data=() # disk data retrieved from 'parted' command
 declare -i LOOP=1
 readonly EFI="[Ee][Ff][Ii]"
 
-init_signals() {
+init() {
+    FSTYPES=$(get_cfg_fname fstypes) # get full path name of fstypes file
+    FILTERS=$(get_cfg_fname exclude) # get full path name of exclude file
+
     local signals
     local D="[0-9]" # digit
     local L=SIG     # literal
@@ -2490,8 +2474,9 @@ result() {
 
 declare -i err=0
 
-source "$SCRIPTDIR"/base_functions.sh && init_signals
+source "$SCRIPTDIR"/base_functions.sh && init
 ((err=$?))
+readonly FSTYPES FILTERS
 
 (( ! err )) &&
     while (( LOOP )); do
