@@ -6,11 +6,13 @@ readonly MPDIR="/usr/local/man/"                         # man pages dir
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
-mapfile -t dirs < <(find "$SCRIPTDIR"/* -type d) # get man page dirs
+# get entries under man dir
+mapfile -t entries < <(grep --exclude=*.sh "TH" "$SCRIPTDIR"/*)
 
-for dir in "${dirs[@]}"; do
-    n=${dir: -1}                # get last char of dir which is a digit
-    file=$(find "$dir" -type f) # get man page file under dir
+for entry in "${entries[@]}"; do
+    file="${entry%%:*}"         # get man page filename
+    entry="${entry#*TH man }"    # get str that begins with man page page num
+    n="${entry::1}"             # get man page page num
 
     sudo mkdir -p "$MPDIR"/man$n/                  # make dir for man page
     sudo cp "$file" "$MPDIR"/man$n/${file##/*/}.$n # copy man page to man dir
