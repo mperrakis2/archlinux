@@ -1,2 +1,0 @@
-sudo cp clone /usr/local/man/man1/clone.1
-sudo gzip /usr/local/man/man1/clone.1

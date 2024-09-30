@@ -1,0 +1,4 @@
+sudo cp man1/clone /usr/local/man/man1/clone.1
+sudo gzip /usr/local/man/man1/clone.1
+sudo cp man5/clone-exclude /usr/local/man/man5/clone-exclude.5
+sudo gzip /usr/local/man/man5/clone-exclude.5

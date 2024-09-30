@@ -60,4 +60,4 @@ The system files excluded from cloning (see FILES) are based on the Filesystem H
 .SH BUGS
 If the script is run in a XFCE terminal window and hibernation is masked by the script before cloning and the hibernation period expires then when cloning has completed and hibernation is unmasked by the script, XFCE can not hibernate. However, if the terminal window is closed, XFCE will hibernate after the hibernation period has expired once again.
 .SH SEE ALSO
-rsync(1), parted(8), gdisk(8), mkfs(8), systemd(1), grub-install(8), grub-mkconfig(8)
+clone-exclude(5), rsync(1), parted(8), gdisk(8), mkfs(8), systemd(1), grub-install(8), grub-mkconfig(8)
