@@ -24,7 +24,7 @@
 # -----------------------------
 # the following files are located in /etc/clone and optionally in ~/.config/clone
 #
-# 'fstypes' : maps filesystem names of 'parted' cmd to 'mkfs' cmd
+# 'fstypes': maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude': files and/or dirs to be excluded from or included in cloning
 #
 # text files created by the script
