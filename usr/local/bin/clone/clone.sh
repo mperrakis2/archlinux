@@ -230,7 +230,7 @@ init() {
     # "f:": full path of fstypes file
     while getopts ":he:f:" option; do
         case ${option} in
-        h)  cat << usage_msg
+        h|:)  cat << usage_msg
 command line options
 --------------------
 -e <exclude_file> : full path to the 'exclude' file that contains files/dirs to
@@ -240,7 +240,7 @@ command line options
 
 if any of the above are not specified the defaults are searched in the following
 order:
-    /etc/clone/ if script is run under /usr/local/bin/
+    /etc/clone/ if script is run under /usr/local/bin/clone/
 else
     ~/.config/clone/
     /etc/clone/
@@ -310,10 +310,9 @@ usage() {
     exec {num}<&- # close the filters file
 
     cat << usage_msg
-This script clones a drive to another. To run it just type in its name and press
-enter. Then, you will be asked for source and destination drives. Source and
-destination need not be the same size as long as all source data fits on
-destination. Also, the directories and/or files contained in the
+This script will clone a drive to another. Source and destination drives need
+not be the same size as long as all source data fits on destination. Also, the
+files and/or directories contained in the
 $YELLOW'$FILTERS'$OFF
 file will ${YELLOW}NOT$OFF be cloned. Here they are:
 
@@ -325,9 +324,14 @@ usage_msg
     echo
     
     cat << usage_msg
-The script will work only on a linux machine using the GRUB 2 bootloader,
-systemd and with source drives that have partitions with UUIDs. It will NOT work
-with drives that have Logical Volume Management (LVM).
+${YELLOW}Limits
+------$OFF
+* The source drive must have partitions with UUIDs.
+* If the source drive is bootable it must use GRUB 2 as its bootloader.
+* The source drive must not have Logical Volume Management (LVM).
+* If the source drive has any partitions with a btrfs filesystem any subvolumes 
+  on it will not be created on the destination.
+* The system used to execute the clone script must use systemd as init.
 
 Here is a list of available drives on your system:
 ==================================================
@@ -377,7 +381,7 @@ usage_msg
 user_input() {
     OPTIONS=()
     echo -en "Enter cloning parameters (see examples above or Ctrl-C to perform"\
-             "cleanup and\nget exit message): "
+             "cleanup and\ndisplay exit message): "
     read -r -a OPTIONS # read cloning options into array
 
     START_DATE=$(date) # timestamp will be used to calculate the clone run time

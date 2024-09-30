@@ -1,0 +1,63 @@
+.\" Manpage for clone.
+.TH man 1 "30 September 2024" "1.0" "clone man page"
+.SH NAME
+clone.sh \- clone a drive using rsync
+.SH SYNOPSIS
+clone.sh [-e exclude_file] [-f fstypes_file] 
+.SH DESCRIPTION
+After you run the script a list of files/dirs excluded from cloning are displayed, e.g. system files under /dev/*, /proc/*, /sys/*, etc. Also, a list of drives connected to your system are displayed and you will be asked to input source and destination drives (by number) which need not be the same size as long as all source data fits on destination.
+
+If you ran the script without any command line options the default configuration files used are under /etc/clone/ and optionally overriden under ~/.config/clone/.
+
+During cloning, appropriate messages are produced on standard output indicating which command is being executed and a cloning progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under /var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/.
+
+You can run more than one cloning instance at a time provided the destinations are (obviously) different. So, if 3 drives are connected to your system one drive can be cloned to two others in parallel.
+.SH EXAMPLES
+After you run the script you will be prompted with a user-friendly menu where the drives connected to your system are displayed. Just type in the source and destination by number separated by a space, e.g. 1 2.
+.SH FILES
+The configuration files used by the script are:
+
+/etc/clone/exclude (contains files/dirs to be excluded from cloning)
+
+/etc/clone/fstypes (contains commands to format a newly created partition for a given filesystem)
+
+The user can create custom configuration files under ~/.config/clone/ but the same filenames have to be used. It is recommended not to modify the default fstypes file or create your own unless you really know what you are doing.
+
+If the script is run under /usr/local/bin/clone/ or custom configuration files do not exist then the default configuration files are used else the custom ones are used.
+Every time a cloning session is executed existing log directories are deleted and the directory /var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/x_y/ is created where 'x' is the number of the source drive and 'y' is the number of the destination drive. The following files are created under this directory:
+
+log      (contains files/dirs cloned)
+
+errors   (contains any errors encountered)
+
+commands (contains most commands executed by the script)
+
+In case multiple clone sessions are being executed in parallel there will be a log directory per session.
+.SH OPTIONS
+-e exclude_file
+
+-f fstypes_file
+
+If any are provided they override the default configuration files (see FILES). Must be valid full pathnames.
+.SH LIMITS
+The source drive must have partitions with UUIDs.
+
+If the source drive is bootable it must use GRUB 2 as its bootloader.
+
+The source drive must not have Logical Volume Management (LVM).
+
+If the source drive has any partitions with a btrfs filesystem any subvolumes on it will not be created on the destination.
+
+The system used to execute clone.sh must use systemd as init.
+.SH EXIT_STATUS
+On success 0 else > 1. If failure, an appropriate error message is displayed, the script executes cleanup function and further info on the error might exist in the error log file (see FILES).
+.SH NOTES
+To clone, the script is using the rsync --inc-recursive (--i-r) command line option in order to use much less memory. However, this option interferes with the rsync --progress command line option. The percentage of files transferred that is displayed is incorrect although the data size transferred is displayed correctly.
+.SH CAVEATS
+In case the user has many programs running while cloning then it is possible that some files that these programs use are deleted during cloning. However, the deleted files are part of rsync's list of files to transfer. In that case, when rsync exits, its return code is 24 (partial transfer due to vanished source files) but the script ignores it.
+.SH STANDARDS
+The system files excluded from cloning (see FILES) are based on the Filesystem Hierarchy Standard (FHS).
+.SH BUGS
+If the script is run in a XFCE terminal window and hibernation is masked by the script before cloning and the hibernation period expires then when cloning has completed and hibernation is unmasked by the script, XFCE can not hibernate. However, if the terminal window is closed, XFCE will hibernate after the hibernation period has expired once again.
+.SH SEE ALSO
+rsync(1), parted(8), gdisk(8), mkfs(8), systemd(1), grub-install(8), grub-mkconfig(8)
