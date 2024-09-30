@@ -79,8 +79,8 @@ file_exists() {
         msg+="1 (loop or not). Exiting."
         exit_with_stack "$msg"
     fi
-    
-    if [[ ! -s "$1" || ! -r "$1" ]]; then
+
+    if [[ ! -f "$1" || ! -r "$1" || ! -s "$1" ]]; then
         cecho -e "\n${RED}The $YELLOW$1$RED file does not exist or has zero size or"\
                  "${RED}is not readable.\n$RED$2"
         ((ref_loop=0))
@@ -858,7 +858,7 @@ mount_ptn() {
     local fstype
     local -i is_mnt=0
     
-    if [[ "$1" == "$srcdisk" ]]; then p="$SP"; else p="$DP"; fi
+    if [[ "$1" == "$srcdrv" ]]; then p="$SP"; else p="$DP"; fi
 
     # get partition UUID
     UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\([^\"]*\)\"")
@@ -966,8 +966,8 @@ get_ptn_size() {
     # get size of src partition in bytes
     (( ref = $(field "$ptn" "$PSIZE") ))
 
-    # calculate percentage of src partition based on src disk size
-    pct=$(bc <<< "scale=3; $ref / $SRC_DISK_RESIZE")
+    # calculate percentage of src partition based on src drive size
+    pct=$(bc <<< "scale=3; $ref / $SRC_DRV_RESIZE")
 
     # calculate dst partition size based on percentage above
     cmd='{printf "%.0f", ($1 * $2 == int($1 * $2)) '
