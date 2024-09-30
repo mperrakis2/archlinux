@@ -324,14 +324,14 @@ usage_msg
     echo
     
     cat << usage_msg
-${YELLOW}Limits
-------$OFF
+${YELLOW}Constraints
+-----------$OFF
 * The source drive must have partitions with UUIDs.
 * If the source drive is bootable it must use GRUB 2 as its bootloader.
-* The source drive must not have Logical Volume Management (LVM).
+* The source drive must not use Logical Volume Management (LVM).
 * If the source drive has any partitions with a btrfs filesystem any subvolumes 
   on it will not be created on the destination.
-* The system used to execute the clone script must use systemd as init.
+* The system the clone script is executed on must use systemd as init.
 
 Here is a list of available drives on your system:
 ==================================================
@@ -362,7 +362,7 @@ usage_msg
     done
 
     cat << usage_msg
-=================================================
+==================================================
 
 Cloning parameters have to be entered in the following order:
     <source drive number> <destination drive number>
