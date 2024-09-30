@@ -1,36 +1,36 @@
 useful scripts and config files (need sudo)
 ===========================================
 /usr/local/bin/
-    av.sh                      # anti virus
+    av.sh                     # anti virus
     clone/
-        clone.sh               # clone the entire hard drive to another
-        base_functions.sh      # don't run this (used only by clone.sh)
-        man/
-            manpages.sh        # script to create man pages for clone script
-            man1/clone         # man page for clone script
-            man5/clone-exclude # man page for exclude configuration file for clone script
-    cp_kodi_cfg.sh             # copy kodi config files from one user account to another
+        clone.sh              # clone the entire hard drive to another
+        base_functions.sh     # don't run this (used only by clone.sh)
+        manpages/
+            manpages.sh       # script to create man pages for clone script
+            clone             # man page for clone script
+            clone-exclude     # man page for exclude configuration file for clone script
+    cp_kodi_cfg.sh            # copy kodi config files from one user account to another
     useradd/
-        useradd.sh             # add a new user; delete destination if it exists
-        new_user/              # directory that contains new user data
-    userdel.sh                 # delete a user
-    upd_dbs_and_keyring.sh     # update pacman DBs, core & extra, and update keyring package in case there's a newer version
-    grub_sbsign.sh             # install and sign grub bootloader, create UEFI boot entry and update grub cfg file when installing/upgrading grub
-    upd_grub_cfg.sh            # update grub.cfg when installing/upgrading linux kernels
-    cpshim.sh                  # copy shim binaries to boot partition when installing/upgrading shim signed
-    wait.sh                    # used in desktop launchers that launch scripts to prevent the script window from closing
+        useradd.sh            # add a new user; delete destination if it exists
+        new_user/             # directory that contains new user data
+    userdel.sh                # delete a user
+    upd_dbs_and_keyring.sh    # update pacman DBs, core & extra, and update keyring package in case there's a newer version
+    grub_sbsign.sh            # install and sign grub bootloader, create UEFI boot entry and update grub cfg file when installing/upgrading grub
+    upd_grub_cfg.sh           # update grub.cfg when installing/upgrading linux kernels
+    cpshim.sh                 # copy shim binaries to boot partition when installing/upgrading shim signed
+    wait.sh                   # used in desktop launchers that launch scripts to prevent the script window from closing
 
 /usr/lib/systemd/scripts/
-    sync_timedate.sh           # called after wakeup from suspend/hibernate in /etc/systemd/system/sync_timedate.service
-    disable_wakeup.sh          # called from /etc/systemd/system/disable_wakeup.service
-    pkg_maint.sh               # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
+    sync_timedate.sh          # called after wakeup from suspend/hibernate in /etc/systemd/system/sync_timedate.service
+    disable_wakeup.sh         # called from /etc/systemd/system/disable_wakeup.service
+    pkg_maint.sh              # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
 
-/etc/skel/.bashrc              # useful stuff for all users
-/etc/skel/.config/locale.conf  # default language for new user
-/etc/sudoers.d/override        # users added to the sudo group don't have to use their password
+/etc/skel/.bashrc             # useful stuff for all users
+/etc/skel/.config/locale.conf # default language for new user
+/etc/sudoers.d/override       # users added to the sudo group don't have to use their password
 
-/etc/clone/fstypes             # text file that maps filesystem names to the command that creates them, used by clone.sh (see above)
-/etc/clone/exclude             # text file that contains dirs/files to exclude from cloning if src does not fit on dst, used by clone.sh (see above)
+/etc/clone/fstypes            # text file that maps filesystem names to the command that creates them, used by clone.sh (see above)
+/etc/clone/exclude            # text file that contains dirs/files to exclude from cloning if src does not fit on dst, used by clone.sh (see above)
 /etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
 /usr/share/libalpm/hooks/upd_grub_cfg.hook                           # see respective script above
