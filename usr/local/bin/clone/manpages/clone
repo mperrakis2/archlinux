@@ -70,8 +70,6 @@ On success 0 else > 1. If failure, an appropriate error message is displayed, \f
 To clone, \fIclone.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\fI--i-r\fR) command line option in order to use much less memory. However, this option interferes with the \fBrsync\fR(1) \fI--progress\fR command line option. The percentage of files transferred that is displayed is incorrect although the data size transferred is correct.
 .SH CAVEATS
 In case the user has many programs running while cloning then it is possible that some files that these programs use are deleted during cloning. However, the deleted files are part of rsync's list of files to transfer. In that case, when rsync exits, its return code is 24 (partial transfer due to vanished source files) but \fIclone.sh\fR ignores it.
-.SH STANDARDS
-The system files excluded from cloning (see \fBFILES\fR) are based on the Filesystem Hierarchy Standard (FHS).
 .SH BUGS
 If \fIclone.sh\fR is invoked from a XFCE terminal window and hibernation is masked by \fIclone.sh\fR and the hibernation period expires while \fBrsync\fR(1) is running then when cloning has completed and hibernation is unmasked by \fIclone.sh\fR, XFCE can not hibernate. However, if the terminal window is closed, XFCE can hibernate after the hibernation period has expired again.
 .SH SEE ALSO

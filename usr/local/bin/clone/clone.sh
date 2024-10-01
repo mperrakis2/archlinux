@@ -16,13 +16,7 @@
 # 
 # Requirements
 # ------------
-# * The source drive must have partitions with UUIDs.
-# * If the source drive was used to boot the system where the clone script is
-#   invoked, it must use GRUB 2 as its bootloader.
-# * The source drive must not use Logical Volume Management (LVM).
-# * If the source drive has any partitions with a btrfs filesystem any
-#   subvolumes on them will not be created on the destination.
-# * The system the clone script is executed on must use systemd as init.
+# see LIMITS section in the man page
 #
 # text files used by the script
 # -----------------------------
@@ -331,13 +325,7 @@ usage_msg
     cat << usage_msg
 ${YELLOW}Requirements
 ------------$OFF
-* The source drive must have partitions with UUIDs.
-* If the source drive was used to boot the system where the clone script is
-  invoked, it must use GRUB 2 as its bootloader.
-* The source drive must not use Logical Volume Management (LVM).
-* If the source drive has any partitions with a btrfs filesystem any subvolumes
-  on them will not be created on the destination.
-* The system the clone script is executed on must use systemd as init.
+see LIMITS section in the man page
 
 Here is a list of available drives on your system:
 ==================================================
