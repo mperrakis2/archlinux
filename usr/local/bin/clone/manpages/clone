@@ -45,7 +45,7 @@ Before cloning the following directory and lock files under it are created:
 
     \fIhbn_clone_pid\fR: ensure that only one clone script instance is responsible for masking/unmasking hibernation
 
-The lock directory and its contents are deleted during cleanup which is the last stage of \fBclone.sh\fR.
+The lock directory and its contents are deleted before \fBclone.sh\fR exits.
 
 In case multiple clone sessions are being executed in parallel there will be a log directory per session.
 .SH OPTIONS
@@ -65,7 +65,7 @@ If the source drive has any partitions with a btrfs filesystem any subvolumes on
 
 The system \fIclone.sh\fR is executed on must use systemd as init.
 .SH EXIT_STATUS
-On success 0 else > 1. If failure, an appropriate error message is displayed, \fIclone.sh\fR executes cleanup function and further info on the error might exist in the error log file (see \fBFILES\fR).
+Zero on success else > 1. In case of error an appropriate error message is displayed and further info on the error might be available in the error file (see \fBFILES\fR).
 .SH NOTES
 To clone, \fIclone.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\fI--i-r\fR) command line option in order to use much less memory. However, this option interferes with the \fBrsync\fR(1) \fI--progress\fR command line option. The percentage of files transferred that is displayed is incorrect although the data size transferred is correct.
 .SH CAVEATS
