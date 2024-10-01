@@ -325,7 +325,7 @@ usage_msg
     cat << usage_msg
 ${YELLOW}Requirements
 ------------$OFF
-see LIMITS section in the man page
+see ${YELLOW}LIMITS$OFF section in the man page
 
 Here is a list of available drives on your system:
 ==================================================
