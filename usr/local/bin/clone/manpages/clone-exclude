@@ -1,19 +1,15 @@
 .\" Manpage for clone.sh exclude configuration file.
 .TH man 5 "30 September 2024" "1.0" "clone.sh exclude configuration file man page"
 .SH NAME
-exclude \- configuration file for clone.sh that contains files/dirs to be excluded from cloning
+exclude \- configuration file for \fBclone.sh\fR that contains files/dirs to be excluded from cloning
 .SH SYNOPSIS
-/etc/clone/exclude, ~/.config/clone/exclude, or custom full pathname
+/etc/clone/exclude, ~/.config/clone/exclude, <pathname>
 .SH DESCRIPTION
-The configuration files used by clone.sh are:
+The default location of the \fBexclude\fR configuration file is \fI/etc/clone/exclude\fR. This file should never be deleted and if the default values need to be modified or new ones added it is best to create an override file.
 
-/etc/clone/exclude (contains files/dirs to be excluded from cloning)
+\fBclone.sh\fR searches for an override file if not invoked under \fI/usr/local/bin/clone/\fR. The location of the override file must be under \fI~/.config/clone/\fR and the filename has to be \fIexclude\fR.
 
-/etc/clone/fstypes (contains commands to format a newly created partition for a given filesystem)
-
-The user can create custom configuration files under ~/.config/clone/ but the same filenames have to be used. It is recommended not to modify the default fstypes file or create your own unless you really know what you are doing.
-
-If clone.sh is run under /usr/local/bin/clone/ or custom configuration files do not exist then the default configuration files are used else custom ones are used.
+An override file can also be provided when invoking \fBclone.sh\fR with the \fB-e\fR command line option. This takes precedence over any other files.
 .SH EXAMPLES
 .I GENERAL USE
 
@@ -53,7 +49,7 @@ Another example of a tuple:
 
 +/home/user/[ac]z   (include 'az' and 'cz' under '/home/user/')
 
-.I ESCAPED CHARACTERS
+.I SPECIAL & ESCAPED CHARACTERS
 
 If a filename or dirname includes spaces or parentheses or escaped characters like a newline they have to be escaped. For example,
 
@@ -134,49 +130,21 @@ A leading sign ('-' or '+') followed by a '/' and a <path> which is optional and
   
 .I examples
 
--/dir1/dir2/ report*      (exclude all files and directories beginning with 'report' that are under:
+-/dir1/dir2/ report*      (exclude all files and directories beginning with 'report' that are under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
-                           '/dir1/dir2/'
+-/dir1/dir2 report*/      (exclude directories beginning with 'report' that are under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
-                           or any directory that is under '/dir1/dir2/')
+-/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under any 'dir3' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
--/dir1/dir2 report*/      (exclude directories beginning with 'report' that are under:
-
-                           '/dir1/dir2/'
-                           
-                           or any directory that is under '/dir1/dir2/')
-
--/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under any 'dir3' directory that is under:
-
-                           '/dir1/dir2/'
-
-                           or any directory that is under '/dir1/dir2/')
-
--/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under any 'dir3' directory that is under:
-
-                           '/dir1/dir2/'
-
-                           or any directory that is under '/dir1/dir2/')
+-/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under any 'dir3' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
 .I exclude/include tuple example
 
--/dir1/dir2 dir3/dir4/           (exclude directory 'dir4' that is under any 'dir3' directory that is under:
+-/dir1/dir2 dir3/dir4/           (exclude directory 'dir4' that is under any 'dir3' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
-                                  '/dir1/dir2/'
++/dir1/dir2 dir3/dir4/file1.txt  (include 'file1.txt' that is under any '/dir3/dir4/' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
-                                  or any directory that is under '/dir1/dir2/')
-
-+/dir1/dir2 dir3/dir4/file1.txt  (include 'file1.txt' that is under any '/dir3/dir4/' directory that is under:
-
-                                  '/dir1/dir2/'
-
-                                  or any directory that is under '/dir1/dir2/')
-
-+/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any '/dir3/dir4/' directory that is under:
-
-                                  '/dir1/dir2/'
-
-                                  or any directory that is under '/dir1/dir2/')
++/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any '/dir3/dir4/' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
 .I other examples
 
@@ -248,6 +216,6 @@ The following examples are invalid, as the second token contains some metacharac
 
 -/dir1/di*r2/ {?????.sh,*st.txt}, interpreted as plain characters: { , }
 .SH STANDARDS
-The system files excluded from cloning (see FILES) are based on the Filesystem Hierarchy Standard (FHS).
+The system files excluded from cloning are based on the Filesystem Hierarchy Standard (FHS).
 .SH SEE ALSO
-clone(1), rsync(1)
+\fBclone\fR(1), \fBrsync\fR(1)

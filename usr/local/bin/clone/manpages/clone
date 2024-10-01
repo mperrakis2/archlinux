@@ -3,61 +3,76 @@
 .SH NAME
 clone.sh \- clone a drive using rsync
 .SH SYNOPSIS
-clone.sh [-e exclude_file] [-f fstypes_file] 
+.B clone.sh\fR \fI[\fB-e\fI exclude_file] [\fB-f\fI fstypes_file] 
 .SH DESCRIPTION
-After you run the script a list of files/dirs excluded from cloning are displayed, e.g. system files under /dev/*, /proc/*, /sys/*, etc. Also, a list of drives connected to your system are displayed and you will be asked to input source and destination drives (by number) which need not be the same size as long as all source data fits on destination.
+After you run \fIclone.sh\fR a list of files/dirs excluded from cloning are displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. Also, a list of drives connected to your system are displayed and you will be asked to input source and destination drives (by number). Source and destination need not be the same size as long as all source data fits on destination.
 
-If you ran the script without any command line options the default configuration files used are under /etc/clone/ and optionally overriden under ~/.config/clone/.
+If you ran \fIclone.sh\fR without any command line options the default configuration files used are under \fI/etc/clone/\fR and optionally overriden under \fI~/.config/clone/\fR.
 
-During cloning, appropriate messages are produced on standard output indicating which command is being executed and a cloning progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under /var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/.
+During cloning, appropriate messages are produced on standard output indicating which command is being executed and a cloning progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/\fR.
 
-You can run more than one cloning instance at a time provided the destinations are (obviously) different. So, if 3 drives are connected to your system one drive can be cloned to two others in parallel.
+You can run more than one cloning instance at a time provided the destinations are (obviously) different. So, if three drives are connected to your system one drive can be cloned to two others in parallel.
 .SH EXAMPLES
-After you run the script you will be prompted with a user-friendly menu where the drives connected to your system are displayed. Just type in the source and destination by number separated by a space, e.g. 1 2.
+After you run \fIclone.sh\fR you will be prompted with a user-friendly menu where the drives connected to your system are displayed. Just type in the source and destination by number separated by a space, e.g. 1 2.
 .SH FILES
-The configuration files used by the script are:
+The configuration files used by \fIclone.sh\fR are:
 
-/etc/clone/exclude (contains files/dirs to be excluded from cloning)
+\fI/etc/clone/exclude\fR (see \fBman \fIclone-exclude\fR)
 
-/etc/clone/fstypes (contains commands to format a newly created partition for a given filesystem)
+\fI/etc/clone/fstypes\fR (contains commands to format a newly created partition for a given filesystem)
 
-The user can create custom configuration files under ~/.config/clone/ but the same filenames have to be used. It is recommended not to modify the default fstypes file or create your own unless you really know what you are doing.
+The user can create override files under \fI~/.config/clone/\fR but the default filenames have to be used. It is recommended not to modify the default \fIfstypes\fR file or create your own unless you really know what you are doing.
 
-If the script is run under /usr/local/bin/clone/ or custom configuration files do not exist then the default configuration files are used else the custom ones are used.
-Every time a cloning session is executed existing log directories are deleted and the directory /var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/x_y/ is created where 'x' is the number of the source drive and 'y' is the number of the destination drive. The following files are created under this directory:
+\fBclone.sh\fR searches for override files if not invoked under \fI/usr/local/bin/clone/\fR. The location of the override files must be under \fI~/.config/clone/\fR and default filenames have to be used.
 
-log      (contains files/dirs cloned)
+Override files can also be provided when invoking \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). This takes precedence over any other files.
 
-errors   (contains any errors encountered)
+Every time a cloning session is executed existing log directories are deleted and the directory \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/x_y/\fR is created where 'x' is the number of the source drive and 'y' is the number of the destination drive. The following files are created under this directory:
 
-commands (contains most commands executed by the script)
+\fIlog\fR      (contains files/dirs cloned)
+
+\fIerrors\fR   (contains any errors encountered)
+
+\fIcommands\fR (contains most commands executed by \fIclone.sh\fR)
+
+Sometimes it is useful to \fBtail\fR(1) the \fIlog\fR file to see which files/dirs are being transferred by \fBrsync\fR(1).
+
+Before cloning the following directory and lock files under it are created:
+
+\fI/var/lock/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/\fR
+
+    \fIclone_pids\fR: ensure that \fIclone.sh\fR is executed only if its source and destination are not destinations of another \fIclone.sh\fR instance
+
+    \fIhbn_clone_pid\fR: ensure that only one clone script instance is responsible for masking/unmasking hibernation
+
+The lock directory and its contents are deleted during cleanup which is the last stage of \fBclone.sh\fR.
 
 In case multiple clone sessions are being executed in parallel there will be a log directory per session.
 .SH OPTIONS
--e exclude_file
+\fB-e\fR \fIexclude_file\fR
 
--f fstypes_file
+\fB-f\fR \fIfstypes_file\fR
 
-If any are provided they override the default configuration files (see FILES). Must be valid full pathnames.
+If any are provided they override the default configuration files (see \fBFILES\fR). Must be valid full pathnames.
 .SH LIMITS
 The source drive must have partitions with UUIDs.
 
-If the source drive is bootable it must use GRUB 2 as its bootloader.
+If the source drive was used to boot the system where clone.sh is invoked, it must use GRUB 2 as its bootloader.
 
 The source drive must not use Logical Volume Management (LVM).
 
-If the source drive has any partitions with a btrfs filesystem any subvolumes on it will not be created on the destination.
+If the source drive has any partitions with a btrfs filesystem any subvolumes on them will not be created on the destination.
 
-The system the clone script is executed on must use systemd as init.
+The system \fIclone.sh\fR is executed on must use systemd as init.
 .SH EXIT_STATUS
-On success 0 else > 1. If failure, an appropriate error message is displayed, the script executes cleanup function and further info on the error might exist in the error log file (see FILES).
+On success 0 else > 1. If failure, an appropriate error message is displayed, \fIclone.sh\fR executes cleanup function and further info on the error might exist in the error log file (see \fBFILES\fR).
 .SH NOTES
-To clone, the script is using the rsync --inc-recursive (--i-r) command line option in order to use much less memory. However, this option interferes with the rsync --progress command line option. The percentage of files transferred that is displayed is incorrect although the data size transferred is displayed correctly.
+To clone, \fIclone.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\fI--i-r\fR) command line option in order to use much less memory. However, this option interferes with the \fBrsync\fR(1) \fI--progress\fR command line option. The percentage of files transferred that is displayed is incorrect although the data size transferred is correct.
 .SH CAVEATS
-In case the user has many programs running while cloning then it is possible that some files that these programs use are deleted during cloning. However, the deleted files are part of rsync's list of files to transfer. In that case, when rsync exits, its return code is 24 (partial transfer due to vanished source files) but the script ignores it.
+In case the user has many programs running while cloning then it is possible that some files that these programs use are deleted during cloning. However, the deleted files are part of rsync's list of files to transfer. In that case, when rsync exits, its return code is 24 (partial transfer due to vanished source files) but \fIclone.sh\fR ignores it.
 .SH STANDARDS
-The system files excluded from cloning (see FILES) are based on the Filesystem Hierarchy Standard (FHS).
+The system files excluded from cloning (see \fBFILES\fR) are based on the Filesystem Hierarchy Standard (FHS).
 .SH BUGS
-If the script is run in a XFCE terminal window and hibernation is masked by the script before cloning and the hibernation period expires then when cloning has completed and hibernation is unmasked by the script, XFCE can not hibernate. However, if the terminal window is closed, XFCE will hibernate after the hibernation period has expired once again.
+If \fIclone.sh\fR is invoked from a XFCE terminal window and hibernation is masked by \fIclone.sh\fR and the hibernation period expires while \fBrsync\fR(1) is running then when cloning has completed and hibernation is unmasked by \fIclone.sh\fR, XFCE can not hibernate. However, if the terminal window is closed, XFCE can hibernate after the hibernation period has expired again.
 .SH SEE ALSO
-clone-exclude(5), rsync(1), parted(8), gdisk(8), mkfs(8), systemd(1), grub-install(8), grub-mkconfig(8)
+\fBclone-exclude\fR(5), \fBrsync\fR(1), \fBparted\fR(8), \fBgdisk\fR(8), \fBmkfs\fR(8), \fBsystemd\fR(1), \fBgrub-install\fR(8), \fBgrub-mkconfig\fR(8)

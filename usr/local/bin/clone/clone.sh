@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# This script clones a drive to another. To see detailed info and usage run the
-# script with no parameters. Clone options are entered by the user after the
-# the script is run.
+# This script clones one drive to another. To see detailed info and usage read
+# the man page (man <script>) or run the script with no parameters. <script>
+# does not include ".sh". Clone options are entered by the user after the script
+# is run.
 
 # the following describe the script's functionality
 #
@@ -13,16 +14,19 @@
 #
 # the user selects src & dst AFTER the script is launched
 # 
-# prerequisites
-# -------------
-# * does NOT support Logical Volume Management (LVM)
-# * if src was used to boot the system, the src bootloader must be grub 2
-# * systemd must be used as init
-# * all src partitions must have UUIDs
+# Requirements
+# ------------
+# * The source drive must have partitions with UUIDs.
+# * If the source drive was used to boot the system where the clone script is
+#   invoked, it must use GRUB 2 as its bootloader.
+# * The source drive must not use Logical Volume Management (LVM).
+# * If the source drive has any partitions with a btrfs filesystem any
+#   subvolumes on them will not be created on the destination.
+# * The system the clone script is executed on must use systemd as init.
 #
 # text files used by the script
 # -----------------------------
-# the following files are located in /etc/clone and optionally in ~/.config/clone
+# the following files are under /etc/clone and optionally under ~/.config/clone
 #
 # 'fstypes': maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude': files and/or dirs to be excluded from or included in cloning
@@ -30,23 +34,24 @@
 # text files created by the script
 # --------------------------------
 # 'log'          : the output of commands (stdout)
-# 'err'          : errors, if any (stderr)
-# 'cmd'          : the commands themselves
+# 'errors'       : errors, if any (stderr)
+# 'commands'     : the commands themselves
 # 'clone_pids'   : lock file to ensure that a clone script is executed only if
-#                  its src and dst are not destinations of another clone script
+#                  its src and dst are not destinations for another clone script
 #                  instance (multiple instances are allowed as long as 
 #                  destinations are different)
 # 'hbn_clone_pid': lock file to ensure that only one clone script instance is
 #                  responsible for masking/unmasking hibernation
 #
-# * lock files are created under /var/lock/$PUUID/ (see definition of $PUUID
-#   below) which is deleted after all clone script instances have terminated
-# * all other files are created under /var/log/$PUUID/X_Y (X, Y: numbers 
-#   provided by the user for src and dst respectively)
+# * lock files are created under /var/lock/<script>.sh_$PUUID/ (see definition
+#   of $PUUID below) which is deleted after all clone script instances have
+#   terminated
+# * all other files are created under /var/log/<script>.sh_$PUUID/X_Y (X, Y:
+#   numbers provided by the user for src and dst respectively)
 #
 # other scripts used by this script
 # ---------------------------------
-# base_functions.sh (located in this script's directory and sourced in)
+# base_functions.sh (under this script's directory and sourced in)
 #
 # overall script execution
 # ------------------------
@@ -240,7 +245,7 @@ command line options
 
 if any of the above are not specified the defaults are searched in the following
 order:
-    /etc/clone/ if script is run under /usr/local/bin/clone/
+    /etc/clone/ if script is invoked under /usr/local/bin/clone/
 else
     ~/.config/clone/
     /etc/clone/
@@ -324,13 +329,14 @@ usage_msg
     echo
     
     cat << usage_msg
-${YELLOW}Constraints
------------$OFF
+${YELLOW}Requirements
+------------$OFF
 * The source drive must have partitions with UUIDs.
-* If the source drive is bootable it must use GRUB 2 as its bootloader.
+* If the source drive was used to boot the system where the clone script is
+  invoked, it must use GRUB 2 as its bootloader.
 * The source drive must not use Logical Volume Management (LVM).
-* If the source drive has any partitions with a btrfs filesystem any subvolumes 
-  on it will not be created on the destination.
+* If the source drive has any partitions with a btrfs filesystem any subvolumes
+  on them will not be created on the destination.
 * The system the clone script is executed on must use systemd as init.
 
 Here is a list of available drives on your system:
@@ -1505,7 +1511,7 @@ calc_drvspace() {
         done
         
         if [[ "${srcptn::1}" != "/" ]]; then
-            srcmnt_dir="/" # located on root (/) partition                    
+            srcmnt_dir="/"
         else
             srcmnt_dir=$(lsblk -no MOUNTPOINT "$srcptn")
         fi
@@ -2124,7 +2130,7 @@ clone() {
     # add commands to create swap files, if any, on dst
     (( ${#swap_file_cmds[@]} )) && cmds+=("${swap_file_cmds[@]}")
     
-    echo -e "\n\tRunning cloning commands (this may take a while)..."
+    echo -e "\n\tInvoking cloning commands (this may take a while)..."
 
     exec_cmds "${cmds[@]}" # execute commands created above
     ((err=$?))
