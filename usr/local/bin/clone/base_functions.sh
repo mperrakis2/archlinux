@@ -91,7 +91,7 @@ file_exists() {
 # prompt the user to reselect cloning options
 # $1    : optional, str, prompt
 # $2    : int, 0 or 1, loop or not
-# return: 1 or the error code of unmasking hibernation
+# return: 1
 prompt() {
     local -n ref_loop="$1"
 

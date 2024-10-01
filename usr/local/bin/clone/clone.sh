@@ -400,8 +400,14 @@ user_input() {
     for i in "${!OPTIONS[@]}"; do
         OPTIONS[i]="${OPTIONS[i],,}"
         OPTIONS[i]="${OPTIONS[i]//[[:blank:]]/}"
+        [[ ! "${OPTIONS[i]}" =~ ^[0-9]+$ ]] && break # break if not a number
     done
 
+    if [[ ! "${OPTIONS[i]}" =~ ^[0-9]+$ ]]; then # if not num display usage again
+        prompt LOOP "\nSource & destination drives have to be selected as numbers.\n"
+        return $?
+    fi
+    
     cat << validate_params
 
 
@@ -2524,7 +2530,7 @@ readonly FSTYPES FILTERS
         user_input        &&
         setup_env         &&
         populate_arrays   && # create data structures used for cloning
-        calc_drvspace    && # check if src fits on dst
+        calc_drvspace     && # check if src fits on dst
         create_partitions && # create partitions on dst if different than src
         mask_hibernation  &&
         clone
