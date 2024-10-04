@@ -24,7 +24,7 @@ https://wiki.archlinux.org/title/GRUB#Shim-lock
 1. a. grub_modules="all_video boot btrfs cat chain configfile echo efifwsetup efinet ext2 fat font gettext gfxmenu gfxterm gfxterm_background gzio halt help hfsplus iso9660 jpeg keystatus loadenv loopback linux ls lsefi lsefimmap lsefisystab lssal memdisk minicmd normal ntfs part_apple part_msdos part_gpt password_pbkdf2 png probe reboot regexp search search_fs_uuid search_fs_file search_label sleep smbios squash4 test true video xfs zfs zfscrypt zfsinfo cpuid play tpm cryptodisk gcry_arcfour gcry_blowfish gcry_camellia gcry_cast5 gcry_crc gcry_des gcry_dsa gcry_idea gcry_md4 gcry_md5 gcry_rfc2268 gcry_rijndael gcry_rmd160 gcry_rsa gcry_seed gcry_serpent gcry_sha1 gcry_sha256 gcry_sha512 gcry_tiger gcry_twofish gcry_whirlpool luks lvm mdraid09 mdraid1x raid5rec raid6rec http tftp"
 
    # grub-install
-   c. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi
+   b. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi
 
 # check https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
 
@@ -33,7 +33,7 @@ https://wiki.archlinux.org/title/GRUB#Shim-lock
 3. a. sudo cp "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/BOOT/
    b. sudo cp /usr/share/shim-signed/shimx64.efi "$(bootctl -p)"/EFI/BOOT/BOOTX64.EFI
    c. sudo cp /usr/share/shim-signed/shimx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/
-   d. sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "Shim" --loader /EFI/"$(uname -n)"/shimx64.efi
+   d. sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "shim-$(uname -n)" --loader /EFI/"$(uname -n)"/shimx64.efi
 
 4. a. cd "$(bootctl -p)"/EFI
    Execute once only -> sudo openssl req -newkey rsa:2048 -nodes -keyout MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=my Machine Owner Key/" -out MOK.crt
