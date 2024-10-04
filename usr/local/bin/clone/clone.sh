@@ -2335,8 +2335,8 @@ clone() {
                 for entry in "${entries[@]}"; do
                     entry="${entry#"$BOOTDIR"}" # remove bootdir
                     
-                    # skip entries that contain '/BOOT/' (it's for
-                    # removable media) or not 'shim'
+                    # skip entries that contain '/BOOT/' (it's for removable
+                    # media) or not 'shim'
                     [[ "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ || ! "$entry" =~ $SHIM ]] && 
                         continue
 
