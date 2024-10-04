@@ -2358,7 +2358,7 @@ clone() {
 
                         cmds+=("efibootmgr --create --disk '$dstdrv' \
                                            --loader '$entry' \
-                                           --label 'Shim-$distro' \
+                                           --label 'shim-$distro' \
                                            --part ${esp_ptn_nums[1]} \
                                            --unicode")
                     fi
