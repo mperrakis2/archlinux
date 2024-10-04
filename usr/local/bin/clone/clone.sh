@@ -2350,8 +2350,12 @@ clone() {
                     entry="${entry//'/'/'\'}"
                     if [[ ! "$buf" =~ .+${esp_ptn_nums[1]}.+$UUID.+"$entry" ]]
                     then
-                        echo -en "\tCreating command to add UEFI "
-                        echo "boot entry '$entry' ..."
+                        echo -en "\tCreating command to add UEFI boot entry "
+
+                        # separate line as $entry contains special characters
+                        # that echo -e above can't display
+                        echo "'$entry' ..."
+
                         cmds+=("efibootmgr --create --disk '$dstdrv' \
                                            --loader '$entry' \
                                            --label 'Shim-$distro' \
