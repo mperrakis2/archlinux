@@ -1,17 +1,19 @@
 .\" Manpage for clone.
 .TH man 1 "30 September 2024" "1.0" "clone man page"
 .SH NAME
-clone.sh \- clone a drive using rsync
+clone.sh \- clone one drive to another using rsync
 .SH SYNOPSIS
 .B clone.sh\fR \fI[\fB-e\fI exclude_file] [\fB-f\fI fstypes_file] 
 .SH DESCRIPTION
-After you run \fIclone.sh\fR a list of files/dirs excluded from cloning are displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. Also, a list of drives connected to your system are displayed and you will be asked to input source and destination drives (by number). Source and destination need not be the same size as long as all source data fits on destination.
+Source and destination drives need not be the same size as long as all source data fits on destination. If the source drive is bootable the destination will become bootable as well. 
 
-If you ran \fIclone.sh\fR without any command line options the default configuration files used are under \fI/etc/clone/\fR and optionally overriden under \fI~/.config/clone/\fR.
+If you run \fIclone.sh\fR without any command line options the configuration files used are the defaults under \fI/etc/clone/\fR which can optionally be overriden under \fI~/.config/clone/\fR.
 
-During cloning, appropriate messages are produced on standard output indicating which command is being executed and a cloning progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/\fR.
+After you run \fIclone.sh\fR a list of files/dirs excluded from cloning is displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. These files/dirs are read from the configuration file \fIexclude\fR (see \fBFILES\fR). Also, a list of drives connected to your system is displayed and you will be asked to input source and destination drives (by number). 
 
-You can run more than one cloning instance at a time provided the destinations are (obviously) different. So, if three drives are connected to your system one drive can be cloned to two others in parallel.
+During cloning, appropriate messages are produced on standard output indicating which command is being executed and a progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/\fR.
+
+You can run more than one \fIclone.sh\fR instance at a time provided the destinations are (obviously) different. So, if three drives are connected to your system one drive can be cloned to the other two in parallel.
 .SH EXAMPLES
 After you run \fIclone.sh\fR you will be prompted with a user-friendly menu where the drives connected to your system are displayed. Just type in the source and destination by number separated by a space, e.g. 1 2.
 .SH FILES
@@ -23,9 +25,9 @@ The configuration files used by \fIclone.sh\fR are:
 
 The user can create override files under \fI~/.config/clone/\fR but the default filenames have to be used. It is recommended not to modify the default \fIfstypes\fR file or create your own unless you really know what you are doing.
 
-\fBclone.sh\fR searches for override files if not invoked under \fI/usr/local/bin/clone/\fR. The location of the override files must be under \fI~/.config/clone/\fR and default filenames have to be used.
+\fBclone.sh\fR searches for override files if not invoked under \fI/usr/local/bin/clone/\fR. The location of the override files must be under \fI~/.config/clone/\fR and the default filenames have to be used.
 
-Override files can also be provided when invoking \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). This takes precedence over any other files.
+Override files can also be provided when invoking \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). This takes precedence over any other files and any pathnames can be used.
 
 Every time a cloning session is executed existing log directories are deleted and the directory \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/x_y/\fR is created where 'x' is the number of the source drive and 'y' is the number of the destination drive. The following files are created under this directory:
 
@@ -43,7 +45,7 @@ Before cloning the following directory and lock files under it are created:
 
     \fIclone_pids\fR: ensure that \fIclone.sh\fR is executed only if its source and destination are not destinations of another \fIclone.sh\fR instance
 
-    \fIhbn_clone_pid\fR: ensure that only one clone script instance is responsible for masking/unmasking hibernation
+    \fIhbn_clone_pid\fR: ensure that only one \fIclone.sh\fR instance is responsible for masking/unmasking hibernation
 
 The lock directory and its contents are deleted before \fBclone.sh\fR exits.
 

@@ -2,8 +2,9 @@
 
 # base functions for clone.sh
 
-# echo full path name of config file
-# $1: str, filename
+# echo pathname of config file
+# $1    : str, filename
+# stdout: pathname of config file
 get_cfg_fname() {
     (( $# != 1 )) &&
         exit_with_stack "\nOne param required: filename. Exiting."
@@ -17,7 +18,9 @@ get_cfg_fname() {
 
     # if script not run from script dir then get cfg filename from local account
     # if it exists else from global dir
-    if [[ "$cwd" != "$SCRIPTDIR" && -s "$lcl_cfgdir/$1" ]]; then
+    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfgdir/$1" && -r "$lcl_cfgdir/$1" && \
+          -s "$lcl_cfgdir/$1" ]]
+    then
         echo "$lcl_cfgdir/$1"
     else
         echo "$gbl_cfgdir/$1"
@@ -214,7 +217,7 @@ cecho() {
         if [[ "$param" =~ ^"$BOLD" ]]; then # param already prefixed by str color
             params+=("$param$OFF")          # header so just turn off at the end
         else
-            # param not prefixed by str color header so add default (red) and
+            # param not prefixed by str color header so add default (yellow) and
             # then turn off at the end
             params+=("$YELLOW$param$OFF")
         fi
@@ -1101,10 +1104,10 @@ rm_lba_flag() {
     echo "$flags_no_lba"
 }
 
-# get the destination pathname of a file based on mount point
+# get the destination pathnames of a file based on mount point
 # $1    : str, filename
 # $@    : array of str, rsync params
-# return: 0 on success else 1
+# stdout: array of pathnames 
 dst_pathname() {   
     if (( $# < 2 )); then
         local msg="\nAt least two params required: filename and rsync "
@@ -1115,18 +1118,19 @@ dst_pathname() {
     
     local ptn_pair
     local -a rsync_params=("${@:2}") # get all params except first one
+    local -a pathnames=()
 
     # iterate over partition data to find the file on dst
     for ptn_pair in "${rsync_params[@]}"; do
         # check if dst file exists
-        if [[ -s "$(field "$ptn_pair" $((MDIR+MDST)))/$1" ]]; then
+        if [[ -f "$(field "$ptn_pair" $((MDIR+MDST)))/$1" && \
+              -s "$(field "$ptn_pair" $((MDIR+MDST)))/$1" ]]; then
             # get location of dst file
-            echo "$(field "$ptn_pair" $((MDIR+MDST)))/$1"
-            return 0
+            pathnames+=("$(field "$ptn_pair" $((MDIR+MDST)))/$1")
         fi
     done
 
-    return 1 # if no dst file exists return with error
+    echo "${pathnames[@]}"
 }
 
 # $1: optional, int, valid value: 1, signal was received
