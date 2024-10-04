@@ -2337,7 +2337,7 @@ clone() {
                     
                     # skip entries that contain '/BOOT/' (it's for
                     # removable media) or not 'shim'
-                    [[ "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ && ! "$entry" =~ $SHIM ]] && 
+                    [[ "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ || ! "$entry" =~ $SHIM ]] && 
                         continue
 
                     # remove suffix up to and including last '/'
@@ -2350,8 +2350,8 @@ clone() {
                     entry="${entry//'/'/'\'}"
                     if [[ ! "$buf" =~ .+${esp_ptn_nums[1]}.+$UUID.+"$entry" ]]
                     then
-                        echo -e "\tCreating command to add UEFI"\
-                                "boot entry '$entry' ..."
+                        echo -en "\tCreating command to add UEFI "
+                        echo "boot entry '$entry' ..."
                         cmds+=("efibootmgr --create --disk '$dstdrv' \
                                            --loader '$entry' \
                                            --label 'Shim-$distro' \
