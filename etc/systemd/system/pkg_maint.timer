@@ -2,8 +2,8 @@
 Description=see corresponding service
 
 [Timer]
-OnActiveSec=1min
-RandomizedDelaySec=2min
+OnActiveSec=1sec
+RandomizedDelaySec=1min
 OnUnitActiveSec=24hour
 
 [Install]
