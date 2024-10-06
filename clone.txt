@@ -3,22 +3,23 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
 
 1. before clone
    ============
-   a. bleachbit
-   b. sudo bleachbit
+   bleachbit
+   sudo bleachbit
 
 2. run cloning script (see next group)
 
 3. after clone
    ===========
-   a. run kodi to update kodi add ons
-   b. run qBitTorrent and update plug ins
+   run kodi to update kodi add ons
+   run qBitTorrent and update plug ins
+   fwupdmgr update
 
    Add/Remove Software (pamac)
-   c. Refresh databases
-   d. Updates -> install
+       a. Refresh databases
+       b. Updates -> install
 
    or
 
-   c. paru -Syu --skipreview --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all --rebuild=tree
-      paru --clean
-      paru --repoctl --clean
+   paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all --rebuild=tree
+   paru --clean
+   paru --repoctl --clean
