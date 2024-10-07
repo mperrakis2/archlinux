@@ -2220,14 +2220,14 @@ clone() {
         readonly GRUBENV
 
         # update grubenv on dst if it exists
-        if [[ -f "$GRUBENV" && -s "$GRUBENV" ]]; then
+        if [[ -f "$BOOTDIR/$GRUBENV" && -s "$BOOTDIR/$GRUBENV" ]]; then
             local DUUID=""
 
             UUID=""
             dstdir=""
             for ptn_pair in "${rsync_params[@]}"; do
                 # if UUID of grubenv on src store src & dst UUIDs
-                if grep -q $(field "$ptn_pair" "$MUUID") "$GRUBENV" 2>> "$ERRFILE"
+                if grep -q $(field "$ptn_pair" "$MUUID") "$BOOTDIR/$GRUBENV"
                 then
                     UUID=$(field "$ptn_pair" "$MUUID")           # src UUID
                     DUUID=$(field "$ptn_pair" "$((MUUID+MDST))") # dst UUID               
