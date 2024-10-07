@@ -55,17 +55,18 @@ In case multiple clone sessions are being executed in parallel there will be a l
 
 \fB-f\fR \fIfstypes_file\fR
 
-If any are provided they override the default configuration files (see \fBFILES\fR). Must be valid full pathnames.
+If any are provided they override the default configuration files (see \fBFILES\fR). Must be valid pathnames.
 .SH LIMITS
 The source drive must have partitions with UUIDs.
 
-If the source drive was used to boot the system where clone.sh is invoked, it must use GRUB 2 as its bootloader.
-
 The source drive must not use Logical Volume Management (LVM).
 
-If the source drive has any partitions with a btrfs filesystem any subvolumes on them will not be created on the destination.
+If the source drive has partitions with the btrfs filesystem any subvolumes on them will not be created on the destination. To see which filesystems are fully supported check \fIfstypes\fR file (see \fBFILES\fR).
 
-The system \fIclone.sh\fR is executed on must use systemd as init.
+\fIclone.sh\fR must be invoked on a system that uses systemd as init.
+
+If the source drive is bootable the destination will become bootable only if the source drive and the system \fIclone.sh\fR is invoked on use GRUB 2 as their bootloader. Regardless, the destination will contain all source data provided cloning was successful.
+
 .SH EXIT_STATUS
 Zero on success else > 1. In case of error an appropriate error message is displayed and further info on the error might be available in the error file (see \fBFILES\fR).
 .SH NOTES

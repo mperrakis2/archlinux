@@ -14,9 +14,9 @@
 #
 # the user selects src & dst AFTER the script is launched
 # 
-# Requirements
-# ------------
-# see LIMITS section in the man page
+# limitations
+# -----------
+# see LIMITS section in man page (man clone)
 #
 # text files used by the script
 # -----------------------------
@@ -64,8 +64,9 @@
 # clone using rsync
 # if src was used to boot the system, create swap files on dst, if any
 # if fstab file(s) exist on dst, update them with new UUIDs
-# if grub cfg file exists on dst, update it with new UUIDs
-# if grub def files exist on dst, update them with new UUIDs
+# if grub cfg file(s) exist on dst, update then with new UUIDs
+# if grub def file(s) exist on dst, update them with new UUIDs
+# if grubenv file(s) exist on dst, update them with new UUIDs
 # if swap files exist on dst
 #     update grub default file(s) on dst
 #     update grub cfg file on dst
@@ -309,11 +310,11 @@ usage() {
     exec {num}<&- # close the filters file
 
     cat << usage_msg
-This script will clone a drive to another. Source and destination drives need
+This script will clone one drive to another. Source and destination drives need
 not be the same size as long as all source data fits on destination. Also, the
-files and/or directories contained in the
+files and/or directories contained in the following file
 $YELLOW'$FILTERS'$OFF
-file will ${YELLOW}NOT$OFF be cloned. Here they are:
+will ${YELLOW}NOT$OFF be cloned. Here they are:
 
 usage_msg
 
@@ -323,12 +324,12 @@ usage_msg
     echo
     
     cat << usage_msg
-${YELLOW}Requirements
-------------$OFF
-see ${YELLOW}LIMITS$OFF section in the man page
+${YELLOW}LIMITATIONS
+===========$OFF
+see ${YELLOW}LIMITS$OFF section in man page (man clone)
 
-Here is a list of available drives on your system:
-==================================================
+LIST OF DRIVES
+================================================
 usage_msg
 
     g_parted_data=()
@@ -356,17 +357,20 @@ usage_msg
     done
 
     cat << usage_msg
-==================================================
+================================================
 
-Cloning parameters have to be entered in the following order:
-    <source drive number> <destination drive number>
+USAGE
+=====
+Enter the number of the source drive followed by the number of the destination
+drive, e.g. 1 2
 
-    Examples: 1 2
-          or  2 1
-
-${YELLOW}Before proceeding close all programs on all user accounts and exit all user
+${YELLOW}WARNING
+=======
+Before proceeding close all programs on all user accounts and exit all user
 accounts but this one.${OFF}
 
+USER INPUT
+==========
 usage_msg
 }
 
@@ -374,8 +378,7 @@ usage_msg
 # return: 0 on success else 1
 user_input() {
     OPTIONS=()
-    echo -en "Enter cloning parameters (see examples above or Ctrl-C to perform"\
-             "cleanup and\ndisplay exit message): "
+    echo -en "Enter drive numbers (see USAGE section above) or Ctrl-C to exit: "
     read -r -a OPTIONS # read cloning options into array
 
     START_DATE=$(date) # timestamp will be used to calculate the clone run time
@@ -2169,11 +2172,9 @@ clone() {
         done
     fi
     
-    local dstptn
     local -a grubcfg_files=()
 
     # iterate over partitions to find grub file(s)
-    files=()
     for ptn_pair in "${rsync_params[@]}"; do
         dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
         mapfile -t -O ${#grubcfg_files[@]} grubcfg_files < <(find "$dstdir" \
@@ -2190,13 +2191,15 @@ clone() {
         # replace src partition data on dst grub.cfg file
         # iterate over all src partitions and find UUID which exists in grub.cfg
         cmd="sed -i "
+        files=()
         for ptn_pair in "${rsync_params[@]}"; do
             UUID=$(field "$ptn_pair" "$MUUID")
             for file in "${grubcfg_files[@]}"; do
                 if grep -q "$UUID" "$file" 2>> "$ERRFILE"; then
                     # add sed command to replace src UUID with dst UUID
-                    cmd+="-e 's|$UUID|$(field "$ptn_pair" $((MUUID+MDST)))|g' "
-                    break
+                    [[ ! "$cmd" =~ "$UUID" ]] &&
+                        cmd+="-e 's|$UUID|$(field "$ptn_pair" $((MUUID+MDST)))|g' "
+                    [[ ! "${files[*]}" =~ "$file" ]] && files+=("$file")
                 fi
             done
         done
@@ -2212,37 +2215,11 @@ clone() {
             cmd+="$buf"
         fi
 
+        grubcfg_files=("${files[@]}")
         for file in "${grubcfg_files[@]}"; do
             cmds+=("$cmd '$file'")
         done    
     
-        local GRUBENV=/grub/grubenv
-        readonly GRUBENV
-
-        # update grubenv on dst if it exists
-        if [[ -f "$BOOTDIR/$GRUBENV" && -s "$BOOTDIR/$GRUBENV" ]]; then
-            local DUUID=""
-
-            UUID=""
-            dstdir=""
-            for ptn_pair in "${rsync_params[@]}"; do
-                # if UUID of grubenv on src store src & dst UUIDs
-                if grep -q $(field "$ptn_pair" "$MUUID") "$BOOTDIR/$GRUBENV"
-                then
-                    UUID=$(field "$ptn_pair" "$MUUID")           # src UUID
-                    DUUID=$(field "$ptn_pair" "$((MUUID+MDST))") # dst UUID               
-                fi
-
-                # if grubenv exists on dst store dst dir
-                [[ -f $(field "$ptn_pair" "$((MDIR+MDST))")/"$GRUBENV" ]] &&
-                    dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
-            done
-
-            # add sed cmd to replace src with dst UUID in grubenv on dst
-            [[ "$dstdir" && "$UUID" && "$DUUID" ]] &&
-                cmds+=("sed -i -e 's|$UUID|$DUUID|g' '$dstdir/$GRUBENV'")
-        fi
-
     # if src was used to boot the system
     elif [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
         cecho -e "\nFile '${OFF}grub*.cfg$YELLOW' was not found." | tee -a "$ERRFILE"
@@ -2264,6 +2241,34 @@ clone() {
         fi
     fi
 
+    local GRUBENV_FILE=/grub/grubenv
+    readonly GRUBENV_FILE
+
+    # update grubenv on dst
+    files=($(dst_pathname "$GRUBENV_FILE" "${rsync_params[@]}"))
+    if [[ "${files[*]}" ]]; then
+        local DUUID
+
+        for file in "${files[@]}"; do
+            DUUID=""
+            UUID=""
+            cmd="sed -i "
+            for ptn_pair in "${rsync_params[@]}"; do
+                # if UUID on src exists on grubenv on dst
+                if grep -q $(field "$ptn_pair" "$MUUID") "$file" 2>> "$ERRFILE"
+                then
+                    cmd+="-e 's|$(field "$ptn_pair" "$MUUID")|"       # src UUID
+                    cmd+="$(field "$ptn_pair" "$((MUUID+MDST))")|g' " # dst UUID
+                    break
+                fi
+            done
+
+            # add sed cmd to replace src with dst UUID in grubenv on dst
+            grep -q $(field "$ptn_pair" "$MUUID") "$file" 2>> "$ERRFILE" &&
+                cmds+=("$cmd'$file'")
+        done
+    fi
+
     local -a dstdata
     
     # get dst data
@@ -2281,9 +2286,10 @@ clone() {
     local RE_SEARCH_OFFSET="${STR_OFFSET}[0-9]\+"
     readonly STR_UUID RE_SEARCH_UUID STR_OFFSET RE_SEARCH_OFFSET
 
-    local distro
+    local dstptn
     local SHIM="[Ss][Hh][Ii][Mm]"
     readonly SHIM
+    local distro
 
     for ptn_pair in "${rsync_params[@]}"; do
         dstdir=$(field "$ptn_pair" $((MDIR+MDST)))

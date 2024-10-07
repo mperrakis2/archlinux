@@ -75,7 +75,7 @@ All escaped characters have to be specified as $'\\<ec>'.
 
 .B c)\fR -|+<fspec>
 
-A leading sign ('-' or '+') followed by a mandatory file specification (<fspec>) and an optional '/'. <fspec> specifies full pathnames of files or directories and all metacharacters of the bash shell can be used. <fspec> must have a leading '/' and if followed by one a directory is specifed. If not followed by one a directory or file is specified.
+A leading sign ('-' or '+') followed by a mandatory file specification (<fspec>) and an optional '/'. <fspec> specifies pathnames of files or directories and all metacharacters of the bash shell can be used. <fspec> must have a leading '/' and if followed by one a directory is specifed. If not followed by one a directory or file is specified.
   
 .I examples
 
