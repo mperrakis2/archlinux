@@ -2216,6 +2216,22 @@ clone() {
             cmds+=("$cmd '$file'")
         done    
     
+        local GRUBENV="$BOOTDIR"/grub/grubenv
+        readonly GRUBENV
+
+        # update grubenv on dst if it exists
+        [[ -f "$GRUBENV" && -s "$GRUBENV" ]] &&
+            for ptn_pair in "${rsync_params[@]}"; do
+                UUID=$(field "$ptn_pair" "$MUUID")
+                if grep -q "$UUID" "$GRUBENV" 2>> "$ERRFILE"; then
+                    dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
+                    # add sed command to replace src UUID with dst UUID
+                    cmd="sed -i -e 's|$UUID|$(field "$ptn_pair" $((MUUID+MDST)))|g' "
+                    cmds+=("$cmd '$dstdir/$GRUBENV'")
+                    break
+                fi
+            done
+
     # if src was used to boot the system
     elif [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
         cecho -e "\nFile '${OFF}grub*.cfg$YELLOW' was not found." | tee -a "$ERRFILE"
@@ -2265,8 +2281,8 @@ clone() {
         for entry in "${entries[@]}"; do
             # if swap entry is a file and not a partition
             if [[ "${entry::1}" == "/" ]]; then
-                file="${entry%%+( *)}" # get swap filename
-                file="$dstdir${file:1}"     # add dst dir and remove '/'
+                file="${entry%%+( *)}"  # get swap filename
+                file="$dstdir${file:1}" # add dst dir and remove '/'
 
                 # get swap file UUID and offset
                 swap_file_UUID=$(findmnt -no UUID -T "$file")
