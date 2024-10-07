@@ -2216,21 +2216,32 @@ clone() {
             cmds+=("$cmd '$file'")
         done    
     
-        local GRUBENV="$BOOTDIR"/grub/grubenv
+        local GRUBENV=/grub/grubenv
         readonly GRUBENV
 
         # update grubenv on dst if it exists
-        [[ -f "$GRUBENV" && -s "$GRUBENV" ]] &&
+        if [[ -f "$GRUBENV" && -s "$GRUBENV" ]]; then
+            local DUUID=""
+
+            UUID=""
+            dstdir=""
             for ptn_pair in "${rsync_params[@]}"; do
-                UUID=$(field "$ptn_pair" "$MUUID")
-                if grep -q "$UUID" "$GRUBENV" 2>> "$ERRFILE"; then
-                    dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
-                    # add sed command to replace src UUID with dst UUID
-                    cmd="sed -i -e 's|$UUID|$(field "$ptn_pair" $((MUUID+MDST)))|g' "
-                    cmds+=("$cmd '$dstdir/$GRUBENV'")
-                    break
+                # if UUID of grubenv on src store src & dst UUIDs
+                if grep -q $(field "$ptn_pair" "$MUUID") "$GRUBENV" 2>> "$ERRFILE"
+                then
+                    UUID=$(field "$ptn_pair" "$MUUID")           # src UUID
+                    DUUID=$(field "$ptn_pair" "$((MUUID+MDST))") # dst UUID               
                 fi
+
+                # if grubenv exists on dst store dst dir
+                [[ -f $(field "$ptn_pair" "$((MDIR+MDST))")/"$GRUBENV" ]] &&
+                    dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
             done
+
+            # add sed cmd to replace src with dst UUID in grubenv on dst
+            [[ "$dstdir" && "$UUID" && "$DUUID" ]] &&
+                cmds+=("sed -i -e 's|$UUID|$DUUID|g' '$dstdir/$GRUBENV'")
+        fi
 
     # if src was used to boot the system
     elif [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
