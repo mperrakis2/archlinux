@@ -60,9 +60,10 @@ if (( is_esp )); then
 "ntfs ntfscomp parttool part_apple part_gpt part_msdos password "\
 "password_pbkdf2 play png probe progress raid5rec raid6rec read reboot regexp "\
 "search search_fs_file search_fs_uuid search_label signature_test sleep "\
-"sleep_test smbios squash4 tar test testload testspeed tftp time tpm tr true "\
-"usb usbtest video videoinfo videotest videotest_checksum video_bochs "\
-"video_cirrus video_colors video_fb xfs xzio zfs zfscrypt zfsinfo"
+"sleep_test smbios squash4 tar terminal terminfo test testload testspeed tftp "\
+"time tpm tr true usb usbtest video videoinfo videotest videotest_checksum "\
+"video_bochs video_cirrus video_colors video_fb xfs xzio zfs zfscrypt zfsinfo"
+
     # install grub to ESP/<distro>
     res=$(grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv \
                        --efi-directory="$bootdir" --recheck --target=x86_64-efi)
