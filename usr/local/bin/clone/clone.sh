@@ -310,6 +310,8 @@ usage() {
     exec {num}<&- # close the filters file
 
     cat << usage_msg
+DESCRIPTION
+===========
 This script will clone one drive to another. Source and destination drives need
 not be the same size as long as all source data fits on destination. Also, the
 files and/or directories contained in the following file
@@ -362,7 +364,7 @@ usage_msg
 USAGE
 =====
 Enter the number of the source drive followed by the number of the destination
-drive, e.g. 1 2
+drive (see "LIST OF DRIVES" section above), e.g. 1 2
 
 ${YELLOW}WARNING
 =======
