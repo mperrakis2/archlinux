@@ -21,58 +21,19 @@ readonly GRUB_CFG_FNAME="$BOOTDIR/grub/grub.cfg"
 # [.]    : the '.' char
 readonly RE_KV_PREFIX="[0-9]+[.][0-9]+[.][0-9]+"
 
-exit_if_strings_err() {
-    if [[ $# -lt 2 || $# -gt 3 || ! $1 =~ ^[0-9]+$ || ( "$3" && "$3" != lts ) ]]
-    then
-        local errmsg="Two or three params required. An int, a kernel version "
+# check that all input files exist
+for file in "$GRUB_CFG_FNAME" "$BOOTDIR"/vmlinuz-linux "$BOOTDIR"/vmlinuz-linux-lts
+do
+    if [[ ! -f "$file" || ! -r "$file" || ! -w "$file" || ! -s "$file" ]]; then
+        declare errmsg="The '$GRUB_CFG_FNAME' file does not exist or is empty "
         
-        errmsg+="and an optional 'lts' string. Exiting."
+        errmsg+="or is not readable/writable. Can't update $GRUB_CFG_FNAME "
+        errmsg+="with latest versions of the linux and linux-lts kernels."
         systemd-cat -t "${BASH_SOURCE:-$0}" -p "err" echo "$errmsg"
-        
+
         exit 1
     fi
-
-    if [[ $1 -ne 0 || ! "$2" =~ $RE_KV_PREFIX ]]; then
-        local errmsg="The $3 kernel version could not be retrieved or is not "
-
-        errmsg+="correct. 'strings' error code: $1. Exiting."
-        systemd-cat -t "${BASH_SOURCE:-$0}" -p "err" echo "$errmsg"
-            
-        exit "$1"
-    fi
-}
-
-exit_if_sed_err() {
-    if [[ $# -lt 1 || $# -gt 2 || ! $1 =~ ^[01]$ || ( "$2" && "$2" != lts ) ]]
-    then
-        local errmsg="One or two params required. An int and an optional 'lts' "
-        
-        errmsg+="string. Exiting."
-        systemd-cat -t "${BASH_SOURCE:-$0}" -p "err" echo "$errmsg"
-        
-        exit 1
-    fi
-
-    if (( $1 )); then
-        local errmsg="The grub $2 kernel version could not be updated. sed "
-        
-        errmsg+="error code: $1. Exiting."
-        systemd-cat -t "${BASH_SOURCE:-$0}" -p "err" echo "$errmsg"
-            
-        exit "$1"
-    fi
-}
-
-# check that grub.cfg file is ok
-if [[ ! -s "$GRUB_CFG_FNAME" || ! -r "$GRUB_CFG_FNAME" || ! -w "$GRUB_CFG_FNAME" ]]; then
-    declare errmsg="The '$GRUB_CFG_FNAME' file does not exist or is empty or "
-    
-    errmsg+="is not readable. Can't update it with latest versions of the "
-    errmsg+="linux and linux-lts kernels."
-    systemd-cat -t "${BASH_SOURCE:-$0}" -p "err" echo "$errmsg"
-
-    exit 1
-fi
+done
 
 # get grub cfg kernel versions
 #
@@ -109,31 +70,25 @@ get_kv() { grep "$(hostname)" | tail -n 1 | xargs | cut -d ' ' -f 1; }
 
 # get installed kernel version
 kv="$(strings "$BOOTDIR"/vmlinuz-linux | get_kv)"
-exit_if_strings_err $? "$kv"
 
 # get installed lts kernel version
 LTS_KV="$(strings "$BOOTDIR"/vmlinuz-linux-lts | get_kv)"
-exit_if_strings_err $? "$kv" lts
 readonly LTS_KV
 
 sed -i "s| Linux,||g" "$GRUB_CFG_FNAME"
 sed -i "s|Linux linux-lts|Linux LTS kernel $LTS_KV|g" "$GRUB_CFG_FNAME"
-exit_if_sed_err $? lts
 
 for kv_entry in "${GRUB_LTS_KV[@]}"; do
     sed -i "s|LTS kernel $kv_entry|LTS kernel $LTS_KV|g" "$GRUB_CFG_FNAME"
-    exit_if_sed_err $? lts
 done
 
 sed -i "s|Linux linux|Linux kernel $kv|g" "$GRUB_CFG_FNAME"
-exit_if_sed_err $?
 
 if (( ${#GRUB_KV[@]} )); then
     # extract only the numbers in the installed kernel version
     kv=$(expr "$kv" : "\(${RE_KV_PREFIX//'+'/'\+'}\)")
     for kv_entry in "${GRUB_KV[@]}"; do
         sed -i "s|Linux kernel $kv_entry|Linux kernel $kv|g" "$GRUB_CFG_FNAME"
-        exit_if_sed_err $?
     done
 fi
 
