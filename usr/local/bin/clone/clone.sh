@@ -2176,7 +2176,7 @@ clone() {
     
     local -a grubcfg_files=()
 
-    # iterate over partitions to find grub file(s)
+    # iterate over partitions to find grub cfg file(s)
     for ptn_pair in "${rsync_params[@]}"; do
         dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
         mapfile -t -O ${#grubcfg_files[@]} grubcfg_files < <(find "$dstdir" \
@@ -2243,33 +2243,32 @@ clone() {
         fi
     fi
 
-    local GRUBENV_FILE=/grub/grubenv
-    readonly GRUBENV_FILE
+    files=()
+    # iterate over partitions to find grubenv file(s)
+    for ptn_pair in "${rsync_params[@]}"; do
+        dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
+        mapfile -t -O ${#files[@]} files < <(find "$dstdir" -name grubenv \
+                                                  2>> "$ERRFILE")
+    done
 
     # update grubenv on dst
-    files=($(dst_pathname "$GRUBENV_FILE" "${rsync_params[@]}"))
-    if [[ "${files[*]}" ]]; then
-        local DUUID
+    for file in "${files[@]}"; do
+        for ptn_pair in "${rsync_params[@]}"; do
+            UUID=$(field "$ptn_pair" "$MUUID")
 
-        for file in "${files[@]}"; do
-            DUUID=""
-            UUID=""
-            cmd="sed -i "
-            for ptn_pair in "${rsync_params[@]}"; do
-                # if UUID on src exists on grubenv on dst
-                if grep -q $(field "$ptn_pair" "$MUUID") "$file" 2>> "$ERRFILE"
-                then
-                    cmd+="-e 's|$(field "$ptn_pair" "$MUUID")|"       # src UUID
-                    cmd+="$(field "$ptn_pair" "$((MUUID+MDST))")|g' " # dst UUID
-                    break
-                fi
-            done
+            # get entry if it exists in grubenv file on dst
+            entry=$(grep "$UUID" "$file" 2>> "$ERRFILE")
+            if (( $? == 0 )); then
+                name="${entry%=*}" # name of entry
+                val="${entry#*=}"  # value of entry
 
-            # add sed cmd to replace src with dst UUID in grubenv on dst
-            grep -q $(field "$ptn_pair" "$MUUID") "$file" 2>> "$ERRFILE" &&
-                cmds+=("$cmd'$file'")
+                # replace src with dst UUID
+                val="${val/$UUID/$(field "$ptn_pair" "$((MUUID+MDST))")}"
+                cmds+=("grub-editenv '$file' set '$name'='$val'")
+                break
+            fi
         done
-    fi
+    done
 
     local -a dstdata
     
@@ -2342,10 +2341,10 @@ clone() {
             
             # the following three numbers at the beginning of the command
             # are parsed as follows:
-            # 1: run in the background
+            # 0: don't run in the background
             # 1: redirect stdout
             # 0: don't redirect stderr
-            cmds+=("110 grub-install --target=i386-pc \
+            cmds+=("010 grub-install --target=i386-pc \
                                      --boot-directory='$dstdir' \
                                      --recheck '$dstdrv'")
         fi

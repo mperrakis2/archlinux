@@ -1024,9 +1024,9 @@ exec_cmds() {
         # echo the command for convenience
         printf "\t%s\n" "${cmds[i]}" | tee -a "$CMDFILE"
         
-        # commands that don't redirect stdout or stderr print output
-        (( ! ${#fd[1]} || ! ${#fd[2]} )) && 
-            cecho -e "\tProgress..."
+        # commands that run in the background take a long time to complete and
+        # usually have a progress indicator, e.g. percentage
+        (( ${#fd[0]} )) && cecho -e "\tProgress..."
         
         # run cmd and use 'eval' to take into account spaces between arguments
         # but not within each argument
