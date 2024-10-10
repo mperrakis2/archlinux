@@ -99,27 +99,18 @@ if (( is_esp )); then
 
     cd "$bl_dir"
 
-    def_bl_dir="$bl_dir/BOOT/"
-    if [[ -s "$def_bl_dir" ]]; then
-        # copy grub bootloader to EFI/BOOT
-        full_bl_path="$bl_dir/$distro/$bl_name"
-        res=$(cp "$full_bl_path" "$def_bl_dir")
-        exit_on_error $? "$res"
-
-        # sign grub bootloader in EFI/BOOT used by external device to boot
-        full_bl_path="$def_bl_dir/$bl_name"
-        if ! sbverify --cert "$crtfile" "$full_bl_path" &>/dev/null; then
-            res=$(sbsign --key "$keyfile" --cert "$crtfile" --output "$full_bl_path" \
-                                                                     "$full_bl_path")
-            exit_on_error $? "$res"
-        fi
-    fi
-
     # sign grub bootloader in EFI/<distro> used by internal device to boot
     full_bl_path="$bl_dir/$distro/$bl_name"
     if ! sbverify --cert "$crtfile" "$full_bl_path" &>/dev/null; then
         res=$(sbsign --key "$keyfile" --cert "$crtfile" --output "$full_bl_path" \
                                                                  "$full_bl_path")
+        exit_on_error $? "$res"
+    fi
+
+    def_bl_dir="$bl_dir/BOOT/"
+    if [[ -s "$def_bl_dir" ]]; then
+        # copy grub bootloader to EFI/BOOT
+        res=$(cp "$full_bl_path" "$def_bl_dir")
         exit_on_error $? "$res"
     fi
 fi
