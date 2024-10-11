@@ -939,7 +939,7 @@ umount_ptn() {
         
         # if partition was mounted, unmount it
         if (( is_mnt )); then
-            dirname=$(field "$1" $((field_num-1))) # extract directory name
+            dirname=$(field "$1" "$((field_num-1))") # extract directory name
 
             # create command to unmount partition
             cmds+=("umount --recursive '$dirname'")
@@ -1123,10 +1123,10 @@ dst_pathname() {
     # iterate over partition data to find the file on dst
     for ptn_pair in "${rsync_params[@]}"; do
         # check if dst file exists
-        if [[ -f "$(field "$ptn_pair" $((MDIR+MDST)))/$1" && \
-              -s "$(field "$ptn_pair" $((MDIR+MDST)))/$1" ]]; then
+        if [[ -f "$(field "$ptn_pair" "$((MDIR+MDST))")/$1" && \
+              -s "$(field "$ptn_pair" "$((MDIR+MDST))")/$1" ]]; then
             # get location of dst file
-            pathnames+=("$(field "$ptn_pair" $((MDIR+MDST)))/$1")
+            pathnames+=("$(field "$ptn_pair" "$((MDIR+MDST))")/$1")
         fi
     done
 

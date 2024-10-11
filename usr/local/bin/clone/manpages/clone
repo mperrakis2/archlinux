@@ -23,7 +23,9 @@ The configuration files used by \fIclone.sh\fR are:
 
 \fI/etc/clone/fstypes\fR (contains commands to format a newly created partition for a given filesystem)
 
-The user can create override files under \fI~/.config/clone/\fR but the default filenames have to be used. It is recommended not to modify the default \fIfstypes\fR file or create your own unless you really know what you are doing.
+\fI/etc/clone/grub_modules\fR (contains GRUB 2 modules required to install the GRUB 2 bootloader on destination)
+
+The user can create override files under \fI~/.config/clone/\fR but the default filenames have to be used. It is recommended not to modify the default \fIfstypes\fR and \fIgrub_modules\fR files or create your own unless you really know what you are doing.
 
 \fBclone.sh\fR searches for override files if not invoked under \fI/usr/local/bin/clone/\fR. The location of the override files must be under \fI~/.config/clone/\fR and the default filenames have to be used.
 

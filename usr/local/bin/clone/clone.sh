@@ -22,8 +22,9 @@
 # -----------------------------
 # the following files are under /etc/clone and optionally under ~/.config/clone
 #
-# 'fstypes': maps filesystem names of 'parted' cmd to 'mkfs' cmd
-# 'exclude': files and/or dirs to be excluded from or included in cloning
+# 'fstypes'     : maps filesystem names of 'parted' cmd to 'mkfs' cmd
+# 'exclude'     : files and/or dirs to be excluded from or included in cloning
+# 'grub_modules': modules embedded in grub bootloader (only in /etc/clone)
 #
 # text files created by the script
 # --------------------------------
@@ -70,9 +71,9 @@
 # if swap files exist on dst
 #     update grub default file(s) on dst
 #     update grub cfg file on dst
-# if there is a bios partition on dst, install grub on it
+# if there is a bios and/or efi partition on dst, install grub on it
 # if UEFI boot and dst is internal
-#     add UEFI boot entry, if not already exists
+#     add UEFI boot entry, if not already exist
 # cleanup (unmask hibernation if it was masked, etc)
 
 set -o pipefail
@@ -82,8 +83,9 @@ shopt -s extglob
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
-declare FSTYPES=""
-declare FILTERS=""
+FSTYPES=""
+FILTERS=""
+GRUB_MODULES=/etc/clone/grub_modules
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
@@ -216,9 +218,9 @@ DP="" # dst partiion prefix
 declare -a rsync_params=()
 declare -a g_parted_data=() # drive data retrieved from 'parted' command
 declare -i LOOP=1
-readonly EFI="[Ee][Ff][Ii]"
 
 init() {
+
     local option
 
     # explanation for getopts string below
@@ -1969,12 +1971,11 @@ clone() {
     echo -e "\tCreating list of files created by clone script to exclude from cloning..."
 
     local srcptn
-    local srcdir
 
     # log directory created by the script is excluded from cloning 
     srcptn=$(df -ak --sync --output=source "$(dirname "$LOGDIR")" | tail -1)
-    srcdir=$(lsblk -no MOUNTPOINT "$srcptn")
-    rsync_filters[$srcdir]+="-f \"- $(dirname "${LOGDIR//\"/\\\"}")/\" "
+    srcmnt=$(lsblk -no MOUNTPOINT "$srcptn")
+    rsync_filters[$srcmnt]+="-f \"- $(dirname "${LOGDIR//\"/\\\"}")/\" "
 
     local -a entries
     local entry
@@ -1982,7 +1983,6 @@ clone() {
     local file
     local -a swap_file_cmds=()
     local -i size
-    local dstdir
     local -a files=()
     local FSTAB_FILE="/etc/fstab"
     readonly FSTAB_FILE
@@ -2018,10 +2018,10 @@ clone() {
 
                 # add the swap file only if it exists on the src drive
                 if [[ "$srcptn" =~ $srcdrv$SP ]]; then
-                    srcdir=$(lsblk -no MOUNTPOINT "$srcptn")
+                    srcmnt=$(lsblk -no MOUNTPOINT "$srcptn")
                     
                     # don't clone swap file (add to rsync filters)
-                    rsync_filters[$srcdir]+="-f \"- ${file//\"/\\\"}\" "
+                    rsync_filters[$srcmnt]+="-f \"- ${file//\"/\\\"}\" "
                     
                     if [[ -f "$file" && -r "$file" && -w "$file" && -s "$file" ]]
                     then
@@ -2035,18 +2035,18 @@ clone() {
                         
                         for ptn_pair in "${rsync_params[@]}"; do
                             if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
-                                dstdir=$(field "$ptn_pair" $((MDIR+MDST)))
+                                dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
 
                                 # the following three numbers at the beginning of 
                                 # the command are parsed as follows:
                                 # 1: run in the background
                                 # 1: redirect stdout
                                 # 0: don't redirect stderr
-                                cmd="110 dd if=/dev/zero of='$dstdir'/'$file' "
+                                cmd="110 dd if=/dev/zero of='$dstmnt'/'$file' "
                                 cmd+="bs=1M count=$count status=progress"
                                 swap_file_cmds+=("$cmd")
-                                swap_file_cmds+=("chmod 0600 '$dstdir'/'$file'")
-                                swap_file_cmds+=("mkswap -U clear '$dstdir'/'$file'")
+                                swap_file_cmds+=("chmod 0600 '$dstmnt'/'$file'")
+                                swap_file_cmds+=("mkswap -U clear '$dstmnt'/'$file'")
                                 break
                             fi
                         done
@@ -2063,13 +2063,13 @@ clone() {
 
     # iterate over partitions and create commands for cloning
     for ptn_pair in "${rsync_params[@]}"; do
-        srcdir=$(field "$ptn_pair" "$MDIR") # get src dir
+        srcmnt=$(field "$ptn_pair" "$MDIR") # get src dir
 
-        if [[ "$srcdir" == "/" ]]; then
-            key="$srcdir"
+        if [[ "$srcmnt" == "/" ]]; then
+            key="$srcmnt"
         else
             # remove trailing '/' as it's not part of key of associative array
-            key="${srcdir::-1}"
+            key="${srcmnt::-1}"
 
             # remove src mount directory from filtered directories/files to
             # comply with rsync rules
@@ -2077,10 +2077,10 @@ clone() {
         fi
 
         # get size of dst partition
-        dstdir=$(field "$ptn_pair" $((MDIR+MDST)))
+        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
 
         if (( create_ptn )); then
-            (( size = $(df -ak --block-size=KiB --sync --output=avail "$dstdir" \
+            (( size = $(df -ak --block-size=KiB --sync --output=avail "$dstmnt" \
                         2>> "$ERRFILE" | tail -1 | tr -d [:alpha:]) ))
             (( size *= 1024 )) # convert to bytes
 
@@ -2101,11 +2101,11 @@ clone() {
             if (( size <= used )); then
                 cecho -e "\n${RED}Destination partition"\
                          "$(field "$ptn_pair" "$((MPTN+MDST))")$RED mounted on"\
-                         "$dstdir$RED is too small. It is $YELLOW$size KiB"\
+                         "$dstmnt$RED is too small. It is $YELLOW$size KiB"\
                          "${RED}but should be $YELLOW> $used KiB$RED. Delete"\
                          "${RED}some data in source partition"\
-                         "$YELLOW$(field "$ptn_pair" $((MPTN)))$RED mounted on"\
-                         "$srcdir$RED. Exiting.\n"
+                         "$YELLOW$(field "$ptn_pair" "$((MPTN))")$RED mounted on"\
+                         "$srcmnt$RED. Exiting.\n"
                 return 1
             fi
         fi
@@ -2117,7 +2117,7 @@ clone() {
         # volume, executing a 'ls' command on the mounted volume produces the
         # following message "ls: '<mount_dir>': No data available" yet the
         # contents are displayed correctly.
-        [[ "$(findmnt -no FSTYPE "$srcdir")" =~ hfs ]] && flags="${flags:0:-1}"
+        [[ "$(findmnt -no FSTYPE "$srcmnt")" =~ hfs ]] && flags="${flags:0:-1}"
 
         # create clone command; the following two numbers at the beginning of the 
         # command are parsed as follows:
@@ -2126,7 +2126,7 @@ clone() {
         cmds+=("10 rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
                          -$flags --numeric-ids --inc-recursive --delete-during \
                          --delete-excluded ${rsync_filters["$key"]} \
-                         '$srcdir' '$dstdir'")
+                         '$srcmnt' '$dstmnt'")
     done
 
     # add commands to create swap files, if any, on dst
@@ -2151,22 +2151,22 @@ clone() {
         for ptn_pair in "${rsync_params[@]}"; do
             # add sed command to replace src partition name with dst name
             cmd+="-e \"s|'$(field "$ptn_pair" "$MPTN")'|"
-            cmd+="'$(field "$ptn_pair" $((MPTN+MDST)))'|g\" "
+            cmd+="'$(field "$ptn_pair" "$((MPTN+MDST))")'|g\" "
 
             # add sed command to replace src UUID with dst UUID
             cmd+="-e 's|$(field "$ptn_pair" "$MUUID")|"
-            cmd+="$(field "$ptn_pair" $((MUUID+MDST)))|g' "
+            cmd+="$(field "$ptn_pair" "$((MUUID+MDST))")|g' "
         done
 
         for swap_ptn_UUIDs in "${swap_ptns_UUIDs[@]}"; do
             # replace src partition data on dst fstab file for swap partition
             # add sed command to replace src partition name with dst name
             cmd+="-e 's|$(field "$swap_ptn_UUIDs" "$SPTN")|"
-            cmd+="$(field "$swap_ptn_UUIDs" $((SPTN+SDST)))|g' "
+            cmd+="$(field "$swap_ptn_UUIDs" "$((SPTN+SDST))")|g' "
 
             # add sed command to replace src UUID with dst UUID
             cmd+="-e 's|$(field "$swap_ptn_UUIDs" "$SUUID")|"
-            cmd+="$(field "$swap_ptn_UUIDs" $((SUUID+SDST)))|g' "
+            cmd+="$(field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
         done
 
         for file in "${files[@]}"; do # create cmd(s) for fstab file(s)
@@ -2178,8 +2178,8 @@ clone() {
 
     # iterate over partitions to find grub cfg file(s)
     for ptn_pair in "${rsync_params[@]}"; do
-        dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
-        mapfile -t -O ${#grubcfg_files[@]} grubcfg_files < <(find "$dstdir" \
+        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+        mapfile -t -O ${#grubcfg_files[@]} grubcfg_files < <(find "$dstmnt" \
                                                                   -name "grub*.cfg" \
                                                                   2>> "$ERRFILE")
     done
@@ -2200,7 +2200,7 @@ clone() {
                 if grep -q "$UUID" "$file" 2>> "$ERRFILE"; then
                     # add sed command to replace src UUID with dst UUID
                     [[ ! "$cmd" =~ "$UUID" ]] &&
-                        cmd+="-e 's|$UUID|$(field "$ptn_pair" $((MUUID+MDST)))|g' "
+                        cmd+="-e 's|$UUID|$(field "$ptn_pair" "$((MUUID+MDST))")|g' "
                     [[ ! "${files[*]}" =~ "$file" ]] && files+=("$file")
                 fi
             done
@@ -2211,7 +2211,7 @@ clone() {
         if (( ${#swap_ptns_UUIDs[@]} )); then
             for swap_ptn_UUIDs in "${swap_ptns_UUIDs[@]}"; do
                 buf+="-e 's|$(field "$swap_ptn_UUIDs" "$SUUID")|"
-                buf+="$(field "$swap_ptn_UUIDs" $((SUUID+SDST)))|g' "
+                buf+="$(field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
             done
 
             cmd+="$buf"
@@ -2243,11 +2243,11 @@ clone() {
         fi
     fi
 
-    files=()
     # iterate over partitions to find grubenv file(s)
+    files=()
     for ptn_pair in "${rsync_params[@]}"; do
-        dstdir=$(field "$ptn_pair" "$((MDIR+MDST))")
-        mapfile -t -O ${#files[@]} files < <(find "$dstdir" -name grubenv \
+        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+        mapfile -t -O ${#files[@]} files < <(find "$dstmnt" -name grubenv \
                                                   2>> "$ERRFILE")
     done
 
@@ -2288,19 +2288,25 @@ clone() {
     readonly STR_UUID RE_SEARCH_UUID STR_OFFSET RE_SEARCH_OFFSET
 
     local dstptn
+    local EFI="[Ee][Ff][Ii]"
+    local BOOT="[Bb][Oo][Oo][Tt]"
+    local EFI_BOOT_DIR="$EFI/$BOOT/"
+    local DEF_BL="$EFI_BOOT_DIR/$BOOT*.$EFI" # BL: bootloader
     local SHIM="[Ss][Hh][Ii][Mm]"
-    readonly SHIM
+    readonly EFI BOOT EFI_BOOT_DIR DEF_BL SHIM
+    local arch
     local distro
+    local crt
 
     for ptn_pair in "${rsync_params[@]}"; do
-        dstdir=$(field "$ptn_pair" $((MDIR+MDST)))
-        mapfile -t entries < <(grep swap "$dstdir$FSTAB_FILE" 2>> "$ERRFILE")
+        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+        mapfile -t entries < <(grep swap "$dstmnt$FSTAB_FILE" 2>> "$ERRFILE")
 
         for entry in "${entries[@]}"; do
             # if swap entry is a file and not a partition
             if [[ "${entry::1}" == "/" ]]; then
                 file="${entry%%+( *)}"  # get swap filename
-                file="$dstdir${file:1}" # add dst dir and remove '/'
+                file="$dstmnt${file:1}" # add dst dir and remove '/'
 
                 # get swap file UUID and offset
                 swap_file_UUID=$(findmnt -no UUID -T "$file")
@@ -2316,7 +2322,7 @@ clone() {
                 readonly REPLACE_UUID REPLACE_OFFSET
                 
                 # replace UUID and offset with that of dst in grub cfg default file
-                file="$dstdir$GRUBDEF_FILE"
+                file="$dstmnt$GRUBDEF_FILE"
                 if [[ -f "$file" && -r "$file" && -s "$file" ]]; then
                     cmds+=("sed -i 's|$RE_SEARCH_UUID|$REPLACE_UUID|g' '$file'")
                     cmds+=("sed -i 's|$RE_SEARCH_OFFSET|$REPLACE_OFFSET|g' '$file'")
@@ -2330,7 +2336,7 @@ clone() {
             fi
         done
 
-        dstptn=$(field "$ptn_pair" $((MPTN+MDST)))
+        dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
 
         # if boot partition and bios flag is set, install grub on bios
         # partition
@@ -2345,19 +2351,54 @@ clone() {
             # 1: redirect stdout
             # 0: don't redirect stderr
             cmds+=("010 grub-install --target=i386-pc \
-                                     --boot-directory='$dstdir' \
+                                     --boot-directory='$dstmnt' \
                                      --recheck '$dstdrv'")
         fi
         
         # if esp partition and UEFI boot is enabled, install UEFI boot
         # entries if required
         if [[ "$dstptn" == "$dstdrv$DP${esp_ptn_nums[1]}" ]]; then
+            # add command to install grub as removable in order not to delete
+            # any efibootmgr entries
+            cmds+=("grub-install --modules='$GRUB_MODULES' --target=x86_64-efi \
+                                 --sbat=/usr/share/grub/sbat.csv --removable \
+                                 --recheck --efi-directory='$dstmnt' '$dstdrv'")
+
+            # add cmd to rename the bootloader
+            buf=$(find "$dstmnt"/$DEF_BL 2>> "$ERRFILE")
+            buf="${buf/\/*\/}"     # get filename
+            buf="${buf,,}"         # convert to lowercase
+            buf="${buf/boot/grub}" # replace boot with grub
+            arch=$(expr "$buf" : "^grub\(.*[0-9]\+\)") # get architecture
+
+            cmds+=("mv '$dstmnt'/$DEF_BL '$dstmnt'/$EFI_BOOT_DIR/'$buf'")
+
+            # add cmd to copy the default bootloader to distro dir
+            distro=$(uname -n)
+            cmds+=("cp '$dstmnt'/$EFI_BOOT_DIR/'$buf' '$dstmnt'/$EFI/'$distro'/")
+
+            # add cmd to copy shim 
+            cmds+=("cp /usr/share/shim-signed/$SHIM$arch* '$dstmnt'/EFI/BOOT/BOOT${arch^^}.EFI")
+
+            # add cmd to switch to dir with certificate files
+            cmds+=("cd '$dstmnt'/$EFI")
+
+            # add cmd to sign default bootloader
+            key=$(find "$dstmnt"/$EFI/*.key 2>> "$ERRFILE") # get MOK key file
+            crt=$(find "$dstmnt"/$EFI/*.crt 2>> "$ERRFILE") # get MOK crt file
+            cmds+=("sbsign --key '$key' --cert '$crt' --output BOOT/grub$arch.efi BOOT/grub$arch.efi")
+
+            # add cmd to sign distro bootloader
+            cmds+=("sbsign --key '$key' --cert '$crt' --output '$distro'/grub$arch.efi '$distro'/grub$arch.efi")
+
+            cmds+=("cd -") # add cmd to return to previous dir else umount fails
+            
             buf=$(efibootmgr 2>> "$ERRFILE")
             ((err=$?))
             if (( ! err && ! removable )); then
                 echo
                 # get dst boot partition UUID
-                UUID=$(field "$ptn_pair" $((MUUID+MDST)))
+                UUID=$(field "$ptn_pair" "$((MUUID+MDST))")
 
                 # get dst boot partition UUID entry
                 UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
@@ -2565,7 +2606,7 @@ result() {
 
 declare -i err=0
 
-source "$SCRIPTDIR"/base_functions.sh && init $@
+source "$SCRIPTDIR"/base_functions.sh && source "$GRUB_MODULES" && init $@
 ((err=$?))
 readonly FSTYPES FILTERS
 
