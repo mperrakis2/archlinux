@@ -53,28 +53,10 @@ declare -i is_esp=$(( ! $? ))
 
 if (( is_esp )); then
     # modules to embed in grub bootloader 
-    grub_modules="all_video backtrace bitmap bitmap_scale bli blocklist boot "\
-"boottime btrfs bufio cacheinfo cat chain cmdline_cat_test cmp cmp_test "\
-"configfile cpio cpuid crc64 cryptodisk date datehook datetime disk diskfilter "\
-"echo efifwsetup efinet efitextmode efi_gop efi_uga elf eval exfat ext2 fat "\
-"file fixvideo font fshelp functional_test gcry_arcfour gcry_blowfish "\
-"gcry_camellia gcry_cast5 gcry_crc gcry_des gcry_dsa gcry_idea gcry_md4 "\
-"gcry_md5 gcry_rfc2268 gcry_rijndael gcry_rmd160 gcry_rsa gcry_seed "\
-"gcry_serpent gcry_sha1 gcry_sha256 gcry_sha512 gcry_tiger gcry_twofish "\
-"gcry_whirlpool gettext gfxmenu gfxterm gfxterm_background gfxterm_menu "\
-"gptsync gptsync gzio halt hashsum hdparm hello hello help hexdump hfsplus "\
-"http iorw iso9660 jpeg keystatus linux loadbios loadenv loopback ls lsacpi "\
-"lsefi lsefimmap lsefisystab lsmmap lspci lssal luks luks2 lvm mdraid1x "\
-"mdraid09 memdisk memrw minicmd mmap msdospart multiboot multiboot2 normal "\
-"ntfs ntfscomp parttool part_apple part_gpt part_msdos password "\
-"password_pbkdf2 play png probe progress raid5rec raid6rec read reboot regexp "\
-"search search_fs_file search_fs_uuid search_label signature_test sleep "\
-"sleep_test smbios squash4 tar terminal terminfo test testload testspeed tftp "\
-"time tpm tr true usb usbtest video videoinfo videotest videotest_checksum "\
-"video_bochs video_cirrus video_colors video_fb xfs xzio zfs zfscrypt zfsinfo"
+    source /etc/clone/grub_modules
 
     # install grub to ESP/BOOT
-    res=$(grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv \
+    res=$(grub-install --modules="$GRUB_MODULES" --sbat=/usr/share/grub/sbat.csv \
                        --efi-directory="$bootdir" --removable --recheck \
                        --target=x86_64-efi)
     exit_on_error $? "$res"
