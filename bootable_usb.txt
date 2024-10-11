@@ -31,7 +31,9 @@ https://wiki.archlinux.org/title/GRUB#Shim-lock
 1. a. grub_modules="all_video backtrace bitmap bitmap_scale bli blocklist boot boottime btrfs bufio cacheinfo cat chain cmdline_cat_test cmp cmp_test configfile cpio cpuid crc64 cryptodisk date datehook datetime disk diskfilter echo efifwsetup efinet efitextmode efi_gop efi_uga elf eval exfat ext2 fat file fixvideo font fshelp functional_test gcry_arcfour gcry_blowfish gcry_camellia gcry_cast5 gcry_crc gcry_des gcry_dsa gcry_idea gcry_md4 gcry_md5 gcry_rfc2268 gcry_rijndael gcry_rmd160 gcry_rsa gcry_seed gcry_serpent gcry_sha1 gcry_sha256 gcry_sha512 gcry_tiger gcry_twofish gcry_whirlpool gettext gfxmenu gfxterm gfxterm_background gfxterm_menu gptsync gptsync gzio halt hashsum hdparm hello hello help hexdump hfsplus http iorw iso9660 jpeg keystatus linux loadbios loadenv loopback ls lsacpi lsefi lsefimmap lsefisystab lsmmap lspci lssal luks luks2 lvm mdraid1x mdraid09 memdisk memrw minicmd mmap msdospart multiboot multiboot2 normal ntfs ntfscomp parttool part_apple part_gpt part_msdos password password_pbkdf2 play png probe progress raid5rec raid6rec read reboot regexp search search_fs_file search_fs_uuid search_label signature_test sleep sleep_test smbios squash4 tar terminal terminfo test testload testspeed tftp time tpm tr true usb usbtest video videoinfo videotest videotest_checksum video_bochs video_cirrus video_colors video_fb xfs xzio zfs zfscrypt zfsinfo"
 
    # grub-install
-   b. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi
+   b. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi --removable
+   c. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi
+   d. sudo mv "$(bootctl -p)"/EFI/BOOT/BOOTX64.EFI "$(bootctl -p)"/EFI/BOOT/grubx64.efi
 
 # check https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
 
@@ -47,8 +49,8 @@ https://wiki.archlinux.org/title/GRUB#Shim-lock
                      -> sudo openssl x509 -outform DER -in MOK.crt -out MOK.cer
    b. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/vmlinuz-linux "$(bootctl -p)"/vmlinuz-linux
    c. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/vmlinuz-linux-lts "$(bootctl -p)"/vmlinuz-linux-lts
+   d. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/EFI/BOOT/grubx64.efi "$(bootctl -p)"/EFI/BOOT/grubx64.efi
    d. sudo sbsign --key MOK.key --cert MOK.crt --output "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi
-   e. sudo cp "$(bootctl -p)"/EFI/"$(uname -n)"/grubx64.efi "$(bootctl -p)"/EFI/BOOT/
    Execute once only -> Create the following file and make it executable: /etc/initcpio/post/kernel-sbsign (see link above for file contents)
 
 5. a. Reboot and enable Secure Boot. If shim does not find the certificate grubx64.efi is signed with in MokList it will launch MokManager (mmx64.efi).
