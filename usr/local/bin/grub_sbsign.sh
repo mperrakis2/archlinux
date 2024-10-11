@@ -51,10 +51,6 @@ fi
 parted /dev/"${ptn_data[0]}" print | grep -q esp
 declare -i is_esp=$(( ! $? ))
 
-arch=$(uname -m)                # get architecture
-arch="${arch//+([[:digit:]])_}" # remove chars not part of bl filename
-distro="$(uname -n)"
-
 if (( is_esp )); then
     # modules to embed in grub bootloader 
     grub_modules="all_video backtrace bitmap bitmap_scale bli blocklist boot "\
@@ -83,17 +79,16 @@ if (( is_esp )); then
                        --target=x86_64-efi)
     exit_on_error $? "$res"
 
-    # install grub to ESP/<distro>
-    res=$(grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv \
-                       --efi-directory="$bootdir" --recheck --target=x86_64-efi)
-    exit_on_error $? "$res"
-
     bl_dir="$bootdir/EFI/"     # bl -> bootloader
     def_bl_dir="$bl_dir"/BOOT/ # bootloader dir for external drives
+    arch=$(uname -m)                # get architecture
+    arch="${arch//+([[:digit:]])_}" # remove chars not part of bl filename
     bl_path="$def_bl_dir"/BOOT"${arch^^}".EFI
     bl_name="grub$arch.efi"
+    distro="$(uname -n)"
 
-    mv "$bl_path" "$def_bl_dir/$bl_name" # rename bootloader
+    mv "$bl_path" "$def_bl_dir/$bl_name"         # rename bootloader
+    cp "$def_bl_dir/$bl_name" "$bl_dir/$distro"/ # copy bootloader
 
     # copy shim to default bootloader dir so that external drives can boot
     cp /usr/share/shim-signed/shim"$arch".efi "$bl_path"
@@ -119,14 +114,6 @@ if (( is_esp )); then
         exit_on_error $? "$res"
     fi
 
-fi
-
-# install efi boot entry even if not secure boot
-if efibootmgr &> /dev/null; then
-    # create new UEFI boot entry for shim
-    res=$(efibootmgr --unicode --disk /dev/"${ptn_data[0]}" --part "${ptn_data[1]}" \
-                     --create --label "Shim" --loader /EFI/"$distro"/shim"$arch".efi)
-    exit_on_error $? "$res"
 fi
 
 # update grub config file
