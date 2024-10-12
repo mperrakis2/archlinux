@@ -228,17 +228,17 @@ init() {
     # "h" : display help message
     #
     # a colon after an option specifies a required arg
-    # "e:": full path of exclude file
-    # "f:": full path of fstypes file
+    # "e:": path of exclude file
+    # "f:": path of fstypes file
     while getopts ":he:f:" option; do
         case ${option} in
         h|:)  cat << usage_msg
 command line options
 --------------------
--e <exclude_file> : full path to the 'exclude' file that contains files/dirs to
+-e <exclude_file> : path to the 'exclude' file that contains files/dirs to be
                     be excluded from cloning
--f <fstypes_file> : full path to the 'fstypes' file that contains the commands
-                    to format various filesystems
+-f <fstypes_file> : path to the 'fstypes' file that contains the commands to
+                    format various filesystems
 
 if any of the above are not specified the defaults are searched in the following
 order:
@@ -263,9 +263,9 @@ usage_msg
 
     # if no cmd line options provided, get default cfg file names
     [[ -z "$FSTYPES" ]] &&
-        FSTYPES=$(get_cfg_fname fstypes) # get full path of fstypes file
+        FSTYPES=$(get_cfg_fname fstypes) # get path of fstypes file
     [[ -z "$FILTERS" ]] &&
-        FILTERS=$(get_cfg_fname exclude) # get full path of exclude file
+        FILTERS=$(get_cfg_fname exclude) # get path of exclude file
 
     local signals
     local D="[0-9]" # digit
