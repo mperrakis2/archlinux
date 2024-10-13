@@ -54,13 +54,14 @@
 # source in base functions
 # init (get cfg file names & trap cancellation signals)
 # display usage and get user input
-# initialize (create lock file, etc)
+# setup (create lock file, etc)
 # get partition data for src & dst
 # exit if src has no partitions or at least one partition does not have a UUID
 # exit if dst does not have enough drive space
+# read cfg files into memory
 # if partition mismatch between src & dst
 #     remove partitions on dst, if any
-#     create src partitions on dst and format them
+#     create partitions on dst and format them
 # mask hibernation if it is unmasked and trap signal USR1
 # format swap partitions on dst, if any
 # clone using rsync
@@ -1538,8 +1539,9 @@ read_cfg_in_mem() {
     local -i err
 
     files_exist
-    ((err=$?))
+    ((err=$?)); ((err)) && return $err
 
+    source "$GRUB_MODULES_FILE"
     return $err
 }
 
@@ -2650,7 +2652,7 @@ result() {
 
 declare -i err=0
 
-source "$SCRIPTDIR"/base_functions.sh && init $@ && source "$GRUB_MODULES_FILE"
+source "$SCRIPTDIR"/base_functions.sh && init $@
 ((err=$?))
 readonly FSTYPES_FILE FILTERS_FILE
 
