@@ -1,4 +1,5 @@
-# the following grub modules are needed for secure boot
+# the following grub modules are needed for secure boot based on
+# https://wiki.archlinux.org/title/GRUB#Shim-lock
 
 readonly GRUB_MODULES="all_video boot btrfs cat chain configfile echo efifwsetup "\
 "efinet ext2 fat font gettext gfxmenu gfxterm gfxterm_background gzio halt "\

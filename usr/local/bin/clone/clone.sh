@@ -25,6 +25,7 @@
 # 'fstypes'     : maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude'     : files and/or dirs to be excluded from or included in cloning
 # 'grub_modules': modules embedded in grub bootloader (only in /etc/clone/)
+# 'grub_arch'   : maps output of 'uname -m' to arch used by 'grub-install'
 #
 # text files created by the script
 # --------------------------------
@@ -83,9 +84,10 @@ shopt -s extglob
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
-FSTYPES=""
-FILTERS=""
-GRUB_MODULES=/etc/clone/grub_modules
+FSTYPES_FILE=""
+FILTERS_FILE=""
+GRUB_MODULES_FILE=/etc/clone/grub_modules
+GRUB_ARCH=/etc/clone/grub_arch
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
@@ -196,9 +198,9 @@ declare -i clone_size=0
 declare -a src_ptn_data=()
 srcdrv=""
 dstdrv=""
-declare -ia esp_ptn_nums=(0 0)
+declare -iA esp_ptn_nums=()
 declare -ia boot_ptn_nums=(0 0)
-declare -ia bios_ptn_nums=(0 0)
+declare -i bios_ptn=0
 
 declare -i start=0
 declare START_DATE=""
@@ -220,7 +222,6 @@ declare -a g_parted_data=() # drive data retrieved from 'parted' command
 declare -i LOOP=1
 
 init() {
-
     local option
 
     # explanation for getopts string below
@@ -251,19 +252,24 @@ usage_msg
             exit 0
             ;;
         e)
-            FILTERS="$OPTARG"
+            FILTERS_FILE="$OPTARG"
             ;;
         f)
-            FSTYPES="$OPTARG"
+            FSTYPES_FILE="$OPTARG"
             ;;
         esac
     done
 
     # if no cmd line options provided, get default cfg file names
-    [[ -z "$FSTYPES" ]] &&
-        FSTYPES=$(get_cfg_fname fstypes) # get pathname of fstypes file
-    [[ -z "$FILTERS" ]] &&
-        FILTERS=$(get_cfg_fname exclude) # get pathname of exclude file
+    [[ -z "$FSTYPES_FILE" ]] &&
+        FSTYPES_FILE=$(get_cfg_fname fstypes) # get pathname of fstypes file
+    [[ -z "$FILTERS_FILE" ]] &&
+        FILTERS_FILE=$(get_cfg_fname exclude) # get pathname of exclude file
+
+    local -i err
+    
+    files_exist # check that text files needed by script exist
+    ((err=$?)); ((err)) && return $err
 
     local signals
     local D="[0-9]" # digit
@@ -281,15 +287,12 @@ usage_msg
 usage() {
     clear
 
-    # return if text files needed by script don't exist
-    if ! files_exist LOOP; then return 1; fi
-    
     # read file that contains files and/or directories to be excluded from or
     # included in cloning and save them
     local -i num
     local -a filters=()
 
-    exec {num}< "$FILTERS" # open filters file
+    exec {num}< "$FILTERS_FILE" # open filters file
     while read -r -u $num; do
         # remove leading & trailing spaces and tabs
         REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
@@ -315,7 +318,7 @@ DESCRIPTION
 This script will clone one drive to another. Source and destination drives need
 not be the same size as long as all source data fits on destination. Also, the
 files and/or directories contained in the following file
-$YELLOW'$FILTERS'$OFF
+$YELLOW'$FILTERS_FILE'$OFF
 will ${YELLOW}NOT$OFF be cloned. Here they are:
 
 usage_msg
@@ -384,9 +387,6 @@ user_input() {
     read -r -a OPTIONS # read cloning options into array
 
     START_DATE=$(date) # timestamp will be used to calculate the clone run time
-
-    # return if text files needed by script don't exist
-    if ! files_exist LOOP; then return 1; fi
 
     local -a parted_data # drive data retrieved from 'parted' command
 
@@ -675,9 +675,9 @@ populate_arrays() {
 
     partitions=()
     ((no_resize=0))
-    esp_ptn_nums=(0 0)
+    esp_ptn_nums=()
     boot_ptn_nums=(0 0)
-    bios_ptn_nums=(0 0)
+    ((bios_ptn=0))
     local -i ptn_num
     local -i ptn_cnt
     local -i startb
@@ -750,15 +750,13 @@ populate_arrays() {
                     # save partition number of ESP partition and add its size
                     if [[ "$flags" =~ esp ]]; then
                         ((no_resize+=size))
-                        ((esp_ptn_nums[0]=ptn_num))
-                        ((esp_ptn_nums[1]=ptn_cnt))
+                        ((esp_ptn_nums[$ptn_num]=ptn_cnt))
                     fi
 
                     # save partition number of bios grub partition and add its size
                     if [[ "$flags" =~ bios ]]; then
                         ((no_resize+=size))
-                        ((bios_ptn_nums[0]=ptn_num))
-                        ((bios_ptn_nums[1]=ptn_cnt))
+                        ((bios_ptn=ptn_num))
                     fi
 
                     # save partition number of boot partition
@@ -981,9 +979,9 @@ calc_drvspace() {
     readonly CONVERSION_UNIT
 
     # add src bios partition
-    if (( bios_ptn_nums[0] )); then
-        (( used = $(lsblk -nb -o SIZE "$srcdrv$SP${bios_ptn_nums[0]}") / CONVERSION_UNIT ))
-        src_ptn_data+=("$srcdrv$SP${bios_ptn_nums[0]} $used 0%")
+    if (( bios_ptn )); then
+        (( used = $(lsblk -nb -o SIZE "$srcdrv$SP$bios_ptn") / CONVERSION_UNIT ))
+        src_ptn_data+=("$srcdrv$SP$bios_ptn $used 0%")
     fi
 
     local i
@@ -998,9 +996,13 @@ calc_drvspace() {
         src_ptn_data[i]=$(echo "${src_ptn_data[i]}" | xargs)
         source=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
         (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') * CONVERSION_UNIT ))
-        if [[ "$source" == "$srcdrv$SP${esp_ptn_nums[0]}" ]]; then
-            pcent=0
-        else
+        for ptn_num in "${!esp_ptn_nums[@]}"; do
+            if [[ "$source" == "$srcdrv$SP$ptn_num" ]]; then
+                pcent=0
+                break
+            fi
+        done
+        if [[ ! "$source" == "$srcdrv$SP$ptn_num" ]]; then
             pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
             pcent="${pcent/'%'}"
         fi
@@ -1038,15 +1040,15 @@ calc_drvspace() {
     local -A filters=() # key: rsync filter
                         # val: indices of array that stores rsync filter contents
     local -A user_filters=() # key: rsync filter
-                             # val: user defined filter in $FILTERS file
+                             # val: user defined filter in $FILTERS_FILE file
     local -i match
     local -a entries=() # files matching all rsync filters
     local buf
     local -a abuf
-    local MSG="Check the '$FILTERS' file"
+    local MSG="Check the '$FILTERS_FILE' file"
     readonly MSG
     
-    exec {fd}< "$FILTERS" # open filters file
+    exec {fd}< "$FILTERS_FILE" # open filters file
     while read -r -u $fd; do
         # remove leading & trailing spaces and tabs
         REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
@@ -1077,7 +1079,7 @@ calc_drvspace() {
         buf="$CYAN'${paths[*]}'$YELLOW has wrong syntax and will be omitted. "
         buf+="$MSG for correct syntax."
 
-        # For valid entries see '$FILTERS' file.
+        # For valid entries see '$FILTERS_FILE' file.
         case ${#paths[@]} in
             1) [[ ! "${paths[*]}" =~ ^[-+]/.+$ ]] && 
                    { cechot "$buf"; continue; }
@@ -1531,6 +1533,16 @@ calc_drvspace() {
     done
 }
 
+# return: 0 on success else the error code of the command that failed
+read_cfg_in_mem() {
+    local -i err
+
+    files_exist
+    ((err=$?))
+
+    return $err
+}
+
 # if necessary remove & create new partitions on dst
 # return: 0 on success else the error code of the command that failed
 create_partitions() {            
@@ -1562,6 +1574,7 @@ create_partitions() {
     SRC_DRV_SIZE=$(field "${drv_data[${OPTIONS[0]}]}" "$DSIZE")
     readonly SRC_DRV_SIZE
     local ptn
+    local -i ptn_num
     local -i src_ptn_data_size=0
     local -i resize_for_data=0
     local -i drv_num
@@ -1577,8 +1590,13 @@ create_partitions() {
         # data size
         for i in "${!src_ptn_data[@]}"; do
             ptn=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
-            [[ "$ptn" == "$srcdrv$SP${esp_ptn_nums[0]}" || \
-               "$ptn" == "$srcdrv$SP${bios_ptn_nums[0]}" ]] &&
+            for ptn_num in "${!esp_ptn_nums[@]}"; do
+                if [[ "$ptn" == "$srcdrv$SP$ptn_num" ]]; then
+                    (( clone_size -= $(field "${src_ptn_data[i]}" "$USED" ' ') ))
+                    break
+                fi
+            done
+            [[ "$ptn" == "$srcdrv$SP$bios_ptn" ]] &&
                 (( clone_size -= $(field "${src_ptn_data[i]}" "$USED" ' ') ))
         done
 
@@ -1625,7 +1643,6 @@ create_partitions() {
 
     local flag
     local -i end
-    local -i ptn_num
     local pct
     local cmd
     local -i j=0
@@ -1744,8 +1761,8 @@ create_partitions() {
             done
 
             # create cmds to format the partition
-            exec {fd}< "$FSTYPES" # open FSTYPES file
-            # find filesystem command that applies to partition fstype
+            # get filesystem command that applies to partition fstype
+            exec {fd}< "$FSTYPES_FILE" # open file
             while read -r -u $fd; do
                 # remove leading and trailing whitespace
                 REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
@@ -1759,7 +1776,7 @@ create_partitions() {
                     break
                 fi
             done
-            exec {fd}<&- # close the FSTYPES file
+            exec {fd}<&- # close file
 
             # compare src and dst partition data and if different set flag
             (( ! create_ptn )) &&
@@ -2085,8 +2102,11 @@ clone() {
             # get size of src partition data
             for i in "${!src_ptn_data[@]}"; do
                 srcptn=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
-                [[ "$srcptn" == "$srcdrv$SP${esp_ptn_nums[0]}" || \
-                   "$srcptn" == "$srcdrv$SP${bios_ptn_nums[0]}" ]] &&
+                for ptn_num in "${!esp_ptn_nums[@]}"; do
+                    [[ "$srcptn" == "$srcdrv$SP$ptn_num" ]] && break
+                done
+                [[ "$srcptn" == "$srcdrv$SP$ptn_num" || \
+                   "$srcptn" == "$srcdrv$SP$bios_ptn" ]] &&
                     continue
 
                 if [[ "$srcptn" == $(field "$ptn_pair" "$MPTN") ]]; then
@@ -2296,6 +2316,22 @@ clone() {
     local distro
     local crt
 
+    # get system architecture
+    exec {fd}< "$GRUB_ARCH" # open file
+    while read -r -u $fd; do
+        # remove leading and trailing whitespace
+        REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
+
+        # ignore empty lines & comments
+        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
+        
+        if [[ $(field "$REPLY" 1) =~ $(uname -m) ]]; then
+            REPLY=$(field "$REPLY" 2)
+            break
+        fi
+    done
+    exec {fd}<&- # close file
+
     for ptn_pair in "${rsync_params[@]}"; do
         dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
         mapfile -t entries < <(grep swap "$dstmnt$FSTAB_FILE" 2>> "$ERRFILE")
@@ -2355,89 +2391,99 @@ clone() {
         
         # if esp partition and UEFI boot is enabled, install UEFI boot
         # entries if required
-        if [[ "$dstptn" == "$dstdrv$DP${esp_ptn_nums[1]}" ]]; then
-            # add command to install grub as removable in order not to delete
-            # any efibootmgr entries
-            cmds+=("grub-install --modules='$GRUB_MODULES' --target=x86_64-efi \
-                                 --sbat=/usr/share/grub/sbat.csv --removable \
-                                 --recheck --efi-directory='$dstmnt' '$dstdrv'")
+        for ptn_num in "${esp_ptn_nums[@]}"; do
+            if [[ "$dstptn" == "$dstdrv$DP$ptn_num" ]]; then
+                # add command to install grub as removable in order not to delete
+                # any efibootmgr entries
+                cmds+=("grub-install --modules='$GRUB_MODULES' --target='$REPLY' \
+                                     --sbat=/usr/share/grub/sbat.csv --removable \
+                                     --recheck --efi-directory='$dstmnt' \
+                                     --boot-directory='$dstmnt' \
+                                     '$dstdrv'")
 
-            # add cmd to rename the bootloader
-            buf=$(find "$dstmnt"/$DEF_BL 2>> "$ERRFILE")
-            buf="${buf/\/*\/}"     # get filename
-            buf="${buf,,}"         # convert to lowercase
-            buf="${buf/boot/grub}" # replace boot with grub
-            arch=$(expr "$buf" : "^grub\(.*[0-9]\+\)") # get architecture
+                # add cmd to rename the bootloader
+                buf=$(find "$dstmnt"/$DEF_BL 2>> "$ERRFILE")
+                buf="${buf/\/*\/}"     # get filename
+                buf="${buf,,}"         # convert to lowercase
+                buf="${buf/boot/grub}" # replace boot with grub
+                arch=$(expr "$buf" : "^grub\(.*[0-9]\+\)") # get architecture
 
-            cmds+=("mv '$dstmnt'/$DEF_BL '$dstmnt'/$EFI_BOOT_DIR/'$buf'")
+                cmds+=("mv '$dstmnt'/$DEF_BL '$dstmnt'/$EFI_BOOT_DIR/'$buf'")
 
-            # add cmd to copy the default bootloader to distro dir
-            distro=$(uname -n)
-            cmds+=("cp '$dstmnt'/$EFI_BOOT_DIR/'$buf' '$dstmnt'/$EFI/'$distro'/")
+                # add cmd to copy the default bootloader to distro dir
+                distro=$(uname -n)
+                cmds+=("cp '$dstmnt'/$EFI_BOOT_DIR/'$buf' '$dstmnt'/$EFI/'$distro'/")
 
-            # add cmd to copy shim 
-            cmds+=("cp /usr/share/shim-signed/$SHIM$arch* '$dstmnt'/EFI/BOOT/BOOT${arch^^}.EFI")
+                # add cmd to copy shim 
+                cmds+=("cp /usr/share/shim-signed/$SHIM$arch* \
+                           '$dstmnt'/EFI/BOOT/BOOT${arch^^}.EFI")
 
-            # add cmd to switch to dir with certificate files
-            cmds+=("cd '$dstmnt'/$EFI")
+                # add cmd to switch to dir with certificate files
+                cmds+=("cd '$dstmnt'/$EFI")
 
-            # add cmd to sign default bootloader
-            key=$(find "$dstmnt"/$EFI/*.key 2>> "$ERRFILE") # get MOK key file
-            crt=$(find "$dstmnt"/$EFI/*.crt 2>> "$ERRFILE") # get MOK crt file
-            cmds+=("sbsign --key '$key' --cert '$crt' --output BOOT/grub$arch.efi BOOT/grub$arch.efi")
+                # add cmd to sign default bootloader
+                key=$(find "$dstmnt"/$EFI/*.key 2>> "$ERRFILE") # get MOK key file
+                crt=$(find "$dstmnt"/$EFI/*.crt 2>> "$ERRFILE") # get MOK crt file
+                cmds+=("sbsign --key '$key' --cert '$crt' \
+                               --output BOOT/grub$arch.efi BOOT/grub$arch.efi")
 
-            # add cmd to sign distro bootloader
-            cmds+=("sbsign --key '$key' --cert '$crt' --output '$distro'/grub$arch.efi '$distro'/grub$arch.efi")
+                # add cmd to sign distro bootloader
+                cmds+=("sbsign --key '$key' --cert '$crt' \
+                               --output '$distro'/grub$arch.efi \
+                                        '$distro'/grub$arch.efi")
 
-            cmds+=("cd -") # add cmd to return to previous dir else umount fails
-            
-            buf=$(efibootmgr 2>> "$ERRFILE")
-            ((err=$?))
-            if (( ! err && ! removable )); then
-                echo
-                # get dst boot partition UUID
-                UUID=$(field "$ptn_pair" "$((MUUID+MDST))")
-
-                # get dst boot partition UUID entry
-                UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
-                UUID="${UUID//+(* )}" # extract partition UUID
+                # add cmd to return to previous dir else umount fails
+                cmds+=("cd -")
                 
-                # get boot entries (they contain 'EFI' string)
-                mapfile -t entries < <(find "$BOOTDIR"/$EFI -name "*.$EFI")
+                buf=$(efibootmgr 2>> "$ERRFILE")
+                ((err=$?))
+                if (( ! err && ! removable )); then
+                    echo
+                    # get dst boot partition UUID
+                    UUID=$(field "$ptn_pair" "$((MUUID+MDST))")
 
-                for entry in "${entries[@]}"; do
-                    entry="${entry#"$BOOTDIR"}" # remove bootdir
+                    # get dst boot partition UUID entry
+                    UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
+                    UUID="${UUID//+(* )}" # extract partition UUID
                     
-                    # skip entries that contain '/BOOT/' (it's for removable
-                    # media) or not 'shim'
-                    [[ "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ || ! "$entry" =~ $SHIM ]] && 
-                        continue
+                    # get boot entries (they contain 'EFI' string)
+                    mapfile -t entries < <(find "$BOOTDIR"/$EFI -name "*.$EFI")
 
-                    # remove suffix up to and including last '/'
-                    distro="${entry%+(/*)}"
-                    
-                    # remove prefix up to and including last '/'
-                    distro="${distro##+(*/)}"
+                    for entry in "${entries[@]}"; do
+                        entry="${entry#"$BOOTDIR"}" # remove bootdir
+                        
+                        # skip entries that contain '/BOOT/' (it's for removable
+                        # media) or not 'shim'
+                        [[ "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ || \
+                           ! "$entry" =~ $SHIM ]] && 
+                            continue
 
-                    # if no shim boot entries for dst, add them
-                    entry="${entry//'/'/'\'}"
-                    if [[ ! "$buf" =~ .+${esp_ptn_nums[1]}.+$UUID.+"$entry" ]]
-                    then
-                        echo -en "\tCreating command to add UEFI boot entry "
+                        # remove suffix up to and including last '/'
+                        distro="${entry%+(/*)}"
+                        
+                        # remove prefix up to and including last '/'
+                        distro="${distro##+(*/)}"
 
-                        # separate line as $entry contains special characters
-                        # that echo -e above can't display
-                        echo "'$entry' ..."
+                        # if no shim boot entries for dst, add them
+                        entry="${entry//'/'/'\'}"
+                        if [[ ! "$buf" =~ .+$ptn_nums.+$UUID.+"$entry" ]]
+                        then
+                            echo -en "\tCreating command to add UEFI boot entry "
 
-                        cmds+=("efibootmgr --create --disk '$dstdrv' \
-                                           --loader '$entry' \
-                                           --label 'shim-$distro' \
-                                           --part ${esp_ptn_nums[1]} \
-                                           --unicode")
-                    fi
-                done
+                            # separate line as $entry contains special characters
+                            # that echo -e above can't display
+                            echo "'$entry' ..."
+
+                            cmds+=("efibootmgr --create --disk '$dstdrv' \
+                                               --part $ptn_num \
+                                               --loader '$entry' \
+                                               --label 'shim-$distro' \
+                                               --unicode")
+                        fi
+                    done
+                fi
             fi
-        fi
+        done
     done
     
     exec_cmds "${cmds[@]}" # execute commands created above
@@ -2604,9 +2650,9 @@ result() {
 
 declare -i err=0
 
-source "$SCRIPTDIR"/base_functions.sh && source "$GRUB_MODULES" && init $@
+source "$SCRIPTDIR"/base_functions.sh && init $@ && source "$GRUB_MODULES_FILE"
 ((err=$?))
-readonly FSTYPES FILTERS
+readonly FSTYPES_FILE FILTERS_FILE
 
 (( ! err )) &&
     while (( LOOP )); do
@@ -2614,6 +2660,7 @@ readonly FSTYPES FILTERS
         user_input        &&
         setup_env         &&
         populate_arrays   && # create data structures used for cloning
+        read_cfg_in_mem   && # read cfg files into memory
         calc_drvspace     && # check if src fits on dst
         create_partitions && # create partitions on dst if different than src
         mask_hibernation  &&

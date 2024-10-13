@@ -1,0 +1,8 @@
+# maps output of 'uname -m' (first field) to architecture used by 'grub-install'
+
+x86_64:x86_64-efi
+i386:i386-efi
+arm:arm-efi
+arm64:arm64-efi
+riscv32:riscv32-efi
+riscv64:riscv64-efi

@@ -16,7 +16,9 @@ get_cfg_fname() {
     cwd=$(pwd)
     lcl_cfgdir=$(eval echo ~$(logname))"/.config/clone/" # local cfg dir
 
-    if [[ "$cwd" != "$SCRIPTDIR" ]]; then
+    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfgdir/$1" && \
+          -r "$lcl_cfgdir/$1" && -s "$lcl_cfgdir/$1" ]]
+    then
         echo "$lcl_cfgdir/$1"
     else
         echo "$gbl_cfgdir/$1"
@@ -39,25 +41,24 @@ trap_signals() {
     trap "$1" $2 &> /dev/null # register signal handler
     ((err=$?))
     
-    (( err )) && cecho -e "\n${RED}Error while trapping signals, error code: $err. Exiting."
+    (( err )) && 
+        cecho -e "\n${RED}Error while trapping signals, error code: $err. Exiting."
 
     return $err
 }
 
 # check that all files exist, are readable and have size != 0
-# $1    : int, 0 or 1, loop or not
 # return: 0 on success, 1 if a file does not exist, not readable or zero size
 files_exist() {
-    (( $# != 1 )) &&
-        exit_with_stack "\nOne param required: a bool, 0 or 1 (loop or not). Exiting."
-
     local key
-    local -A fdata=([$FSTYPES]="It is needed when formatting partitions. Exiting.")
+    local -A fdata=([$FSTYPES_FILE]="It is needed when formatting partitions. Exiting.")
     local -i err=0
     
-    fdata[$FILTERS]="It is needed to exclude/include files/dirs when cloning. Exiting."
+    fdata[$FILTERS_FILE]="It is needed to exclude/include files/dirs when cloning. Exiting."
+    fdata[$GRUB_MODULES_FILE]="It is needed to install the grub bootloader. Exiting."
+    fdata[$GRUB_ARCH]="It is needed to install the grub bootloader. Exiting."
     for key in "${!fdata[@]}"; do
-        file_exists "$key" "${fdata["$key"]}" "$1"
+        file_exists "$key" "${fdata["$key"]}"
         ((err+=$?))
     done
     
@@ -67,22 +68,18 @@ files_exist() {
 # check that a file exists, is readable and has size != 0
 # $1    : str, the filename
 # $2    : str, the msg to display
-# $3    : int, 0 or 1, loop or not
 # return: 0 on success, 1 if file not exist, not readable or zero size
 file_exists() {
-    local -n ref_loop="$3"
-    
-    if [[ $# -ne 3 || ! $ref_loop =~ ^[0-1]$ ]]; then
-        local msg="\nThree params required: filename, message and a bool, 0 or "
-        
-        msg+="1 (loop or not). Exiting."
+    if (( $# != 2 )); then
+        local msg="\nTwo params required: filename and message. Exiting."
+
         exit_with_stack "$msg"
     fi
 
     if [[ ! -f "$1" || ! -r "$1" || ! -s "$1" ]]; then
         cecho -e "\n${RED}The $YELLOW$1$RED file does not exist or has zero size or"\
                  "${RED}is not readable.\n$RED$2"
-        ((ref_loop=0))
+
         return 1
     fi
 }
@@ -653,7 +650,7 @@ get_sector_size() {
         ((size=$?))
         if (( ! size )); then
             # get min & max sector size for fstype
-            exec {fd}< "$FSTYPES" # open FSTYPES file
+            exec {fd}< "$FSTYPES_FILE" # open file
             while read -ru $fd; do
                 # remove leading and trailing whitespace
                 REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
@@ -671,7 +668,7 @@ get_sector_size() {
                     break
                 fi
             done
-            exec {fd}<&- # close the FSTYPES file
+            exec {fd}<&- # close the file
 
             ((size=$(field "${partitions[i]}" "$PALIGN_START")))
             ((size=$(align_sector_size $min_size $max_size $size)))
