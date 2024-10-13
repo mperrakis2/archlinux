@@ -20,11 +20,11 @@
 #
 # text files used by the script
 # -----------------------------
-# the following files are under /etc/clone and optionally under ~/.config/clone
+# the following files are under /etc/clone/ and optionally under ~/.config/clone/
 #
 # 'fstypes'     : maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude'     : files and/or dirs to be excluded from or included in cloning
-# 'grub_modules': modules embedded in grub bootloader (only in /etc/clone)
+# 'grub_modules': modules embedded in grub bootloader (only in /etc/clone/)
 #
 # text files created by the script
 # --------------------------------
@@ -232,23 +232,21 @@ init() {
     # "f:": pathname of fstypes file
     while getopts ":he:f:" option; do
         case ${option} in
-        h|:)  cat << usage_msg
+        h|:|\?)  cat << usage_msg
 command line options
 --------------------
--e <exclude_file> : pathname to the 'exclude' file that contains files/dirs to
-                    be excluded from cloning
--f <fstypes_file> : pathname to the 'fstypes' file that contains the commands to
-                    format various filesystems
+-e <exclude_file> : pathname to file that contains files/dirs to be excluded
+                    from cloning
+-f <fstypes_file> : pathname to file that contains the commands to format
+                    various filesystems
 
-if any of the above are not specified the defaults are searched in the following
-order:
-    /etc/clone/ if script is invoked under /usr/local/bin/clone/
-else
-    ~/.config/clone/
-    /etc/clone/
+if any of the above is not specified the default files are searched under:
 
-it is recommended not to modify the default 'fstypes' file or create your own
-unless you really know what you are doing
+* /etc/clone/, if the script is invoked under the directory it is installed
+(usually /usr/local/bin/clone/) or ~/.config/clone/ does not exist
+
+* ~/.config/clone/, if it exists and the script is not invoked under the 
+directory it is installed
 usage_msg
             exit 0
             ;;

@@ -16,11 +16,7 @@ get_cfg_fname() {
     cwd=$(pwd)
     lcl_cfgdir=$(eval echo ~$(logname))"/.config/clone/" # local cfg dir
 
-    # if script not run from script dir then get cfg filename from local account
-    # if it exists else from global dir
-    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfgdir/$1" && -r "$lcl_cfgdir/$1" && \
-          -s "$lcl_cfgdir/$1" ]]
-    then
+    if [[ "$cwd" != "$SCRIPTDIR" ]]; then
         echo "$lcl_cfgdir/$1"
     else
         echo "$gbl_cfgdir/$1"
