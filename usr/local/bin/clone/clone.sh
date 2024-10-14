@@ -1,18 +1,16 @@
 #!/bin/bash
 
 # This script clones one drive to another. To see detailed info and usage read
-# the man page (man <script>) or run the script with no parameters. <script>
-# does not include ".sh". Clone options are entered by the user after the script
-# is run.
+# the man page (man <script>, no file extention). For a quick description of the
+# command line options run '<script> -h'. Further clone options are entered by
+# the user after the script is run.
 
-# the following describe the script's functionality
-#
 # legend
 # ------
 # src: drive to be cloned (source)
 # dst: drive to clone to  (destination)
 #
-# the user selects src & dst AFTER the script is launched
+# the user selects src & dst AFTER the script is invoked
 # 
 # limitations
 # -----------
@@ -26,6 +24,7 @@
 # 'exclude'     : files and/or dirs to be excluded from or included in cloning
 # 'grub_modules': modules embedded in grub bootloader (only in /etc/clone/)
 # 'grub_arch'   : maps output of 'uname -m' to arch used by 'grub-install'
+#                 (only in /etc/clone/)
 #
 # text files created by the script
 # --------------------------------
@@ -48,35 +47,6 @@
 # other scripts used by this script
 # ---------------------------------
 # base_functions.sh (under this script's directory and sourced in)
-#
-# overall script execution
-# ------------------------
-# source in base functions
-# init (get cfg file names & trap cancellation signals)
-# display usage and get user input
-# setup (create lock file, etc)
-# get partition data for src & dst
-# exit if src has no partitions or at least one partition does not have a UUID
-# exit if dst does not have enough drive space
-# read cfg files into memory
-# if partition mismatch between src & dst
-#     remove partitions on dst, if any
-#     create partitions on dst and format them
-# mask hibernation if it is unmasked and trap signal USR1
-# format swap partitions on dst, if any
-# clone using rsync
-# if src was used to boot the system, create swap files on dst, if any
-# if fstab file(s) exist on dst, update them with new UUIDs
-# if grub cfg file(s) exist on dst, update then with new UUIDs
-# if grub def file(s) exist on dst, update them with new UUIDs
-# if grubenv file(s) exist on dst, update them with new UUIDs
-# if swap files exist on dst
-#     update grub default file(s) on dst
-#     update grub cfg file on dst
-# if there is a bios and/or efi partition on dst, install grub on it
-# if UEFI boot and dst is internal
-#     add UEFI boot entry, if not already exist
-# cleanup (unmask hibernation if it was masked, etc)
 
 set -o pipefail
 shopt -s extglob
@@ -87,8 +57,12 @@ readonly SCRIPTDIR
 
 FSTYPES_FILE=""
 FILTERS_FILE=""
-GRUB_MODULES_FILE=/etc/clone/grub_modules
-GRUB_ARCH=/etc/clone/grub_arch
+readonly GRUB_MODULES_FILE=/etc/clone/grub_modules
+readonly GRUB_ARCH_FILE=/etc/clone/grub_arch
+
+declare -a FSTYPES=()
+declare -a FILTERS=()
+GRUB_ARCH=""
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
@@ -134,8 +108,8 @@ REDB="$BOLD$(tput setab 1)"
 readonly REDB
 
 declare -i SIGMASK=128
-readonly SIGMASK 
-        
+readonly SIGMASK
+
 # the variables below are field numbers used by the field() function
 # BEGIN
 declare -i DNAME=1
@@ -785,6 +759,12 @@ populate_arrays() {
     ((LOOP=0))
     readonly LOOP
 
+    # at this point there is no more looping so read cfg files into memory
+    local -i err
+
+    read_cfg_into_mem 
+    ((err=$?)); ((err)) && return $err
+
     readonly OPTIONS OPTIONS_S
     readonly LOGFILE ERRFILE CMDFILE
     readonly PTN_PREFIX SP DP
@@ -1032,7 +1012,6 @@ calc_drvspace() {
 
     echo -e "\n\tChecking files/directories excluded from source drive..."
 
-    local -i fd
     local -a paths # the paths of an rsync filter
     local j
     local k
@@ -1049,29 +1028,23 @@ calc_drvspace() {
     local MSG="Check the '$FILTERS_FILE' file"
     readonly MSG
     
-    exec {fd}< "$FILTERS_FILE" # open filters file
-    while read -r -u $fd; do
-        # remove leading & trailing spaces and tabs
-        REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
-        (( ! ${#REPLY} )) && continue       # ignore empty lines
-        [[ "$REPLY" =~ ^#.*$ ]] && continue # ignore comments
-
+    for buf in "${FILTERS[@]}"; do
         # split line into paths
         ((j=0))
         paths=()
-        for (( i = 0; i < ${#REPLY}; ++i )); do
-            if [[ "${REPLY:i:1}" != [[:blank:]] ]]; then
+        for (( i = 0; i < ${#buf}; ++i )); do
+            if [[ "${buf:i:1}" != [[:blank:]] ]]; then
                 # remove redundant '/' and '*'
-                if [[ ("${REPLY:i:1}" != "*" && "${REPLY:i:1}" != "/") || \
-                      "${REPLY:i:1}" != "${REPLY:i-1:1}" ]]; then
-                    paths[j]+="${REPLY:i:1}"
+                if [[ ("${buf:i:1}" != "*" && "${buf:i:1}" != "/") || \
+                      "${buf:i:1}" != "${buf:i-1:1}" ]]; then
+                    paths[j]+="${buf:i:1}"
                 fi
             else
                 if [[ "${paths[j]:${#paths[j]}-1:1}" == '\' ]]; then
-                    paths[j]+="${REPLY:i:1}"
+                    paths[j]+="${buf:i:1}"
                 else
                     ((++j))
-                    while [[ "${REPLY:i:1}" == [[:blank:]] ]]; do ((++i)); done
+                    while [[ "${buf:i:1}" == [[:blank:]] ]]; do ((++i)); done
                     ((--i))
                 fi
             fi
@@ -1235,7 +1208,6 @@ calc_drvspace() {
             entries+=("${next_entries[@]}") # add next entries to existing
         fi
     done
-    exec {fd}<&- # close the filters file
 
     next_entries=() # release some memory
 
@@ -1534,17 +1506,6 @@ calc_drvspace() {
     done
 }
 
-# return: 0 on success else the error code of the command that failed
-read_cfg_in_mem() {
-    local -i err
-
-    files_exist
-    ((err=$?)); ((err)) && return $err
-
-    source "$GRUB_MODULES_FILE"
-    return $err
-}
-
 # if necessary remove & create new partitions on dst
 # return: 0 on success else the error code of the command that failed
 create_partitions() {            
@@ -1652,7 +1613,6 @@ create_partitions() {
     local -a dst_ptns=()
     local -i alloc_bytes=0
     local -i ptn_tbl_flag=0
-    local -i fd
 
     # iterate over all partitions to create commands that delete and create
     # partitions on dst if necessary
@@ -1764,21 +1724,13 @@ create_partitions() {
 
             # create cmds to format the partition
             # get filesystem command that applies to partition fstype
-            exec {fd}< "$FSTYPES_FILE" # open file
-            while read -r -u $fd; do
-                # remove leading and trailing whitespace
-                REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
-
-                # ignore empty lines & comments
-                (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
-                
-                if [[ "$fstype" && "$REPLY" =~ $fstype ]]; then
+            for cmd in "${FSTYPES[@]}"; do
+                if [[ "$fstype" && "$cmd" =~ $fstype ]]; then
                     # create command to format the newly created partition
-                    cmds+=("$(field "$REPLY" 2) '$dstdrv$DP$ptn_cnt'")
+                    cmds+=("$(field "$cmd" 2) '$dstdrv$DP$ptn_cnt'")
                     break
                 fi
             done
-            exec {fd}<&- # close file
 
             # compare src and dst partition data and if different set flag
             (( ! create_ptn )) &&
@@ -2318,22 +2270,6 @@ clone() {
     local distro
     local crt
 
-    # get system architecture
-    exec {fd}< "$GRUB_ARCH" # open file
-    while read -r -u $fd; do
-        # remove leading and trailing whitespace
-        REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
-
-        # ignore empty lines & comments
-        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
-        
-        if [[ $(field "$REPLY" 1) =~ $(uname -m) ]]; then
-            REPLY=$(field "$REPLY" 2)
-            break
-        fi
-    done
-    exec {fd}<&- # close file
-
     for ptn_pair in "${rsync_params[@]}"; do
         dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
         mapfile -t entries < <(grep swap "$dstmnt$FSTAB_FILE" 2>> "$ERRFILE")
@@ -2397,7 +2333,7 @@ clone() {
             if [[ "$dstptn" == "$dstdrv$DP$ptn_num" ]]; then
                 # add command to install grub as removable in order not to delete
                 # any efibootmgr entries
-                cmds+=("grub-install --modules='$GRUB_MODULES' --target='$REPLY' \
+                cmds+=("grub-install --modules='$GRUB_MODULES' --target='$GRUB_ARCH' \
                                      --sbat=/usr/share/grub/sbat.csv --removable \
                                      --recheck --efi-directory='$dstmnt' \
                                      --boot-directory='$dstmnt' \
@@ -2662,7 +2598,6 @@ readonly FSTYPES_FILE FILTERS_FILE
         user_input        &&
         setup_env         &&
         populate_arrays   && # create data structures used for cloning
-        read_cfg_in_mem   && # read cfg files into memory
         calc_drvspace     && # check if src fits on dst
         create_partitions && # create partitions on dst if different than src
         mask_hibernation  &&

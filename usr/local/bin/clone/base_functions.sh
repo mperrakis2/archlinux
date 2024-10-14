@@ -47,18 +47,24 @@ trap_signals() {
     return $err
 }
 
+declare -A CFG_FNAMES=()
+
 # check that all files exist, are readable and have size != 0
 # return: 0 on success, 1 if a file does not exist, not readable or zero size
 files_exist() {
     local key
-    local -A fdata=([$FSTYPES_FILE]="It is needed when formatting partitions. Exiting.")
     local -i err=0
     
-    fdata[$FILTERS_FILE]="It is needed to exclude/include files/dirs when cloning. Exiting."
-    fdata[$GRUB_MODULES_FILE]="It is needed to install the grub bootloader. Exiting."
-    fdata[$GRUB_ARCH]="It is needed to install the grub bootloader. Exiting."
-    for key in "${!fdata[@]}"; do
-        file_exists "$key" "${fdata["$key"]}"
+    if (( ! ${#CFG_FNAMES[@]} )); then
+        CFG_FNAMES[$FILTERS_FILE]="It is needed to exclude/include files/dirs when cloning. Exiting."
+        CFG_FNAMES[$FSTYPES_FILE]="It is needed when formatting partitions. Exiting."
+        CFG_FNAMES[$GRUB_MODULES_FILE]="It is needed to install the grub bootloader. Exiting."
+        CFG_FNAMES[$GRUB_ARCH_FILE]="It is needed to install the grub bootloader. Exiting."
+        readonly CFG_FNAMES
+    fi
+
+    for key in "${!CFG_FNAMES[@]}"; do
+        file_exists "$key" "${CFG_FNAMES["$key"]}"
         ((err+=$?))
     done
     
@@ -334,11 +340,11 @@ get_entries() {
     # 'find' cmd
     for k in "${!ref[@]}"; do
         # The first part of the 'find' command  needs to be in single quotes as
-        # it may contain spaces that are not escaped. Also, 'paths' may include 
-        # spaces that are escaped so 'eval' is used to treat 'paths' as a single
+        # it may contain spaces that are not escaped. Also, 'PATHS' may include 
+        # spaces that are escaped so 'eval' is used to treat 'PATHS' as a single
         # argument.
         readarray -td '' new_names < <(eval \
-                                       'find "${ref[k]}"'/"${paths[1]:$j:$i-$j}" \
+                                       'find "${ref[k]}"'/"${PATHS[1]:$j:$i-$j}" \
                                              -maxdepth 0 \
                                              "$2" \
                                              -print0 2>> "$ERRFILE")
@@ -638,6 +644,60 @@ convert_size() {
     ref+=" $unit_str"
 }
 
+# return: 0 on success else the error code of the command that failed
+read_cfg_into_mem() {
+    local -i err
+
+    files_exist
+    ((err=$?)); ((err)) && return $err
+
+    local -i fd
+
+    exec {fd}< "$FSTYPES_FILE" # open file
+    while read -r -u $fd; do
+        # remove leading and trailing whitespace
+        REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
+
+        # ignore empty lines & comments
+        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
+
+        FSTYPES+=("$REPLY")
+    done
+    exec {fd}<&- # close file
+
+    exec {fd}< "$FILTERS_FILE" # open file
+    while read -r -u $fd; do
+        # remove leading & trailing spaces and tabs
+        REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
+
+        # ignore empty lines & comments
+        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
+        
+        FILTERS+=("$REPLY")
+    done
+    exec {fd}<&- # close file
+
+    exec {fd}< "$GRUB_ARCH_FILE" # open file
+    while read -r -u $fd; do
+        # remove leading and trailing whitespace
+        REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
+
+        # ignore empty lines & comments
+        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
+        
+        if [[ $(field "$REPLY" 1) =~ $(uname -m) ]]; then
+            GRUB_ARCH=$(field "$REPLY" 2) # get grub arch
+            break
+        fi
+    done
+    exec {fd}<&- # close file
+
+    source "$GRUB_MODULES_FILE"
+    readonly FILTERS FSTYPES GRUB_ARCH
+
+    return $err
+}
+
 # get sector size based on partition type and size
 # stdout: the aligned sector size
 get_sector_size() {
@@ -650,17 +710,12 @@ get_sector_size() {
         ((size=$?))
         if (( ! size )); then
             # get min & max sector size for fstype
-            exec {fd}< "$FSTYPES_FILE" # open file
-            while read -ru $fd; do
-                # remove leading and trailing whitespace
-                REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
+            local rec
 
-                # ignore empty lines & comments
-                (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
-    
-                if [[ "$REPLY" =~ $fstype ]]; then
-                    ((min_size=$(field "$REPLY" 3)))
-                    ((max_size=$(field "$REPLY" 4)))
+            for rec in "${FSTYPES[@]}"; do
+                if [[ "$rec" =~ $fstype ]]; then
+                    ((min_size=$(field "$rec" 3)))
+                    ((max_size=$(field "$rec" 4)))
                     if (( min_size == 0 || max_size == 0 )); then # btrfs
                         ((min_size=page_size))
                         ((max_size=page_size))
@@ -668,7 +723,6 @@ get_sector_size() {
                     break
                 fi
             done
-            exec {fd}<&- # close the file
 
             ((size=$(field "${partitions[i]}" "$PALIGN_START")))
             ((size=$(align_sector_size $min_size $max_size $size)))
