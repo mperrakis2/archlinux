@@ -1,4 +1,5 @@
-# common ~/.bashrc for all users
+# If not running interactively, don't do anything
+[[ "${-#*i}" == "$-" ]] && return
 
 alias ls="ls -F --color=auto"
 alias l=ls
@@ -76,6 +77,3 @@ if groups "$(whoami)" | grep sudo &> /dev/null; then
     alias paru="sudo /usr/local/bin/upd_dbs_and_keyring.sh && paru"
     export SUDO_EDITOR=mousepad
 fi
-
-# If not running interactively, don't do anything
-[[ "${-#*i}" == "$-" ]] && return
