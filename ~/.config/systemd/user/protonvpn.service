@@ -6,8 +6,8 @@ Description=Proton Vpn
 
 [Service]
 Type=oneshot
-ExecStart=bash -c 'zone=$(curl --fail https://ipapi.co/timezone); wg-quick up NL-FREE-409094; sudo timedatectl set-timezone "$zone"'
-ExecStop=bash -c 'wg-quick down NL-FREE-409094 && sudo timedatectl set-timezone $(tzupdate -p)'
+ExecStart=bash -c 'zone=$(tzupdate -p); wg-quick up NL-FREE-409094; sudo tzupdate -t "$zone"'
+ExecStop=bash -c 'wg-quick down NL-FREE-409094; sudo tzupdate'
 RemainAfterExit=yes
 
 [Install]

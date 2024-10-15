@@ -2,9 +2,8 @@
 Description=see corresponding service
 
 [Timer]
-OnActiveSec=1sec
-RandomizedDelaySec=10sec
-OnUnitActiveSec=24hour
+OnCalendar=daily
+Persistent=true
 
 [Install]
 WantedBy=timers.target
