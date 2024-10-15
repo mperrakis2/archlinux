@@ -6,7 +6,7 @@ Description=Proton Vpn
 
 [Service]
 Type=oneshot
-ExecStart=wg-quick up NL-FREE-409094
+ExecStart=bash -c 'zone=$(timedatectl show | head -1 | cut -f 2 -d '=') && wg-quick up NL-FREE-409094 && sudo timedatectl set-timezone "$zone"'
 ExecStop=wg-quick down NL-FREE-409094
 RemainAfterExit=yes
 
