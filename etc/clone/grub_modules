@@ -1,14 +1,22 @@
 # the following grub modules are needed for secure boot based on
 # https://wiki.archlinux.org/title/GRUB#Shim-lock
 
-readonly GRUB_MODULES="all_video boot btrfs cat chain configfile echo efifwsetup "\
-"efinet ext2 fat font gettext gfxmenu gfxterm gfxterm_background gzio halt "\
-"help hfsplus iso9660 jpeg keystatus loadenv loopback linux ls lsefi lsefimmap "\
-"lsefisystab lssal memdisk minicmd normal ntfs part_apple part_msdos part_gpt "\
-"password_pbkdf2 png probe reboot regexp search search_fs_uuid search_fs_file "\
-"search_label sleep smbios squash4 test true video xfs zfs zfscrypt zfsinfo "\
-"cpuid play tpm cryptodisk gcry_arcfour gcry_blowfish gcry_camellia gcry_cast5 "\
-"gcry_crc gcry_des gcry_dsa gcry_idea gcry_md4 gcry_md5 gcry_rfc2268 "\
-"gcry_rijndael gcry_rmd160 gcry_rsa gcry_seed gcry_serpent gcry_sha1 "\
-"gcry_sha256 gcry_sha512 gcry_tiger gcry_twofish gcry_whirlpool luks lvm "\
-"mdraid09 mdraid1x raid5rec raid6rec http tftp"
+readonly GRUB_MODULES="all_video backtrace bitmap bitmap_scale bli blocklist "\
+"boot boottime btrfs bufio cacheinfo cat chain cmdline_cat_test cmp cmp_test "\
+"configfile cpio cpuid crc64 cryptodisk date datehook datetime disk diskfilter "\
+"echo efifwsetup efinet efitextmode efi_gop efi_uga elf eval exfat ext2 fat "\
+"file fixvideo font fshelp functional_test gcry_arcfour gcry_blowfish "\
+"gcry_camellia gcry_cast5 gcry_crc gcry_des gcry_dsa gcry_idea gcry_md4 "\
+"gcry_md5 gcry_rfc2268 gcry_rijndael gcry_rmd160 gcry_rsa gcry_seed "\
+"gcry_serpent gcry_sha1 gcry_sha256 gcry_sha512 gcry_tiger gcry_twofish "\
+"gcry_whirlpool gettext gfxmenu gfxterm gfxterm_background gfxterm_menu "\
+"gptsync gptsync gzio halt hashsum hdparm hello hello help hexdump hfsplus "\
+"http iorw iso9660 jpeg keystatus linux loadbios loadenv loopback ls lsacpi "\
+"lsefi lsefimmap lsefisystab lsmmap lspci lssal luks luks2 lvm mdraid1x "\
+"mdraid09 memdisk memrw minicmd mmap msdospart multiboot multiboot2 normal "\
+"ntfs ntfscomp parttool part_apple part_gpt part_msdos password "\
+"password_pbkdf2 play png probe progress raid5rec raid6rec read reboot regexp "\
+"search search_fs_file search_fs_uuid search_label signature_test sleep "\
+"sleep_test smbios squash4 tar terminal terminfo test testload testspeed tftp "\
+"time tpm tr true usb usbtest video videoinfo videotest videotest_checksum "\
+"video_bochs video_cirrus video_colors video_fb xfs xzio zfs zfscrypt zfsinfo"
