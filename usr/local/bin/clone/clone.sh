@@ -10,7 +10,7 @@
 # src: drive to be cloned (source)
 # dst: drive to clone to  (destination)
 #
-# the user selects src & dst AFTER the script is invoked
+# the user selects src & dst AFTER the script is run
 # 
 # limitations
 # -----------
@@ -212,11 +212,11 @@ command line options
 
 if any of the above is not specified the default files are searched under:
 
-* /etc/clone/, if the script is invoked under the directory it is installed
+* /etc/clone/, if the script is run under the directory it is installed
 (usually /usr/local/bin/clone/) or ~/.config/clone/ does not exist
 
-* ~/.config/clone/, if it exists and the script is not invoked under the 
-directory it is installed
+* ~/.config/clone/, if it exists and the script is not run under the directory
+it is installed
 usage_msg
             exit 0
             ;;
@@ -2098,7 +2098,7 @@ clone() {
     # add commands to create swap files, if any, on dst
     (( ${#swap_file_cmds[@]} )) && cmds+=("${swap_file_cmds[@]}")
     
-    echo -e "\n\tInvoking cloning commands (this may take a while)..."
+    echo -e "\n\tExecuting cloning commands (this may take a while)..."
 
     exec_cmds "${cmds[@]}" # execute commands created above
     ((err=$?))

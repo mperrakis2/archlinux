@@ -25,9 +25,9 @@ The configuration files used by \fIclone.sh\fR are:
 
 The user can create override files under \fI~/.config/clone/\fR but the default filenames have to be used. It is recommended not to modify the default \fIfstypes\fR file or create your own unless you really know what you are doing.
 
-\fBclone.sh\fR searches for override files if not invoked under the directory it is installed (usually \fI/usr/local/bin/clone/\fR). The directory of the override files must be \fI~/.config/clone/\fR and the default filenames have to be used.
+\fBclone.sh\fR searches for override files if not run under the directory it is installed (usually \fI/usr/local/bin/clone/\fR). The directory of the override files must be \fI~/.config/clone/\fR and the default filenames have to be used.
 
-Override files can also be provided when invoking \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). This takes precedence over any other files and any pathnames can be used.
+Override files can also be provided when executing \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). This takes precedence over any other files and any pathnames can be used.
 
 Every time a cloning session is executed existing log directories are deleted and the directory \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/x_y/\fR is created where 'x' is the number of the source drive and 'y' is the number of the destination drive. The following files are created under this directory:
 
@@ -63,17 +63,17 @@ The source drive must not use Logical Volume Management (LVM).
 
 If the source drive has partitions with the btrfs filesystem any subvolumes on them will not be created on the destination. To see which filesystems are fully supported check \fIfstypes\fR file (see \fBFILES\fR).
 
-\fIclone.sh\fR must be invoked on a system that uses systemd as init.
+\fIclone.sh\fR must be run on a system that uses systemd as init.
 
-If the source drive is bootable the destination will become bootable only if the source drive and the system \fIclone.sh\fR is invoked on use GRUB 2 as their bootloader. Regardless, the destination will contain all source data provided cloning was successful.
+If the source drive is bootable the destination will become bootable only if the source drive and the system \fIclone.sh\fR is run on use GRUB 2 as their bootloader. Regardless, the destination will contain all source data provided cloning was successful.
 
 .SH EXIT_STATUS
 Zero on success else > 1. In case of error an appropriate error message is displayed and further info on the error might be available in the error file (see \fBFILES\fR).
 .SH NOTES
 To clone, \fIclone.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\fI--i-r\fR) command line option in order to use much less memory. However, this option interferes with the \fBrsync\fR(1) \fI--progress\fR command line option. The percentage of files transferred that is displayed is incorrect although the data size transferred is correct.
 .SH CAVEATS
-In case the user has many programs running while cloning then it is possible that some files that these programs use are deleted during cloning. However, the deleted files are part of \fBrsync\fR(1)'s list of files to transfer. In that case, when \fBrsync\fR(1) exits, its return code is 24 (partial transfer due to vanished source files) but \fIclone.sh\fR ignores it. Therefore, it is recommended that prior to invoking \fIclone.sh\fR the user closes all programs on all user accounts and exits all user accounts but the one that will be used to invoke \fIclone.sh\fR.
+In case the user has many programs running while cloning then it is possible that some files that these programs use are deleted during cloning. However, the deleted files are part of \fBrsync\fR(1)'s list of files to transfer. In that case, when \fBrsync\fR(1) exits, its return code is 24 (partial transfer due to vanished source files) but \fIclone.sh\fR ignores it. Therefore, it is recommended that prior to executing \fIclone.sh\fR the user closes all programs on all user accounts and exits all user accounts but the one that will be used to run \fIclone.sh\fR.
 .SH BUGS
-If \fIclone.sh\fR is invoked from a XFCE terminal window and hibernation is masked by \fIclone.sh\fR and the hibernation period expires while \fBrsync\fR(1) is running then when cloning has completed and hibernation is unmasked by \fIclone.sh\fR, XFCE can not hibernate. However, if the terminal window is closed, XFCE can hibernate after the hibernation period has expired again.
+If \fIclone.sh\fR is run from a XFCE terminal window and hibernation is masked by \fIclone.sh\fR and the hibernation period expires while \fBrsync\fR(1) is running then when cloning has completed and hibernation is unmasked by \fIclone.sh\fR, XFCE can not hibernate. However, if the terminal window is closed, XFCE can hibernate after the hibernation period has expired again.
 .SH SEE ALSO
 \fBclone-exclude\fR(5), \fBrsync\fR(1), \fBparted\fR(8), \fBgdisk\fR(8), \fBmkfs\fR(8), \fBsystemd\fR(1), \fBgrub-install\fR(8), \fBgrub-mkconfig\fR(8)

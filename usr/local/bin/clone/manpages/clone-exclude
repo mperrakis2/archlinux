@@ -5,11 +5,11 @@ exclude \- configuration file for \fBclone.sh\fR that contains files/dirs to be 
 .SH SYNOPSIS
 /etc/clone/exclude, ~/.config/clone/exclude, <pathname>
 .SH DESCRIPTION
-The default location of the \fBexclude\fR configuration file is \fI/etc/clone/exclude\fR. This file should never be deleted and if the default values need to be modified, deleted or new ones added it is best to create an override file.
+The default directory of the \fBexclude\fR configuration file is \fI/etc/clone/exclude\fR. This file should never be deleted and if the default entries need to be modified, deleted or new ones added it is best to create an override file.
 
-\fBclone.sh\fR searches for an override file if not invoked under \fI/usr/local/bin/clone/\fR. The location of the override file must be under \fI~/.config/clone/\fR and the filename has to be \fIexclude\fR.
+\fBclone.sh\fR searches for an override file if not run under \fI/usr/local/bin/clone/\fR. The directory of the override file must be \fI~/.config/clone/\fR and the filename has to be \fIexclude\fR.
 
-An override file can also be provided when invoking \fBclone.sh\fR with the \fB-e\fR command line option. This takes precedence over any other files and the pathname may contain any directory and filename (not restricted to \fIexclude\fR).
+An override file can also be provided when executing \fBclone.sh\fR with the \fB-e\fR command line option. This takes precedence over any other files and the pathname may contain any directory and filename (not restricted to \fIexclude\fR).
 .SH EXAMPLES
 .I GENERAL USE
 
