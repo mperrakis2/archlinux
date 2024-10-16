@@ -33,7 +33,6 @@ useful scripts and config files (need sudo)
 
 /etc/clone/fstypes               # text file that maps filesystem names to the command that creates them, used by clone.sh (see above)
 /etc/clone/exclude               # text file that contains dirs/files to exclude from cloning if src does not fit on dst, used by clone.sh (see above)
-/etc/clone/grub_modules          # text file that contains names of grub modules required to install the grub bootloader
 /etc/clone/grub_arch             # text file that maps 'uname -m' achitectures to architectures used by grub-install
 /etc/clone/README                # point the user to the man pages for info on cfg files
 /etc/NetworkManager/dispatcher.d/update-timezone.sh                  # update the timezone when network interface goes up

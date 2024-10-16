@@ -58,7 +58,6 @@ files_exist() {
     if (( ! ${#CFG_FNAMES[@]} )); then
         CFG_FNAMES[$FILTERS_FILE]="It is needed to exclude/include files/dirs when cloning. Exiting."
         CFG_FNAMES[$FSTYPES_FILE]="It is needed when formatting partitions. Exiting."
-        CFG_FNAMES[$GRUB_MODULES_FILE]="It is needed to install the grub bootloader. Exiting."
         CFG_FNAMES[$GRUB_ARCH_FILE]="It is needed to install the grub bootloader. Exiting."
         readonly CFG_FNAMES
     fi
@@ -692,7 +691,6 @@ read_cfg_into_mem() {
     done
     exec {fd}<&- # close file
 
-    source "$GRUB_MODULES_FILE"
     readonly FILTERS FSTYPES GRUB_ARCH
 
     return $err

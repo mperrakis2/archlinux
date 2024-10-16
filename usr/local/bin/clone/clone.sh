@@ -22,7 +22,6 @@
 #
 # 'fstypes'     : maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude'     : files and/or dirs to be excluded from or included in cloning
-# 'grub_modules': modules embedded in grub bootloader (only in /etc/clone/)
 # 'grub_arch'   : maps output of 'uname -m' to arch used by 'grub-install'
 #                 (only in /etc/clone/)
 #
@@ -57,7 +56,6 @@ readonly SCRIPTDIR
 
 FSTYPES_FILE=""
 FILTERS_FILE=""
-readonly GRUB_MODULES_FILE=/etc/clone/grub_modules
 readonly GRUB_ARCH_FILE=/etc/clone/grub_arch
 
 declare -a FSTYPES=()
@@ -2262,13 +2260,10 @@ clone() {
     local dstptn
     local EFI="[Ee][Ff][Ii]"
     local BOOT="[Bb][Oo][Oo][Tt]"
-    local EFI_BOOT_DIR="$EFI/$BOOT/"
-    local DEF_BL="$EFI_BOOT_DIR/$BOOT*.$EFI" # BL: bootloader
     local SHIM="[Ss][Hh][Ii][Mm]"
-    readonly EFI BOOT EFI_BOOT_DIR DEF_BL SHIM
+    readonly EFI BOOT SHIM
     local arch
     local distro
-    local crt
 
     for ptn_pair in "${rsync_params[@]}"; do
         dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
@@ -2331,48 +2326,6 @@ clone() {
         # entries if required
         for ptn_num in "${esp_ptn_nums[@]}"; do
             if [[ "$dstptn" == "$dstdrv$DP$ptn_num" ]]; then
-                # add command to install grub as removable in order not to delete
-                # any efibootmgr entries
-                cmds+=("grub-install --modules='$GRUB_MODULES' --target='$GRUB_ARCH' \
-                                     --sbat=/usr/share/grub/sbat.csv --removable \
-                                     --recheck --efi-directory='$dstmnt' \
-                                     --boot-directory='$dstmnt' \
-                                     '$dstdrv'")
-
-                # add cmd to rename the bootloader
-                buf=$(find "$dstmnt"/$DEF_BL 2>> "$ERRFILE")
-                buf="${buf/\/*\/}"     # get filename
-                buf="${buf,,}"         # convert to lowercase
-                buf="${buf/boot/grub}" # replace boot with grub
-                arch=$(expr "$buf" : "^grub\(.*[0-9]\+\)") # get architecture
-
-                cmds+=("mv '$dstmnt'/$DEF_BL '$dstmnt'/$EFI_BOOT_DIR/'$buf'")
-
-                # add cmd to copy the default bootloader to distro dir
-                distro=$(uname -n)
-                cmds+=("cp '$dstmnt'/$EFI_BOOT_DIR/'$buf' '$dstmnt'/$EFI/'$distro'/")
-
-                # add cmd to copy shim 
-                cmds+=("cp /usr/share/shim-signed/$SHIM$arch* \
-                           '$dstmnt'/EFI/BOOT/BOOT${arch^^}.EFI")
-
-                # add cmd to switch to dir with certificate files
-                cmds+=("cd '$dstmnt'/$EFI")
-
-                # add cmd to sign default bootloader
-                key=$(find "$dstmnt"/$EFI/*.key 2>> "$ERRFILE") # get MOK key file
-                crt=$(find "$dstmnt"/$EFI/*.crt 2>> "$ERRFILE") # get MOK crt file
-                cmds+=("sbsign --key '$key' --cert '$crt' \
-                               --output BOOT/grub$arch.efi BOOT/grub$arch.efi")
-
-                # add cmd to sign distro bootloader
-                cmds+=("sbsign --key '$key' --cert '$crt' \
-                               --output '$distro'/grub$arch.efi \
-                                        '$distro'/grub$arch.efi")
-
-                # add cmd to return to previous dir else umount fails
-                cmds+=("cd -")
-                
                 buf=$(efibootmgr 2>> "$ERRFILE")
                 ((err=$?))
                 if (( ! err && ! removable )); then
