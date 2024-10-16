@@ -58,7 +58,6 @@ files_exist() {
     if (( ! ${#CFG_FNAMES[@]} )); then
         CFG_FNAMES[$FILTERS_FILE]="It is needed to exclude/include files/dirs when cloning. Exiting."
         CFG_FNAMES[$FSTYPES_FILE]="It is needed when formatting partitions. Exiting."
-        CFG_FNAMES[$GRUB_ARCH_FILE]="It is needed to install the grub bootloader. Exiting."
         readonly CFG_FNAMES
     fi
 
@@ -676,22 +675,7 @@ read_cfg_into_mem() {
     done
     exec {fd}<&- # close file
 
-    exec {fd}< "$GRUB_ARCH_FILE" # open file
-    while read -r -u $fd; do
-        # remove leading and trailing whitespace
-        REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
-
-        # ignore empty lines & comments
-        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
-        
-        if [[ $(field "$REPLY" 1) =~ $(uname -m) ]]; then
-            GRUB_ARCH=$(field "$REPLY" 2) # get grub arch
-            break
-        fi
-    done
-    exec {fd}<&- # close file
-
-    readonly FILTERS FSTYPES GRUB_ARCH
+    readonly FILTERS FSTYPES
 
     return $err
 }

@@ -22,8 +22,6 @@
 #
 # 'fstypes'     : maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude'     : files and/or dirs to be excluded from or included in cloning
-# 'grub_arch'   : maps output of 'uname -m' to arch used by 'grub-install'
-#                 (only in /etc/clone/)
 #
 # text files created by the script
 # --------------------------------
@@ -56,11 +54,9 @@ readonly SCRIPTDIR
 
 FSTYPES_FILE=""
 FILTERS_FILE=""
-readonly GRUB_ARCH_FILE=/etc/clone/grub_arch
 
 declare -a FSTYPES=()
 declare -a FILTERS=()
-GRUB_ARCH=""
 
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
@@ -2262,7 +2258,6 @@ clone() {
     local BOOT="[Bb][Oo][Oo][Tt]"
     local SHIM="[Ss][Hh][Ii][Mm]"
     readonly EFI BOOT SHIM
-    local arch
     local distro
 
     for ptn_pair in "${rsync_params[@]}"; do
