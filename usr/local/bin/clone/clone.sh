@@ -2298,8 +2298,8 @@ clone() {
 
         # if boot partition and bios flag is set, install grub on bios
         # partition
-        if [[ "$dstptn" == "$dstdrv$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]] &&
-           which grub-install &> /dev/null
+        if [[ "$dstptn" == "$dstdrv$DP${boot_ptn_nums[1]}" && $bios -eq 1 && \
+              "${grubcfg_files[*]}" ]] && which grub-install &> /dev/null
         then
             echo -e "\tCreating command to install grub on bios"\
                     "partition on destination drive..."
