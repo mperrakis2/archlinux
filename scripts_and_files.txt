@@ -46,9 +46,3 @@ useful scripts and config files (need sudo)
 /etc/systemd/system/pacman-filesdb-refresh.timer.d/override.conf     # override to refresh yay files DB daily
 /etc/systemd/sleep.conf.d/override.conf                              # override default sleep, suspend, hibernate settings
 /etc/systemd/logind.conf.d/override.conf                             # override default user login settings
-
-specific for account markos
-===========================
-~/toggle_vpn.sh
-~/.config/systemd/user/protonvpn.service
-/etc/wireguard/NL-FREE-409094.conf
