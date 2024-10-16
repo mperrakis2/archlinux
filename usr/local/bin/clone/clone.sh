@@ -2187,10 +2187,6 @@ clone() {
         for file in "${grubcfg_files[@]}"; do
             cmds+=("$cmd '$file'")
         done    
-    
-    # if src was used to boot the system
-    elif [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
-        cecho -e "\nFile '${OFF}grub*.cfg$YELLOW' was not found." | tee -a "$ERRFILE"
     fi
 
     local GRUBDEF_FILE="/etc/default/grub"
@@ -2302,7 +2298,8 @@ clone() {
 
         # if boot partition and bios flag is set, install grub on bios
         # partition
-        if [[ "$dstptn" == "$dstdrv$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]]
+        if [[ "$dstptn" == "$dstdrv$DP${boot_ptn_nums[1]}" && $bios -eq 1 ]] &&
+           which grub-install &> /dev/null
         then
             echo -e "\tCreating command to install grub on bios"\
                     "partition on destination drive..."
