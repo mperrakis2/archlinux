@@ -3,23 +3,26 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
 
 1. before clone
    ============
-   bleachbit
-   sudo bleachbit
+   $ bleachbit
+   $ sudo bleachbit
 
 2. run cloning script (see next group)
 
 3. after clone
    ===========
-   run kodi to update kodi add ons
-   run qBitTorrent and update plug ins
-   fwupdmgr update
-
-   Add/Remove Software (pamac)
+   Add/Remove Software with pamac (GUI):
        a. Refresh databases
        b. Updates -> install
 
    or
 
-   paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all --rebuild=tree
-   paru --clean
-   paru --repoctl --clean
+   Use command line:
+       a. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all --rebuild=tree
+       b. $ paru --clean
+       c. $ paru --repoctl --clean
+
+   and then
+
+   $ fwupdmgr update
+   run kodi to update kodi add ons
+   run qBitTorrent and update plug ins
