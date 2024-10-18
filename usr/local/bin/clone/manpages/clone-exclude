@@ -3,13 +3,13 @@
 .SH NAME
 exclude \- configuration file for \fBclone.sh\fR that contains files/dirs to be excluded from cloning
 .SH SYNOPSIS
-/etc/clone/exclude, ~/.config/clone/exclude, <pathname>
+/etc/clone/exclude, ~/.config/clone/exclude, <custom pathname>
 .SH DESCRIPTION
-The default directory of the \fBexclude\fR configuration file is \fI/etc/clone/exclude\fR. This file should never be deleted and if the default entries need to be modified, deleted or new ones added it is best to create an override file.
+The default directory of the \fBexclude\fR configuration file is \fI/etc/clone/exclude\fR. This file should never be deleted and if the default entries need to be modified or deleted it is best to create a customized file. However, if new entries need to be added this file can be updated.
 
-\fBclone.sh\fR searches for an override file if not run under \fI/usr/local/bin/clone/\fR. The directory of the override file must be \fI~/.config/clone/\fR and the filename has to be \fIexclude\fR.
+\fBclone.sh\fR searches for a customized file if not run under the directory it is installed (usually \fI/usr/local/bin/clone/\fR). The directory of the customized file must be \fI~/.config/clone/\fR and the filename has to be \fIexclude\fR.
 
-An override file can also be provided when executing \fBclone.sh\fR with the \fB-e\fR command line option. This takes precedence over any other files and the pathname may contain any directory and filename (not restricted to \fIexclude\fR).
+A customized file can also be provided when executing \fBclone.sh\fR with the \fB-e\fR command line option. This takes precedence over any other files and the pathname may be any valid directory and filename (not restricted to \fIexclude\fR).
 .SH EXAMPLES
 .I GENERAL USE
 
@@ -51,7 +51,7 @@ Another example of a tuple:
 
 .I SPECIAL & ESCAPED CHARACTERS
 
-If a filename or dirname includes spaces or parentheses or escaped characters like a newline they have to be escaped. For example,
+If a filename or dirname includes spaces, parentheses or escaped characters, e.g. newline, they have to be escaped. For example,
 
 [prompt]$ ls -1
 
@@ -75,7 +75,7 @@ All escaped characters have to be specified as $'\\<ec>'.
 
 .B c)\fR -|+<fspec>
 
-A leading sign ('-' or '+') followed by a mandatory file specification (<fspec>) and an optional '/'. <fspec> specifies pathnames of files or directories and all metacharacters of the bash shell can be used. <fspec> must have a leading '/' and if followed by one a directory is specifed. If not followed by one a directory or file is specified.
+A leading sign ('-' or '+') followed by a mandatory file specification (<fspec>) and an optional '/'. <fspec> specifies pathnames of files or directories and all metacharacters of the bash shell can be used. <fspec> must have a leading '/' and if it has a trailing '/' a directory is specified else a directory or file is specified.
   
 .I examples
 
@@ -125,26 +125,25 @@ A leading sign ('-' or '+') followed by a mandatory file specification (<fspec>)
 
 .B d)\fR -|+/[<path>] [<path>]<name>
 
-A leading sign ('-' or '+') followed by a '/' and a <path> which is optional and can have a trailing '/'. All metacharacters of the bash shell can be used in <path>. The next token contains an optional <path> which can't have a leading '/'. <name> specifies filenames or dirnames. <path> and <name> must be separated by a '/'. The following metacharacters can be used in 
-[<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies directories only.
+A leading sign ('-' or '+') followed by a '/' and a <path> which is optional and can have a trailing '/'. All metacharacters of the bash shell can be used in <path>. The next token contains an optional <path> which can't have a leading '/'. <name> specifies filenames or dirnames. <path> (in the second token) and <name> must be separated by a '/'. The following metacharacters can be used in [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies a directory only (not a file).
   
 .I examples
 
--/dir1/dir2/ report*      (exclude all files and directories beginning with 'report' that are under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2/ report* (exclude all files and directories beginning with 'report' that are under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
--/dir1/dir2 report*/      (exclude directories beginning with 'report' that are under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2 report*/ (exclude directories beginning with 'report' that are under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
--/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under any 'dir3' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
--/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under any 'dir3' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
 .I exclude/include tuple example
 
--/dir1/dir2 dir3/dir4/           (exclude directory 'dir4' that is under any 'dir3' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2 dir3/dir4/ (exclude directory 'dir4' that is under any 'dir3' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
-+/dir1/dir2 dir3/dir4/file1.txt  (include 'file1.txt' that is under any '/dir3/dir4/' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
++/dir1/dir2 dir3/dir4/file1.txt (include 'file1.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
-+/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any '/dir3/dir4/' directory that is under: '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
++/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
 
 .I other examples
 
