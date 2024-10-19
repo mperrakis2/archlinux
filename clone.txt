@@ -6,7 +6,7 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
    $ bleachbit
    $ sudo bleachbit
 
-2. run cloning script (see next group)
+2. run clone script (see group 'scripts & files')
 
 3. after clone
    ===========
