@@ -1,0 +1,15 @@
+[Unit]
+Description=Light Display Manager
+Documentation=man:lightdm(1)
+Conflicts=getty@tty1.service
+After=getty@tty1.service systemd-user-sessions.service plymouth-quit.service acpid.service
+
+[Service]
+ExecStart=/usr/local/bin/lightdm.sh # this is an override see script for comments
+Environment=LANG=el_GR.utf8         # this is an override
+Restart=always
+IgnoreSIGPIPE=no
+BusName=org.freedesktop.DisplayManager
+
+[Install]
+Alias=display-manager.service

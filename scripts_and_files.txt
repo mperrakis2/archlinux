@@ -36,14 +36,14 @@ configuration files
 /etc/clone/fstypes         # maps filesystem names to the command that creates them (ditto)
 /etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
-/usr/share/libalpm/hooks/cpshim.hook                                 # hook for script with same name under /usr/local/bin
-/usr/share/libalpm/hooks/grub_sbsign.hook                            # ditto
 /etc/skel/.bashrc                                                    # useful stuff for all users
 /etc/skel/.config/locale.conf                                        # default language for new user
 /etc/sudoers.d/override                                              # users added to the sudo group don't have to use their password
 /etc/systemd/logind.conf.d/override.conf                             # override default user login settings
 /etc/systemd/sleep.conf.d/override.conf                              # override default sleep, suspend, hibernate settings
 /etc/systemd/system/archlinux-keyring-wkd-sync.timer.d/override.conf # override to run timer daily
-/etc/systemd/system/lightdm.service.d/override.conf                  # override to display greeter in Greek and set intel gfx driver cfg file for Xorg
 /etc/systemd/system/pacman-filesdb-refresh.timer.d/override.conf     # override to refresh pacman DB packages daily
 /etc/systemd/system/pamac-cleancache.service.d/override.conf         # override to remove pamac build files
+/usr/lib/systemd/system/lightdm.service                              # updated to launch script and set language to Greek
+/usr/share/libalpm/hooks/cpshim.hook                                 # hook for script with same name under /usr/local/bin
+/usr/share/libalpm/hooks/grub_sbsign.hook                            # ditto
