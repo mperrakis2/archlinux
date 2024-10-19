@@ -205,18 +205,18 @@ init() {
         h|:|\?)  cat << usage_msg
 command line options
 --------------------
--e <exclude_file> : pathname to file that contains files/dirs to be excluded
+-e <exclude_file> : pathname of file that contains files/dirs to be excluded
                     from cloning
--f <fstypes_file> : pathname to file that contains the commands to format
+-f <fstypes_file> : pathname of file that contains the commands to format
                     various filesystems
 
 if any of the above is not specified the default files are searched under:
 
-* /etc/clone/, if the script is run under the directory it is installed
-(usually /usr/local/bin/clone/) or ~/.config/clone/ does not exist
+* /etc/clone/, if the script is run under the directory it is installed in
+(usually /usr/local/bin/clone/) or if ~/.config/clone/ does not exist
 
 * ~/.config/clone/, if it exists and the script is not run under the directory
-it is installed
+it is installed in
 usage_msg
             exit 0
             ;;
@@ -258,11 +258,11 @@ usage() {
 
     # read file that contains files and/or directories to be excluded from or
     # included in cloning and save them
-    local -i num
+    local -i fd
     local -a filters=()
 
-    exec {num}< "$FILTERS_FILE" # open filters file
-    while read -r -u $num; do
+    exec {fd}< "$FILTERS_FILE" # open filters file
+    while read -r -u $fd; do
         # remove leading & trailing spaces and tabs
         REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
         (( ! ${#REPLY} ))  && continue  # skip empty lines
@@ -279,7 +279,7 @@ usage() {
         
         filters+=("$REPLY") # save entry excluded from or included in cloning
     done
-    exec {num}<&- # close the filters file
+    exec {fd}<&- # close the filters file
 
     cat << usage_msg
 DESCRIPTION
@@ -292,29 +292,46 @@ will ${YELLOW}NOT$OFF be cloned. Here they are:
 
 usage_msg
 
-    for num in "${!filters[@]}"; do
-        cecho "$CYAN${filters[num]}"
+    for fd in "${!filters[@]}"; do
+        cecho "$CYAN${filters[fd]}"
     done
     echo
     
+    g_parted_data=()
+    
+    # get drive and partition data in human readable format
+    readarray -t g_parted_data < <(parted --script --list 2> /dev/null)
+
+    local line
+    local -i i
+
+    # create buf with chars of '=' with len >= longest line of parted output
+    ((fd=0))
+    filters=()
+    for line in "${g_parted_data[@]}"; do
+        if (( fd < ${#line} )); then
+            for (( i = 0; i < ${#line} - fd; ++i )); do filters[0]+="="; done
+            ((fd=${#line}))
+        fi
+    done
+
     cat << usage_msg
 ${YELLOW}LIMITATIONS
 ===========$OFF
 see ${YELLOW}LIMITS$OFF section in man page (man clone)
 
 LIST OF DRIVES
-================================================
 usage_msg
+
+    echo ${filters[0]} # print underlines
 
     g_parted_data=()
     
     # get drive and partition data in human readable format
     readarray -t g_parted_data < <(parted --script --list 2> /dev/null)
 
-    ((drv_cnt=0))
-    local line
-
     # iterate over drive and partition data
+    ((drv_cnt=0))
     for line in "${g_parted_data[@]}"; do
         # the output of 'parted' command is something like:
         #
@@ -330,13 +347,14 @@ usage_msg
         fi
     done
 
+    echo ${filters[0]} # print underlines
+
     cat << usage_msg
-================================================
 
 USAGE
 =====
 Enter the number of the source drive followed by the number of the destination
-drive (see "LIST OF DRIVES" section above), e.g. 1 2
+drive separated by a space (see "LIST OF DRIVES" section above), e.g. 1 2
 
 ${YELLOW}WARNING
 =======
@@ -1944,6 +1962,7 @@ clone() {
     local entry
     local ptn_pair # src partition and its corresponding dst partition
     local file
+    local buf
     local -a swap_file_cmds=()
     local -i size
     local -a files=()
@@ -1971,8 +1990,8 @@ clone() {
                 ((found=0))
 
                 # check if swap file has been added to swap file list
-                for added_swap_file in "${files[@]}"; do
-                    [[ "$added_swap_file" == "$file" ]] && found=1 && break
+                for buf in "${files[@]}"; do
+                    [[ "$buf" == "$file" ]] && found=1 && break
                 done
                 (( found )) && continue    # swap file has been added so skip it
                 files+=("$file") # add swap file to swap file list
@@ -2151,8 +2170,8 @@ clone() {
     done
 
     local UUID
-    local buf=""
-
+    
+    buf=""
     if [[ "${grubcfg_files[*]}" ]]; then
         echo -e "\tCreating commands to update grub cfg file on destination drive..."
 
@@ -2241,13 +2260,11 @@ clone() {
     local -i removable=0
     [[ "${dstdata[1]}" == usb || "${dstdata[2]}" -eq 1 ]] && ((removable=1))
 
-    local swap_file_UUID
-    local -i swap_file_offset        
-    local STR_UUID="resume=UUID="
-    local RE_SEARCH_UUID="${STR_UUID}[a-fA-F0-9-]\+"
-    local STR_OFFSET="resume_offset="
-    local RE_SEARCH_OFFSET="${STR_OFFSET}[0-9]\+"
-    readonly STR_UUID RE_SEARCH_UUID STR_OFFSET RE_SEARCH_OFFSET
+    local PREFIX_UUID="resume=UUID="
+    local RE_UUID="${PREFIX_UUID}[a-fA-F0-9-]\+"
+    local PREFIX_OFFSET="resume_offset="
+    local RE_OFFSET="${PREFIX_OFFSET}[0-9]\+"
+    readonly PREFIX_UUID RE_UUID PREFIX_OFFSET RE_OFFSET
 
     local dstptn
     local EFI="[Ee][Ff][Ii]"
@@ -2267,29 +2284,27 @@ clone() {
                 file="$dstmnt${file:1}" # add dst dir and remove '/'
 
                 # get swap file UUID and offset
-                swap_file_UUID=$(findmnt -no UUID -T "$file")
-                swap_file_offset=$(filefrag -v "$file" | \
-                                awk '$1=="0:" {print substr($4, 1, length($4)-2)}')
+                UUID=$(findmnt -no UUID -T "$file")
+                ((size=$(filefrag -v "$file" | \
+                         awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
 
-                cmds+=("[[ '$swap_file_UUID' =~ ^[a-fA-F0-9][a-fA-F0-9-]+$ && \
-                           '$swap_file_offset' =~ ^[0-9]+$ && \
-                           '$swap_file_offset' -gt 0 ]]")
+                cmds+=("[[ '$UUID' =~ ^[a-fA-F0-9][a-fA-F0-9-]+$ && \
+                           '$size' =~ ^[0-9]+$ && '$size' -gt 0 ]]")
                         
-                local REPLACE_UUID="$STR_UUID$swap_file_UUID"
-                local REPLACE_OFFSET="$STR_OFFSET$swap_file_offset"
-                readonly REPLACE_UUID REPLACE_OFFSET
+                UUID="$PREFIX_UUID$UUID"
+                buf="$PREFIX_OFFSET$size"
                 
                 # replace UUID and offset with that of dst in grub cfg default file
                 file="$dstmnt$GRUBDEF_FILE"
                 if [[ -f "$file" && -r "$file" && -s "$file" ]]; then
-                    cmds+=("sed -i 's|$RE_SEARCH_UUID|$REPLACE_UUID|g' '$file'")
-                    cmds+=("sed -i 's|$RE_SEARCH_OFFSET|$REPLACE_OFFSET|g' '$file'")
+                    cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
+                    cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
                 fi
 
                 # replace UUID and offset with that of dst in grub cfg files
                 for file in "${grubcfg_files[@]}"; do
-                    cmds+=("sed -i 's|$RE_SEARCH_UUID|$REPLACE_UUID|g' '$file'")
-                    cmds+=("sed -i 's|$RE_SEARCH_OFFSET|$REPLACE_OFFSET|g' '$file'")
+                    cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
+                    cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
                 done    
             fi
         done
