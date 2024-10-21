@@ -1829,7 +1829,7 @@ mask_sleep() {
                 if (( $# == 1 )); then
                     cecho -e "\nDisabling sleep (suspend/hibernate)..."
                 else
-                    echo -e "\nDisabling sleep (suspend/hibernate)..."
+                    echo "Disabling sleep (suspend/hibernate)..."
                 fi
                 
                 cmds+=("chmod go=+r $SLPFILE")
