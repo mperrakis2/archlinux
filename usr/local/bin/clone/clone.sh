@@ -1870,7 +1870,7 @@ mask_sleep() {
             cecho -e "${RED}Disabling sleep (suspend/hibernate) was unsuccessful...\n"
             cleanup 1
         else
-            cecho -e "${GREEN}Sleep (suspend/hibernate) was disableed successfully...\n"
+            cecho -e "${GREEN}Sleep (suspend/hibernate) was disabled successfully...\n"
         fi
 
     return $err
