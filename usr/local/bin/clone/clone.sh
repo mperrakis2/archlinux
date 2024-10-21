@@ -1825,9 +1825,9 @@ mask_hibernation() {
             hibernate cmds "mask" # add cmds to mask hibernation
             if (( ${#cmds[@]} )); then
                 if (( $# == 1 )); then
-                    cecho "Masking hibernation..."
+                    cecho -e "\nMasking hibernation..."
                 else
-                    echo "Masking hibernation..."
+                    echo -e "\nMasking hibernation..."
                 fi
                 
                 cmds+=("chmod go=+r $HBNFILE")
