@@ -101,9 +101,6 @@ readonly OFF
 REDB="$BOLD$(tput setab 1)"
 readonly REDB
 
-declare -i SIGMASK=128
-readonly SIGMASK
-
 # the variables below are field numbers used by the field() function
 # BEGIN
 declare -i DNAME=1
@@ -1805,7 +1802,7 @@ mask_hibernation() {
         sync
         exec &> /dev/tty
 
-        cecho -e "\n\nReceived signal USR1 from another clone process"\
+        cecho -e "\n\nReceived signal from another clone process"\
                  "to mask/unmask hibernation..."
     fi  
 
@@ -1867,10 +1864,10 @@ mask_hibernation() {
     
     (( $# == 1 )) &&
         if (( err )); then
-            cecho -e "${RED}Signal USR1 was handled unsuccessfully...\n"
+            cecho -e "${RED}Masking hibernation was unsuccessful...\n"
             cleanup 1
         else
-            cecho -e "${GREEN}Signal USR1 was handled successfully...\n"
+            cecho -e "${GREEN}Hibernation was masked successfully...\n"
         fi
 
     return $err
@@ -2391,36 +2388,20 @@ clone() {
 # return: 0 on success, 1 if parameter error else the error code of the command
 #         that failed
 cleanup() {
-    local -i sig=$? # the received signal is equal to sig+128
-
     valid_opt_param "$1" # validate parameter
-    
+
     local -i err=0
     local -a cmds
 
     # if cancellation signal was received
     if (( $# == 1 )); then
-        # if user canceled while waiting for input in the read function or
-        # while rsync was running, the received signal is < SIGMASK
-        (( sig < SIGMASK )) && ((sig=SIGMASK+2)) # set it to SIGINT
-
-        local signame
-
-        ((sig-=SIGMASK))
-        case $sig in
-            [1-9]*) signame=" $sig) " ;;
-            [10-64]*) signame="$sig) " ;; # max sig is 64
-        esac
-        
-        signame=$(expr "$(kill -l | grep "$signame")" : "^.*$signame\([A-Z]\+\)")
-        
-        cecho -e "\n\nReceived signal '$signame'. Please let cleanup finish."\
-                 "\nCleanup in progress..."
+        cecho -e "\n\nReceived signal to terminate cloning. Please wait till "\
+                 "cleanup has completed.\nCleanup in progress..."
 
         # pids of processes running in background
         local -a pids
         mapfile -t pids < <(jobs -p)
-    
+
         if (( ${#pids[@]} )); then # kill processes running in background
             echo -e "\tKilling jobs running in the background..."
             
@@ -2463,7 +2444,7 @@ cleanup() {
 
         rsync_params=()
         
-        echo -e "\tIgnore signal USR1 to mask/unmask hibernation..."
+        echo -e "\tIgnore signal to mask/unmask hibernation..."
 
         # ignore sig USR1 in order not to mask/unmask hibernation
         cmds=("trap '' USR1")

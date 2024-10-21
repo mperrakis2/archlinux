@@ -1026,6 +1026,8 @@ exec_cmds() {
     local -i j
     local -i err=0
     local -i pid
+    local -i SIGMASK=128
+    readonly SIGMASK
 
     echo -e "\tExecuting\n\t=========" | tee -a "$CMDFILE"
     for i in "${!cmds[@]}"; do
