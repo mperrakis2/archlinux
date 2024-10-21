@@ -32,8 +32,8 @@
 #                  its src and dst are not destinations for another clone script
 #                  instance (multiple instances are allowed as long as 
 #                  destinations are different)
-# 'hbn_clone_pid': lock file to ensure that only one clone script instance is
-#                  responsible for masking/unmasking hibernation
+# 'slp_clone_pid': lock file to ensure that only one clone script instance is
+#                  responsible for masking/unmasking sleep (suspend/hibernate)
 #
 # * lock files are created under /var/lock/<script>.sh_$PUUID/ (see definition
 #   of $PUUID below) which is deleted after all clone script instances have
@@ -80,8 +80,8 @@ CANCEL_SIGNALS="ABRT HUP INT QUIT TERM"
 readonly CANCEL_SIGNALS
 LCKFILE="$LCKDIR/clone_pids"
 readonly LCKFILE
-HBNFILE="$LCKDIR/hbn_clone_pid"
-readonly HBNFILE
+SLPFILE="$LCKDIR/slp_clone_pid"
+readonly SLPFILE
 
 # bold colors foreground
 BOLD=$(tput bold)
@@ -1789,26 +1789,27 @@ create_partitions() {
     fi
 }
 
-# mask hibernation if it is unmasked
+# mask sleep (suspend/hibernate) if it is unmasked
 # return: 0 on success, 1 if parameter error else the error code of the command
 #         that failed
-mask_hibernation() {
+mask_sleep() {
     valid_opt_param "$1" # validate parameter
     
     # some other clone process has completed or was interrupted and sent signal
-    # USR1 so that this process can handle masking/unmasking hibernation
+    # USR1 so that this process can handle masking/unmasking sleep 
+    # (suspend/hibernate)
     if (( $# == 1 )); then
         # sync and restore stdout and stderr to the terminal
         sync
         exec &> /dev/tty
 
         cecho -e "\n\nReceived signal from another clone process"\
-                 "to mask/unmask hibernation..."
+                 "to disable/enable sleep (suspend/hibernate)..."
     fi  
 
     local -i fd
 
-    exec {fd}>>"$HBNFILE" # append to the hibernation lock file
+    exec {fd}>>"$SLPFILE" # append to the sleep lock file
     
     # critical section follows
     flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
@@ -1818,56 +1819,58 @@ mask_hibernation() {
         local SEP="//"
         readonly SEP
         
-        # mask/unmask hibernation if no other clone process already does
-        if [[ ! -s "$HBNFILE" ]]; then
+        # mask/unmask sleep (suspend/hibernate) if no other clone process
+        # already does
+        if [[ ! -s "$SLPFILE" ]]; then
             local -a cmds
 
-            hibernate cmds "mask" # add cmds to mask hibernation
+            system_sleep cmds "mask" # add cmds to mask sleep (suspend/hibernate)
             if (( ${#cmds[@]} )); then
                 if (( $# == 1 )); then
-                    cecho -e "\nMasking hibernation..."
+                    cecho -e "\nDisabling sleep (suspend/hibernate)..."
                 else
-                    echo -e "\nMasking hibernation..."
+                    echo -e "\nDisabling sleep (suspend/hibernate)..."
                 fi
                 
-                cmds+=("chmod go=+r $HBNFILE")
+                cmds+=("chmod go=+r $SLPFILE")
                 exec_cmds "${cmds[@]}"
                 ((err=$?))
 
-                # add entry to hibernation lock file
+                # add entry to sleep lock file
                 if (( ! err )); then
                     echo "$$_$OPTIONS_S" >&$fd
-                    echo -n "$HBN_CFG_MNT_DIR $SEP " >&$fd
-                    echo "${rsync_filters[$HBN_CFG_MNT_DIR]}" >&$fd
+                    echo -n "$SLP_CFG_MNT_DIR $SEP " >&$fd
+                    echo "${rsync_filters[$SLP_CFG_MNT_DIR]}" >&$fd
                 fi
             fi
         else
-            # if some other clone process is masking/unmasking hibernation then
-            # hibernation files must be excluded from cloning
-            local hbn_entry
+            # if some other clone process is masking/unmasking sleep 
+            # (suspend/hibernate) then sleep lock file must be excluded from
+            # cloning
+            local slp_entry
             local mnt_dir
             local excludes
             
-            hbn_entry=$(tail -1 "$HBNFILE")
-            mnt_dir=$(expr "$hbn_entry" : "^\(.\+\) $SEP")
-            excludes=$(expr "$hbn_entry" : "^.\+ $SEP \(.\+\)$")
+            slp_entry=$(tail -1 "$SLPFILE")
+            mnt_dir=$(expr "$slp_entry" : "^\(.\+\) $SEP")
+            excludes=$(expr "$slp_entry" : "^.\+ $SEP \(.\+\)$")
             [[ ! "${rsync_filters[$mnt_dir]}" =~ $excludes ]] && 
                 rsync_filters[$mnt_dir]+="$excludes"
         fi
 
         (( ! err )) &&
-            trap_signals "mask_hibernation 1" USR1 # signal handler for USR1
+            trap_signals "mask_sleep 1" USR1 # signal handler for USR1
 
         flock -u $fd # release lock
     fi
-    exec {fd}>&- # close hibernation lock file
+    exec {fd}>&- # close sleep lock file
     
     (( $# == 1 )) &&
         if (( err )); then
-            cecho -e "${RED}Masking hibernation was unsuccessful...\n"
+            cecho -e "${RED}Disabling sleep (suspend/hibernate) was unsuccessful...\n"
             cleanup 1
         else
-            cecho -e "${GREEN}Hibernation was masked successfully...\n"
+            cecho -e "${GREEN}Sleep (suspend/hibernate) was disableed successfully...\n"
         fi
 
     return $err
@@ -2444,13 +2447,13 @@ cleanup() {
 
         rsync_params=()
         
-        echo -e "\tIgnore signal to mask/unmask hibernation..."
+        echo -e "\tIgnore signal to disable/enable sleep (suspend/hibernate)..."
 
-        # ignore sig USR1 in order not to mask/unmask hibernation
+        # ignore sig USR1 in order not to mask/unmask sleep (suspend/hibernate)
         cmds=("trap '' USR1")
         exec_cmds "${cmds[@]}"
 
-        unmask_hibernation
+        unmask_sleep
         ((tmp=$?))
         (( ! err )) && ((err=tmp))
         
@@ -2493,8 +2496,8 @@ result() {
     if [[ "$OPTIONS_S" && "$CMDFILE" =~ $OPTIONS_S ]]; then
         # get number of clone script instances
         if get_pids; then
-            # if this is the only clone process then pid & hibernation lock
-            # files can be safely removed
+            # if this is the only clone process then pid & sleep lock files can
+            # be safely removed
             echo -e "\tDeleting lock files directory $LCKDIR ..."
 
             declare -a cmds=()
@@ -2541,7 +2544,7 @@ readonly FSTYPES_FILE FILTERS_FILE
         populate_arrays   && # create data structures used for cloning
         calc_drvspace     && # check if src fits on dst
         create_partitions && # create partitions on dst if different than src
-        mask_hibernation  &&
+        mask_sleep        &&
         clone
         ((err=$?))
     done

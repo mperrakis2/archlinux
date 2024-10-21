@@ -10,11 +10,11 @@ get_cfg_fname() {
         exit_with_stack "\nOne param required: filename. Exiting."
 
     local cwd
-    local gbl_cfgdir="/etc/clone/" # global cfg dir
+    local gbl_cfgdir="/etc/clone" # global cfg dir
     local lcl_cfgdir
 
     cwd=$(pwd)
-    lcl_cfgdir=$(eval echo ~$(logname))"/.config/clone/" # local cfg dir
+    lcl_cfgdir=$(eval echo ~$(logname))"/.config/clone" # local cfg dir
 
     if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfgdir/$1" && \
           -r "$lcl_cfgdir/$1" && -s "$lcl_cfgdir/$1" ]]
@@ -803,17 +803,17 @@ align_size() {
     fi
 }
 
-readonly HBN_CFG_DIR="/etc/systemd/system"
-HBN_CFG_PTN=$(df -ak --sync --output=source "$HBN_CFG_DIR" | tail -1)
-readonly HBN_CFG_PTN
-HBN_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$HBN_CFG_PTN")
-readonly HBN_CFG_MNT_DIR
-declare -a hibernate_cmds=()
+readonly SLP_CFG_DIR="/etc/systemd/system"
+SLP_CFG_PTN=$(df -ak --sync --output=source "$SLP_CFG_DIR" | tail -1)
+readonly SLP_CFG_PTN
+SLP_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$SLP_CFG_PTN")
+readonly SLP_CFG_MNT_DIR
+declare -a sleep_cmds=()
 
-# create mask/unmask hibernation commands
+# create mask/unmask sleep commands
 # $1: ref to str array, store the commands
 # $2: optional, str, valid value: mask
-hibernate() {
+system_sleep() {
     local -i err=0
     
     (( $# == 2 )) && [[ "$2" != "mask" ]] && ((err=1))
@@ -824,15 +824,15 @@ hibernate() {
         exit_with_stack "$msg"
     fi
 
-    if (( $# == 2 )); then # mask hibernation
+    if (( $# == 2 )); then # mask sleep
         local target
         local -a TARGETS=("sleep.target" "suspend.target" "hibernate.target")
-        local hibernate_cmd=""
+        local sleep_cmd=""
         local rsync_exclude
 
         TARGETS+=("hybrid-sleep.target" "suspend-then-hibernate.target")
         readonly TARGETS
-        hibernate_cmds=()
+        sleep_cmds=()
 
         # iterate over targets and create commands to mask unmasked ones
         for target in "${TARGETS[@]}"; do
@@ -841,32 +841,32 @@ hibernate() {
             
             if (( ${PIPESTATUS[-1]} )); then # get output of last pipe, i.e. grep
                 # create cmd to mask target
-                if (( ${#hibernate_cmd} )); then
-                    hibernate_cmd+="$target "
+                if (( ${#sleep_cmd} )); then
+                    sleep_cmd+="$target "
                 else
-                    hibernate_cmd+="systemctl $2 $target "
+                    sleep_cmd+="systemctl $2 $target "
                 fi
                 
-                rsync_exclude="-f \"- $HBN_CFG_DIR/$target\" "
-                [[ ! "${rsync_filters[$HBN_CFG_MNT_DIR]}" =~ $rsync_exclude ]] &&
-                    rsync_filters["$HBN_CFG_MNT_DIR"]+="$rsync_exclude"
+                rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
+                [[ ! "${rsync_filters[$SLP_CFG_MNT_DIR]}" =~ $rsync_exclude ]] &&
+                    rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
             fi
         done
         
-        (( ${#hibernate_cmd} )) && hibernate_cmds+=("$hibernate_cmd")
+        (( ${#sleep_cmd} )) && sleep_cmds+=("$sleep_cmd")
     fi
 
-    # add command to mask/unmask hibernation
-    if (( ${#hibernate_cmds[@]} )); then
+    # add command to mask/unmask sleep
+    if (( ${#sleep_cmds[@]} )); then
         local -n ref="$1"
     
-        ref+=("${hibernate_cmds[@]}")
+        ref+=("${sleep_cmds[@]}")
         if (( $# == 2 )); then 
-            # unmask hibernation
-            hibernate_cmds=("${hibernate_cmds[@]//$2/unmask}")
-            hibernate_cmds+=("flock '$HBNFILE' truncate -s 0 '$HBNFILE'")
+            # unmask sleep
+            sleep_cmds=("${sleep_cmds[@]//$2/unmask}")
+            sleep_cmds+=("flock '$SLPFILE' truncate -s 0 '$SLPFILE'")
         else
-            hibernate_cmds=()
+            sleep_cmds=()
         fi
     fi
 }
@@ -1179,23 +1179,24 @@ valid_opt_param() {
 }
 
 # return: 0 on success else the error code of the command that failed
-unmask_hibernation() {
+unmask_sleep() {
     local -a cmds=()
-    hibernate cmds # add cmds to unmask hibernation
+    system_sleep cmds # add cmds to unmask sleep
     
-    (( ${#cmds[@]} )) && echo -e "\tUnmasking hibernation..."
+    (( ${#cmds[@]} )) && echo -e "\tEnabling sleep (suspend/hibernate)..."
     exec_cmds "${cmds[@]}"
     local -i err=$?
 
     if (( ! err  && ${#cmds[@]} )); then
-        # if other clone processes exist, one of them must mask/unmask
-        # hibernation so send signal USR1 to all of them
+        # if other clone processes exist, one of them must mask/unmask sleep so
+        # send signal USR1 to all of them
         get_pids 1
         ((err=$?))
         
-        # In case the desktop environment attempted hibernation and it failed, 
-        # a notification was sent and a popup appears on the desktop. The popup
-        # has no timeout so the following code clears all popups.
+        # In case the desktop environment attempted sleep (suspend/hibernate) 
+        # and it failed, a notification was sent and a popup appears on the
+        # desktop. The popup has no timeout so the following code clears all
+        # popups.
         if [[ "$DISPLAY" ]]; then            
             local -i nid
             local user
@@ -1274,8 +1275,9 @@ get_pids() {
                     if (( $# == 1 )); then
                         cmds=("kill -s USR1 $pid")
                         if exec_cmds "${cmds[@]}"; then
-                            cecho -e "\tSent signal USR1 to 'clone.sh' process"\
-                                     "with ID $pid to mask/unmask hibernation...\n"
+                            cecho -e "\tSent signal to 'clone.sh' process with "\
+                                     "ID $pid to disable/enable sleep "\
+                                     "(suspend/hibernate)...\n"
                         fi
                     else
                         ((++i))
