@@ -494,9 +494,9 @@ setup_env() {
     chmod go=+r "$LOGFILE" "$ERRFILE" "$CMDFILE"
     ((fd=$?))
     if (( fd )); then
-        cechot "The log directory, $YELLOW'$LOGDIR'$RED, could not be created "\
-               "or set to read & execute or one of $YELLOW'$LOGFILE'$RED, "\
-               "$YELLOW'$ERRFILE'$RED or $YELLOW'$CMDFILE'$RED, could not be "\
+        cechot "The log directory, $YELLOW'$LOGDIR'$RED, could not be created"\
+               "or set to read & execute or one of $YELLOW'$LOGFILE'$RED,"\
+               "$YELLOW'$ERRFILE'$RED or $YELLOW'$CMDFILE'$RED, could not be"\
                "created or set to read. Exiting."
         return $fd
     fi
@@ -1168,8 +1168,8 @@ calc_drvspace() {
                 if [[ "${user_filters["$k"]: -1}" == "/" && \
                         "${paths[*]}" =~ "${user_filters["$k"]}" ]]; then
                     cechot "$CYAN'${paths[*]}'$YELLOW is under"\
-                            "$CYAN'${user_filters["$k"]}'$YELLOW and will be"\
-                            "omitted. $MSG."
+                           "$CYAN'${user_filters["$k"]}'$YELLOW and will be"\
+                           "omitted. $MSG."
                     ((match=1))
                     break
                 fi
@@ -1180,7 +1180,7 @@ calc_drvspace() {
                 if [[ "${paths[i-1]: -1}" == "/" && \
                         "${user_filters["$k"]}" =~ "${paths[*]}" ]]; then
                     cechot "$CYAN'${user_filters["$k"]}'$YELLOW is under"\
-                            "$CYAN'${paths[*]}'$YELLOW and will be omitted. $MSG."
+                           "$CYAN'${paths[*]}'$YELLOW and will be omitted. $MSG."
                     for i in ${filters["$k"]}; do # remove filter entries
                         unset entries[i]
                     done
@@ -1455,7 +1455,7 @@ calc_drvspace() {
     if (( clone_size > dst_drv_size )); then
         cechot "${RED}Data on source drive does not fit on destination drive"\
                "${RED}($YELLOW${sizes[2]} > ${sizes[3]}$RED). Exiting."\
-            | tee -a "$ERRFILE"
+               | tee -a "$ERRFILE"
         return 1
     else
         cechot "${GREEN}Data on source drive (${OFF}${sizes[2]}$GREEN) fits"\
@@ -1483,7 +1483,7 @@ calc_drvspace() {
             if (( $? )); then
                 if [[ "$buf" == "/" ]]; then
                     cecho "No souce partition found for '$k'. Exiting."\
-                        | tee -a "$ERRFILE"
+                          | tee -a "$ERRFILE"
                     return 1
                 else
                     buf=$(dirname "$buf" | tail -1)
@@ -2398,7 +2398,7 @@ cleanup() {
 
     # if cancellation signal was received
     if (( $# == 1 )); then
-        cecho -e "\n\nReceived signal to terminate cloning. Please wait till "\
+        cecho -e "\n\nReceived signal to terminate cloning. Please wait till"\
                  "cleanup has completed.\nCleanup in progress..."
 
         # pids of processes running in background

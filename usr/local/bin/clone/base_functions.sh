@@ -1275,8 +1275,8 @@ get_pids() {
                     if (( $# == 1 )); then
                         cmds=("kill -s USR1 $pid")
                         if exec_cmds "${cmds[@]}"; then
-                            cecho -e "\tSent signal to 'clone.sh' process with "\
-                                     "ID $pid to disable/enable sleep "\
+                            cecho -e "\tSent signal to 'clone.sh' process with"\
+                                     "ID $pid to disable/enable sleep"\
                                      "(suspend/hibernate)...\n"
                         fi
                     else
