@@ -1,7 +1,6 @@
 #! /bin/bash
 
-# disable all devices that are under acpi
-# if not disabled then the system wakes up right after suspend
+# disable all devices that are under acpi else the system wakes up right after suspend
 
 # make sure only one instance of the script can run at a time
 # taken from the man page of flock

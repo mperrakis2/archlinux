@@ -7,4 +7,4 @@ Target = shim-signed
 [Action]
 Description = After an install/update of the shim-signed package copy new shim binaries to ESP.
 When = PostTransaction
-Exec = /usr/local/bin/cpshim.sh
+Exec = /usr/sbin/cpshim.sh

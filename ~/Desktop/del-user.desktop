@@ -1,11 +1,11 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Delete User
+Name=Del User
 Comment=Delete a user and all its data.
-Exec=bash -c "sudo ./userdel.sh; ../wait.sh"
+Exec=bash -c "sudo ./userdel.sh; ../bin/wait.sh"
 Icon=list-remove-user
-Path=/usr/local/bin/
+Path=/usr/sbin/
 Terminal=true
 StartupNotify=false
 GenericName=delete user

@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# this script has to be run as root or sudo by adding the following to /etc/sudoers
-#
-# let all users run a virus scan
-# ALL   ALL=NOPASSWD: /usr/local/share/av.sh
-
 # make sure only one instance of the script can run at a time
 # taken from the man page of flock
 if [[ "${FLOCKER}" != "${BASH_SOURCE:-$0}" ]]; then

@@ -25,5 +25,6 @@ fi
 
 declare -i err=$?
 
-(( ! err )) && echo -e "\ndeleting user account '$REPLY' completed successfully"
+(( ! err )) && echo -e "\nuser account '$REPLY' has been deleted successfully"
+sync
 exit $err

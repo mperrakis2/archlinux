@@ -2,7 +2,7 @@
 # off after resuming from suspend.            
 
 [Unit]
-Description=Sync time & date after suspend, hibernate, etc.
+Description=Sync time & date after sleep (suspend, hibernate, etc.)
 After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
             
 [Service]

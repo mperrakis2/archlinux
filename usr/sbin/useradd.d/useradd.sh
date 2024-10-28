@@ -72,7 +72,7 @@ while read -er -p "$prompt" NEWUSER; do
             userdel -r "$user"
             ((err=$?))
             (( err )) && finish && exit $err
-            sync; sync -f        
+            sync
         fi
 
         break
@@ -114,7 +114,7 @@ readonly CMDFILE+="$$.cmd" # the commands themselves
 
 cmds+=("rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
               --chown='$NEWUSER':'$NEWUSER' -aAhHxlzEUtX --no-i-r --numeric-ids \
-              /usr/local/bin/useradd/new_user/ /home/'$NEWUSER'/" \
+              /usr/sbin/useradd.d/new_user/ /home/'$NEWUSER'/" \
        "rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
               --chown='$NEWUSER':'$NEWUSER' -aAhHxlzEUtX --no-i-r --numeric-ids \
               /etc/skel/.bash* /home/'$NEWUSER'/" \
@@ -140,7 +140,7 @@ for cmd in "${cmds[@]}"; do
     ((err=$?))
     (( err )) && error "$cmd"
 done
-sync; sync -f
+sync
 echo
 
 readonly TEMPLATE_USER=admin
@@ -162,7 +162,7 @@ if [[ "$NEWUSER" != "$TEMPLATE_USER" ]]; then
 	    ((err=$?))
         (( err )) && error "$cmd"
     done
-    sync; sync -f
+    sync
     echo
 fi
 
@@ -199,7 +199,7 @@ for bgdimg_cfgfile in "${BGDIMG_CFGFILES[@]}"; do
     ((err=$?))
     (( err )) && error "$cmd"
 done
-sync; sync -f
+sync
 echo
 
 if [[ "$NEWUSER" != "$TEMPLATE_USER" ]]; then

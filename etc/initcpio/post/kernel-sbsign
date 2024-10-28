@@ -16,4 +16,4 @@ for (( i=0; i<${#keypairs[@]}; i+=2 )); do
     fi
 done
 
-/usr/local/bin/grub_cfg_upd.sh # update grub.cfg with latest kernel versions
+/usr/bin/grub_cfg_upd.sh # update grub.cfg with latest kernel versions

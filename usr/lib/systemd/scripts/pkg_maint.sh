@@ -1,7 +1,6 @@
 #! /bin/bash
 
-# remove orphan packages and clear the package cache
-# also generate new mirrorlist file and update keyring package
+# remove orphan packages, clear the package cache and generate new mirrorlist file
 
 # make sure only one instance of the script can run at a time
 # taken from the man page of flock
@@ -93,5 +92,5 @@ while true; do
     sleep 1    
 done
 
-sync; sync -f
+sync
 exit $err

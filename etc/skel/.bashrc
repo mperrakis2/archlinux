@@ -73,7 +73,7 @@ export PS1="[\[\e[1;${color}m\]\\u\[\e[0m\]@\[\e[1;32m\]\\H\[\e[0m\]: \[\e[1;${c
 export HISTCONTROL=erasedups
 
 if groups "$(whoami)" | grep sudo &> /dev/null; then
-    alias pacman="/usr/local/bin/pacman_keyring.sh && sudo pacman"
-    alias paru="sudo /usr/local/bin/pacman_keyring.sh && paru"
+    alias pacman="/usr/bin/pacman_keyring.sh && $(which pacman)"
+    alias paru="sudo /usr/bin/pacman_keyring.sh && $(which paru)"
     export SUDO_EDITOR=mousepad
 fi

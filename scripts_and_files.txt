@@ -1,43 +1,44 @@
 maintenance scripts
 ===================
 /etc/NetworkManager/dispatcher.d/update-timezone.sh # update the timezone when network interface goes up
-/etc/initcpio/post/kernel-sbsign                    # sign linux kernel and update grub.cfg (see /usr/local/bin/upd_grub_cfg.sh)
+/etc/initcpio/post/kernel-sbsign                    # sign linux kernel and update grub.cfg (see /usr/bin/grub_cfg_upd.sh)
 
 /usr/bin/
-    av.sh                  # anti virus
     cp_kodi_cfg.sh         # copy kodi config files from one user account to another
-    lightdm.sh             # update intel gfx driver cfg file so Xorg doesn't freeze and then launch lightdm
-    pacman_keyring.sh      # update pacman DB and keyring packages if there's an updated keyring package
     grub_cfg_upd.sh        # update grub.cfg when installing/upgrading linux kernels
+    pacman_keyring.sh      # update pacman DB and keyring packages if there's an updated keyring package
     wait.sh                # used in desktop launchers that launch scripts to prevent the script window from closing
 
 /usr/lib/systemd/scripts/
-    disable_wakeup.sh      # called from /etc/systemd/system/disable_wakeup.service
+    disable_wakeup.sh      # called from /etc/systemd/system/disable_wakeup.service (disable devices under acpi else system wakes up right after suspend)
+    lightdm.sh             # called from /usr/lib/systemd/system/lightdm.service (upd cfg file for intel gfx driver so no Xorg freeze and then run lightdm)
     pkg_maint.sh           # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
-    sync_timedate.sh       # called after wakeup from suspend/hibernate in /etc/systemd/system/sync_timedate.service
+                           # (remove orphan packages, clear the package cache and generate new mirrorlist file)
+    sync_timedate.sh       # called from /etc/systemd/system/sync_timedate.service (sync time & date after sleep, e.g. suspend, hibernate, etc.)
 
 /usr/sbin/
+    av.sh                  # anti virus
     clone/
-        clone.sh           # clone one drive to another
         base_functions.sh  # don't run this (used only by clone.sh) 
+        clone.sh           # clone one drive to another
         manpages/
-            manpages.sh    # create man pages for clone script 
             clone          # man page for clone script
             clone-exclude  # man page for exclude configuration file for clone script 
+            manpages.sh    # create man pages for clone script 
     cpshim.sh              # copy shim binaries to boot partition when installing/upgrading shim signed               (see configuration files)
     grub_sbsign.sh         # install and sign grub bootloader and update grub cfg file when installing/upgrading grub (ditto)
     useradd/
-        useradd.sh         # add a new user and delete destination if it exists already
         new_user/          # directory that contains new user data
+        useradd.sh         # add a new user and delete destination if it exists already
     userdel.sh             # delete a user
 
 configuration files
 ===================
 /etc/clone/README          # point the user to the man pages for clone script
-/etc/clone/exclude         # contains dirs/files to exclude from cloning            (used by /usr/local/bin/clone/clone.sh above)
+/etc/clone/exclude         # contains dirs/files to exclude from cloning            (used by /usr/sbin/clone/clone.sh above)
 /etc/clone/fstypes         # maps filesystem names to the command that creates them (ditto)
-/etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
+/etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/skel/.bashrc                                                    # useful stuff for all users
 /etc/skel/.config/locale.conf                                        # default language for new user
 /etc/sudoers.d/override                                              # users added to the sudo group don't have to use their password
@@ -47,5 +48,5 @@ configuration files
 /etc/systemd/system/pacman-filesdb-refresh.timer.d/override.conf     # override to refresh pacman DB packages daily
 /etc/systemd/system/pamac-cleancache.service.d/override.conf         # override to remove pamac build files
 /usr/lib/systemd/system/lightdm.service                              # updated to launch script and set language to Greek
-/usr/share/libalpm/hooks/cpshim.hook                                 # hook for script with same name under /usr/local/bin
+/usr/share/libalpm/hooks/cpshim.hook                                 # hook for script with same name under /usr/sbin
 /usr/share/libalpm/hooks/grub_sbsign.hook                            # ditto

@@ -115,7 +115,7 @@ for cmd in "${CMDS[@]}"; do
 	err=$?
     (( err )) && error "$cmd"
 done
-sync; sync -f
+sync
 
 echo
 
@@ -135,7 +135,7 @@ for filename in "${FILENAMES[@]}"; do
 	((err=$?))
     (( err )) && error "$cmd"
 done
-sync; sync -f
+sync
 
 echo -e "\nCopying kodi configuration from user '$1' to user '$2' completed successfully."
 
