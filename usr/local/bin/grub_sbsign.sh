@@ -127,4 +127,4 @@ grep -q password_pbkdf2 "$grub_cfg_path" && chmod o-r "$grub_cfg_path"
 exec 2> /dev/tty # restore stderr
 
 # update linux kernel version in grub config file
-/usr/local/bin/upd_grub_cfg.sh
+/usr/local/bin/grub_cfg_upd.sh
