@@ -262,7 +262,7 @@ usage() {
     while read -r -u $fd; do
         # remove leading & trailing spaces and tabs
         REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
-        (( ! ${#REPLY} ))  && continue  # skip empty lines
+        [[ -z "$REPLY" ]]  && continue  # skip empty lines
 
         REPLY=$(expr "$REPLY" : "\(^[^#].*$\)") # get lines that are not comments
         (( $? )) && continue # skip comments
@@ -714,7 +714,7 @@ populate_arrays() {
                 ((size=$(field_re "$line" $PSIZE)))
                 fstype=$(field "$line" $PFSTYPE)
                 name=$(field "$line" $PNAME)
-                (( ! ${#name} )) && name=primary
+                [[ -z "$name" ]] && name=primary
                 flags=$(field_re "$line" $PFLAGS "\([^;]*\)")
                 
                 # add partition data to partitions array
@@ -1117,7 +1117,7 @@ calc_drvspace() {
                                                                -type d \
                                                                -print0 2>> "$ERRFILE")
                     fi
-                    (( ! ${#next_entries[@]} )) && break # break if no results                        
+                    (( ! ${#next_entries[@]} )) && break # break if no results
                     ((j=i+1))
                 fi
             done
@@ -1707,7 +1707,7 @@ create_partitions() {
             fi
 
             # create 'mkpart' command for new partition
-            if (( ${#fstype} )); then
+            if [[ "$fstype" ]]; then
                 cmd="parted --script --fix -a optimal '$dstdrv' unit $UNIT mkpart "
                 cmd+="primary '$fstype' $start $end"
                 cmds+=("$cmd")
@@ -1725,7 +1725,7 @@ create_partitions() {
             # create set commands to set partition flags
             ((i=1))
             flag=$(field "$flags" $i ',' | xargs)
-            while (( ${#flag} )); do
+            while [[ "$flag" ]]; do
                 cmds+=("parted --script --fix '$dstdrv' set $ptn_cnt '$flag' on")
                 ((++i))
                 flag=$(field "$flags" $i ',' | xargs)
@@ -2508,7 +2508,7 @@ result() {
         fi
     fi
 
-    (( ${#1} )) && cecho -e "$1"
+    [[ "$1" ]] && cecho -e "$1"
     
     if [[ "$START_DATE" ]]; then
         # the timestamp will be used to calculate the clone run time

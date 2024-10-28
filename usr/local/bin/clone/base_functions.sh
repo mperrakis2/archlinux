@@ -657,7 +657,7 @@ read_cfg_into_mem() {
         REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
 
         # ignore empty lines & comments
-        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
+        [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
 
         FSTYPES+=("$REPLY")
     done
@@ -669,7 +669,7 @@ read_cfg_into_mem() {
         REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
 
         # ignore empty lines & comments
-        (( ! ${#REPLY} )) || [[ "$REPLY" =~ ^#.*$ ]] && continue
+        [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
         
         FILTERS+=("$REPLY")
     done
@@ -841,7 +841,7 @@ system_sleep() {
             
             if (( ${PIPESTATUS[-1]} )); then # get output of last pipe, i.e. grep
                 # create cmd to mask target
-                if (( ${#sleep_cmd} )); then
+                if [[ "$sleep_cmd" ]]; then
                     sleep_cmd+="$target "
                 else
                     sleep_cmd+="systemctl $2 $target "
@@ -853,7 +853,7 @@ system_sleep() {
             fi
         done
         
-        (( ${#sleep_cmd} )) && sleep_cmds+=("$sleep_cmd")
+        [[ "$sleep_cmd" ]] && sleep_cmds+=("$sleep_cmd")
     fi
 
     # add command to mask/unmask sleep
@@ -1057,7 +1057,7 @@ exec_cmds() {
         
         # commands that run in the background take a long time to complete and
         # usually have a progress indicator, e.g. percentage
-        (( ${#fd[0]} )) && cecho -e "\tProgress..."
+        [[ "${fd[0]}" ]] && cecho -e "\tProgress..."
         
         # run cmd and use 'eval' to take into account spaces between arguments
         # but not within each argument
@@ -1076,7 +1076,7 @@ exec_cmds() {
         # code keeps looping until the command exits on its own. Of course, if
         # a cancel signal is received, e.g. INT, TERM, HUP, etc., its handler
         # would exit the script.
-        if (( ${#fd[0]} )); then
+        if [[ "${fd[0]}" ]]; then
             ((pid=$!))
             while true; do
                 printf "\t%s\n" "wait $pid" >> "$CMDFILE" # update cmds file
@@ -1166,11 +1166,8 @@ dst_pathname() {
 
 # $1: optional, int, valid value: 1, signal was received
 valid_opt_param() {
-    local -i err=0
-
     # validate param
-    (( $# == 1 )) && (( ${#1} )) && [[ ! "$1" =~ ^[0-9]+$ || $1 -ne 1 ]] && ((err=1))
-    if (( err || $# > 1 )); then
+    if [[ $# -gt 1 || ($# -eq 1 && (! "$1" =~ ^[0-9]+$ || $1 -ne 1)) ]]; then
         local msg="\nOnly one optional param allowed: a value of 1 to indicate "
         
         msg+="a signal was received. Exiting."
@@ -1387,7 +1384,7 @@ get_id() {
 print_err_msg() {
     local msg
     
-    if [[ $# -ne 1 || ${#1} -eq 0 ]]; then
+    if [[ $# -ne 1 || -z "$1" ]]; then
         msg="\nOne non-empty param required. An error message. Exiting."
         exit_with_stack "$msg"
     else
