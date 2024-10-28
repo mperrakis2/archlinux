@@ -3,31 +3,33 @@ maintenance scripts
 /etc/NetworkManager/dispatcher.d/update-timezone.sh # update the timezone when network interface goes up
 /etc/initcpio/post/kernel-sbsign                    # sign linux kernel and update grub.cfg (see /usr/local/bin/upd_grub_cfg.sh)
 
+/usr/bin/
+    av.sh                  # anti virus
+    cp_kodi_cfg.sh         # copy kodi config files from one user account to another
+    lightdm.sh             # update intel gfx driver cfg file so Xorg doesn't freeze and then launch lightdm
+    pacman_keyring.sh      # update pacman DB and keyring packages if there's an updated keyring package
+    grub_cfg_upd.sh        # update grub.cfg when installing/upgrading linux kernels
+    wait.sh                # used in desktop launchers that launch scripts to prevent the script window from closing
+
 /usr/lib/systemd/scripts/
     disable_wakeup.sh      # called from /etc/systemd/system/disable_wakeup.service
     pkg_maint.sh           # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
     sync_timedate.sh       # called after wakeup from suspend/hibernate in /etc/systemd/system/sync_timedate.service
 
-/usr/local/bin/
-    av.sh                  # anti virus
+/usr/sbin/
     clone/
         clone.sh           # clone one drive to another
-        base_functions.sh  # don't run this (used only by clone.sh)
+        base_functions.sh  # don't run this (used only by clone.sh) 
         manpages/
-            manpages.sh    # create man pages for clone script
+            manpages.sh    # create man pages for clone script 
             clone          # man page for clone script
-            clone-exclude  # man page for exclude configuration file for clone script
-    cp_kodi_cfg.sh         # copy kodi config files from one user account to another
-    cpshim.sh              # copy shim binaries to boot partition when installing/upgrading shim signed
-    grub_sbsign.sh         # install and sign grub bootloader and update grub cfg file when installing/upgrading grub
-    lightdm.sh             # set intel gfx driver cfg file so Xorg doesn't freeze and launch lightdm
-    upd_dbs_and_keyring.sh # update pacman keyring package if there's a newer version and also DB packages
-    upd_grub_cfg.sh        # update grub.cfg when installing/upgrading linux kernels
+            clone-exclude  # man page for exclude configuration file for clone script 
+    cpshim.sh              # copy shim binaries to boot partition when installing/upgrading shim signed               (see configuration files)
+    grub_sbsign.sh         # install and sign grub bootloader and update grub cfg file when installing/upgrading grub (ditto)
     useradd/
         useradd.sh         # add a new user and delete destination if it exists already
         new_user/          # directory that contains new user data
     userdel.sh             # delete a user
-    wait.sh                # used in desktop launchers that launch scripts to prevent the script window from closing
 
 configuration files
 ===================
