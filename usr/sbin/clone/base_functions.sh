@@ -912,7 +912,7 @@ mount_ptn() {
         local mnt_pnt
         
         mnt_pnt=$(lsblk -nr --nodeps --output HOTPLUG "$dstdrv" 2>> "$ERRFILE")
-        if [[ "$mnt_point" == 1 ]]; then mnt_pnt=/media; else mnt_pnt=/mnt; fi
+        if [[ "$mnt_pnt" == 1 ]]; then mnt_pnt=/media; else mnt_pnt=/mnt; fi
 
         mnt_dir=$mnt_pnt/$UUID # get new mount dir
         
