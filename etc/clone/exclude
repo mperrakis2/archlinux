@@ -12,6 +12,7 @@
 -/run/*
 -/sys/*
 -/tmp/*
+-/media/*
 -/mnt/*
 -/var/cache/*
 -/var/lock/*

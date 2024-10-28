@@ -1045,7 +1045,8 @@ calc_drvspace() {
             if [[ "${buf:i:1}" != [[:blank:]] ]]; then
                 # remove redundant '/' and '*'
                 if [[ ("${buf:i:1}" != "*" && "${buf:i:1}" != "/") || \
-                      "${buf:i:1}" != "${buf:i-1:1}" ]]; then
+                      "${buf:i:1}" != "${buf:i-1:1}" ]]
+                then
                     paths[j]+="${buf:i:1}"
                 fi
             else
@@ -1092,6 +1093,15 @@ calc_drvspace() {
                        "drive and will be omitted. $MSG."
             fi
             continue
+
+        # any paths that start with the following must be excluded
+        elif [[ "${paths[0]:1}" =~ ^(/media|/mnt) ]]; then
+            for buf in -/media/* -/mnt/*; do
+                paths=("$buf")
+                add_filter filters user_filters paths
+            done
+            continue
+
         # if paths are not on src drive, skip them
         elif [[ ! "$srcptn" =~ $srcdrv$SP ]]; then
             cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source drive"\
@@ -1385,18 +1395,6 @@ calc_drvspace() {
         fi
     done
         
-    # add mount points for removable media as an exclude entry
-    if [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
-        local MEDIA="-/media/*"
-        readonly MEDIA
-
-        filters[$MEDIA]=
-        user_filters[$MEDIA]="$MEDIA"
-        buf="Exclude from cloning: $CYAN${MEDIA:1}"
-        buf+="$YELLOW (mount points for removable media)"
-        abuf+=("$buf")    
-    fi
-
     (( ${#abuf[@]} )) && echo
     for buf in "${abuf[@]}"; do # print reordered user filters
         cechot "$buf"
@@ -2251,14 +2249,9 @@ clone() {
         done
     done
 
-    local -a dstdata
-    
-    # get dst data
-    mapfile -d ' ' -t dstdata < <(lsblk -nr --nodeps --output NAME,TRAN,RM "$dstdrv")
-
-    # find if dst is removable drive
-    local -i removable=0
-    [[ "${dstdata[1]}" == usb || "${dstdata[2]}" -eq 1 ]] && ((removable=1))
+    local removable
+    removable=$(lsblk -nr --nodeps --output HOTPLUG "$dstdrv" 2>> "$ERRFILE")
+    [[ "$removable" != 0 ]] && ((removable=1))
 
     local PREFIX_UUID="resume=UUID="
     local RE_UUID="${PREFIX_UUID}[a-fA-F0-9-]\+"

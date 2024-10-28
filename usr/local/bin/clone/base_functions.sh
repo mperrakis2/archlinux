@@ -896,7 +896,7 @@ mount_ptn() {
     UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\([^\"]*\)\"")
 
     mnt_dir=$(lsblk -no MOUNTPOINT "$1$p$2") # get partition mount directory
-    fstype=$(lsblk -no FSTYPE "$1$p$2")    # get partition filesystem
+    fstype=$(lsblk -no FSTYPE "$1$p$2")      # get partition filesystem
 
     # For reasons unknown if a ntfs filesystem is mounted already by the system
     # errors are produced during cloning. Therefore, it has to be unmounted and
@@ -907,12 +907,19 @@ mount_ptn() {
     fi
 
     # if partition not mounted, mount it based on its partition UUID under
-    # /media/<UUID>
+    # /media/<UUID> or /mnt/<UUID>
     if [[ -z "$mnt_dir" ]]; then
-        local -a cmds=()
+        local mnt_pnt
         
+        mnt_pnt=$(lsblk -nr --nodeps --output HOTPLUG "$dstdrv" 2>> "$ERRFILE")
+        if [[ "$mnt_point" == 1 ]]; then mnt_pnt=/media; else mnt_pnt=/mnt; fi
+
+        mnt_dir=$mnt_pnt/$UUID # get new mount dir
+        
+        local -a cmds=()
+
         # create command to create directory for mounting if one does not exist
-        [[ ! -d /media/$UUID ]] && cmds+=("mkdir -p /media/$UUID")
+        [[ ! -d "$mnt_dir" ]] && cmds+=("mkdir -p $mnt_dir")
 
         # if partition has one of the following filesystems or a 'dos' partition
         # table type, create cmd to mount with 'uid' and 'gid'
@@ -924,9 +931,9 @@ mount_ptn() {
 
             get_id U uid
             get_id G gid
-            cmds+=("mount -o uid=$uid,gid=$gid '$1$p$2' /media/$UUID")        
+            cmds+=("mount -o uid=$uid,gid=$gid '$1$p$2' $mnt_dir")        
         else
-            cmds+=("mount '$1$p$2' /media/$UUID")
+            cmds+=("mount '$1$p$2' $mnt_dir")
         fi
         
         local -i err
@@ -935,16 +942,14 @@ mount_ptn() {
         exec_cmds "${cmds[@]}"
         err=$?
         if (( err )); then return $err; fi
-
-        mnt_dir=/media/"$UUID" # get new mount point
         ((is_mnt=1))
-    elif [[ "$mnt_dir" == "/" ]]; then
-        mnt_dir=""
     fi
+
+    [[ $mnt_dir != "/" ]] && mnt_dir+="/"
 
     local -n ref="$3"
 
-    ref="$1$p$2:$mnt_dir/:$is_mnt:$UUID:"
+    ref="$1$p$2:$mnt_dir:$is_mnt:$UUID:"
 }
 
 # unmount a partition
@@ -1164,13 +1169,13 @@ dst_pathname() {
     echo "${pathnames[@]}"
 }
 
-# $1: optional, int, valid value: 1, signal was received
+# $1: str, valid value: "" or "1" (signal was received)
 valid_opt_param() {
     # validate param
-    if [[ $# -gt 1 || ($# -eq 1 && (! "$1" =~ ^[0-9]+$ || $1 -ne 1)) ]]; then
-        local msg="\nOnly one optional param allowed: a value of 1 to indicate "
+    if [[ $# -ne 1 || ("$1" && "$1" -ne 1) ]]; then
+        local msg="\nOnly one param allowed: '' or '1' to indicate a signal was "
         
-        msg+="a signal was received. Exiting."
+        msg+="received. Exiting."
         exit_with_stack "$msg"
     fi
 }
