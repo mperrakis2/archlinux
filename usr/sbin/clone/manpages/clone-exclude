@@ -35,7 +35,7 @@ A leading plus (+) sign specifies an include entry.
 
 A tuple requires at least two entries and one of them has to be an exclude. If there's no exclude entry for an include entry the include entry is ignored. The exclude entry need not preceed the include entries.
 
-In case 'report' is under a directory and you are unsure if it's a file or directory and want to exclude it only if it's a file, you can create a tuple as follows:
+If you want to exclude a pathname only if it's a file, you can create a tuple as follows:
 
 -/home/user/report  (exclude a file or directory named 'report')
 
