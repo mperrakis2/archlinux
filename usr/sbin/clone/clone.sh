@@ -1094,18 +1094,18 @@ calc_drvspace() {
             fi
             continue
 
+        # if paths are not on src drive, skip them
+        elif [[ ! "$srcptn" =~ $srcdrv$SP ]]; then
+            cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source drive"\
+                   "and will be omitted. $MSG."
+            continue
+
         # any paths that start with the following must be excluded
         elif [[ "${paths[0]:1}" =~ ^(/media|/mnt) ]]; then
             for buf in -/media/* -/mnt/*; do
                 paths=("$buf")
                 add_filter filters user_filters paths
             done
-            continue
-
-        # if paths are not on src drive, skip them
-        elif [[ ! "$srcptn" =~ $srcdrv$SP ]]; then
-            cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source drive"\
-                   "and will be omitted. $MSG."
             continue
         fi
 
