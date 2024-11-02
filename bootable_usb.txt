@@ -36,20 +36,24 @@ https://wiki.archlinux.org/title/GRUB#Shim-lock
 3. a. sudo cp /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/BOOT/
    b. sudo cp /usr/share/shim-signed/shimx64.efi "$(bootctl -p)"/EFI/BOOT/BOOTX64.EFI
    c. sudo cp /usr/share/shim-signed/shimx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/
-   d. if efi boot entry with label="shim-$(uname -n)" and loader=/EFI/"$(uname -n)"/shimx64.efi does not exist then
-          sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "shim-$(uname -n)" --loader /EFI/"$(uname -n)"/shimx64.efi
+   if efi boot entry with label="shim-$(uname -n)" and loader=/EFI/"$(uname -n)"/shimx64.efi does not exist then
+      sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "shim-$(uname -n)" --loader /EFI/"$(uname -n)"/shimx64.efi
+   fi
 
 4. a. cd "$(bootctl -p)"/EFI
-   Execute once only -> sudo openssl req -newkey rsa:2048 -nodes -keyout MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=my Machine Owner Key/" -out MOK.crt
-                     -> sudo openssl x509 -outform DER -in MOK.crt -out MOK.cer
+   if no certificate then
+      sudo openssl req -newkey rsa:2048 -nodes -keyout MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=my Machine Owner Key/" -out MOK.crt
+      sudo openssl x509 -outform DER -in MOK.crt -out MOK.cer
+   fi
    b. sudo sbsign --key MOK.key --cert MOK.crt --output ../vmlinuz-linux ../vmlinuz-linux
    c. sudo sbsign --key MOK.key --cert MOK.crt --output ../vmlinuz-linux-lts ../vmlinuz-linux-lts
    d. sudo sbsign --key MOK.key --cert MOK.crt --output BOOT/grubx64.efi BOOT/grubx64.efi
    d. sudo sbsign --key MOK.key --cert MOK.crt --output "$(uname -n)"/grubx64.efi "$(uname -n)"/grubx64.efi
-   Execute once only -> Create the following file and make it executable: /etc/initcpio/post/kernel-sbsign (see link above for file contents)
+   if no /etc/initcpio/post/kernel-sbsign script (see secure boot link above for its contents) then
+      create it and make it executable
+   fi
 
-5. a. Reboot and enable Secure Boot. If shim does not find the certificate grubx64.efi is signed with in MokList it will launch MokManager (mmx64.efi).
-   b. In MokManager select Enroll key from disk, find MOK.cer and add it to MokList. When done select Continue boot and your boot loader will launch and it will be capable launching any binary signed with your Machine Owner Key.
+5. Reboot and enable Secure Boot. If shim does not find the certificate grubx64.efi is signed with in MokList it will launch MokManager (mmx64.efi). Then, in MokManager select Enroll key from disk, find MOK.cer and add it to MokList. When done select Continue boot and your boot loader will launch and it will be capable of launching any binary signed with your Machine Owner Key.
 
 secure boot with unicode.pf2 grub font
 ======================================
