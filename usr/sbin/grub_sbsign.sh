@@ -42,7 +42,7 @@ exit_on_error $? "${ptn_data[*]}"
 # check if bios partition exists
 if parted /dev/"${ptn_data[0]}" print | grep -q bios_grub; then
     # install grub to bios partition
-    res=$(grub-install --boot-directory='$dstdir' --recheck --target=i386-pc \
+    res=$(grub-install --boot-directory="$bootdir" --recheck --target=i386-pc \
                        /dev/"${ptn_data[0]}")
     exit_on_error $? "$res"
 fi
@@ -67,8 +67,8 @@ if (( is_esp )); then
 
     # install grub to ESP/BOOT
     res=$(grub-install --modules="$GRUB_MODULES" --sbat=/usr/share/grub/sbat.csv \
-                       --efi-directory="$bootdir" --removable --recheck \
-                       --target=x86_64-efi)
+                       --boot-directory="$bootdir" --efi-directory="$bootdir" \
+                       --recheck --target=x86_64-efi --removable)
     exit_on_error $? "$res"
 
     bl_dir="$bootdir/EFI/"     # bl -> bootloader
@@ -105,7 +105,6 @@ if (( is_esp )); then
                                                                  "$bl_path")
         exit_on_error $? "$res"
     fi
-
 fi
 
 # update grub config file
