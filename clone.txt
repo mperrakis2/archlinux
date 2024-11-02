@@ -1,15 +1,10 @@
 No amount of careful planning will ever replace dumb luck.
 Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain)
 
-1. before clone
-   ============
-   $ bleachbit
-   $ sudo bleachbit
+1. run clone script (see group 'scripts & files')
 
-2. run clone script (see group 'scripts & files')
-
-3. after clone
-   ===========
+2. system update
+   =============
    Add/Remove Software with pamac (GUI):
        a. Refresh databases
        b. Updates -> install
@@ -21,8 +16,13 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
        b. $ paru --clean
        c. $ paru --repoctl --clean
 
-   and then
+   and finally
 
    $ fwupdmgr update
    run kodi to update kodi add ons
    run qBitTorrent and update plug ins
+
+3. clear space
+   ===========
+   $ bleachbit
+   $ sudo bleachbit
