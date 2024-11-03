@@ -6,7 +6,7 @@ After=getty@tty1.service systemd-user-sessions.service plymouth-quit.service acp
 
 [Service]
 ExecStart=/usr/lib/systemd/scripts/lightdm.sh # override (see script for comments)
-Environment=LANG=el_GR.utf8 # override
+Environment=LANG=el_GR.utf8
 Restart=always
 IgnoreSIGPIPE=no
 BusName=org.freedesktop.DisplayManager
