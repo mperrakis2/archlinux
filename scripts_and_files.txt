@@ -14,7 +14,6 @@ maintenance scripts
     lightdm.sh             # called from /usr/lib/systemd/system/lightdm.service (upd cfg file for intel gfx driver so no Xorg freeze and then run lightdm)
     pkg_maint.sh           # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
                            # (remove orphan packages, clear the package cache and generate new mirrorlist file)
-    sync_timedate.sh       # called from /etc/systemd/system/sync_timedate.service (sync time & date after sleep, e.g. suspend, hibernate, etc.)
 
 /usr/sbin/
     av.sh                  # anti virus
