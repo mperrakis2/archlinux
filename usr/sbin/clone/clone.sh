@@ -312,7 +312,7 @@ DRIVES
 usage_msg
 
     filters[0]="==============================================================="
-    filters[0]+="=============="
+    filters[0]+="==============="
 
     echo ${filters[0]} # print underlines
 
@@ -345,8 +345,7 @@ usage_msg
 
 USAGE
 =====
-To cancel anytime press Ctrl-C. To continue, enter the number of the source
-drive followed by the number of the destination drive separated by a space,
+Enter the number of the source drive followed by the number of the destination
 usage_msg
 }
 
@@ -354,7 +353,8 @@ usage_msg
 # return: 0 on success else 1
 user_input() {
     OPTIONS=()
-    echo -n "e.g. 1 2: "
+    echo -n "drive separated by space, e.g. 1 2 or press Ctrl-C anytime to"\
+            "cancel: "
     read -r -a OPTIONS # read cloning options into array
 
     START_DATE=$(date) # timestamp will be used to calculate the clone run time
