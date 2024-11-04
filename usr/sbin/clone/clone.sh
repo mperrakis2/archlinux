@@ -306,7 +306,7 @@ See ${YELLOW}LIMITS$OFF section in man page (man clone).
 ${YELLOW}WARNING
 =======
 Before proceeding close all programs on all user accounts and logout from all
-user accounts but one that has root privileges.$OFF
+user accounts but one that will be used to run this script.$OFF
 
 DRIVES
 usage_msg
