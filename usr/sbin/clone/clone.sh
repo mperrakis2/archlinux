@@ -215,7 +215,7 @@ if any of the above is omitted its default file is read from:
 * ~/.config/clone/, if it exists and the script is not run under its
   installation directory
 
-for further info see man pages (man clone & man clone-exclude)
+for more info see man pages (man clone & man clone-exclude)
 usage_msg
             exit 0
             ;;
@@ -315,7 +315,7 @@ usage_msg
     done
 
     cat << usage_msg
-For further info see the man pages (man clone & man clone-exclude).
+For more info see the man pages (man clone & man clone-exclude).
 
 ${YELLOW}LIMITATIONS
 ===========$OFF
