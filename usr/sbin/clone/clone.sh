@@ -306,7 +306,7 @@ See ${YELLOW}LIMITS$OFF section in man page (man clone).
 ${YELLOW}WARNING
 =======
 Before proceeding close all programs on all user accounts and logout from all
-user accounts but one that has sudo access.$OFF
+user accounts but one that has root privileges.$OFF
 
 DRIVES
 usage_msg
