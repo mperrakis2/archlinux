@@ -25,7 +25,7 @@ The configuration files used by \fBclone.sh\fR are:
 
 The user can create customized files under \fI~/.config/clone/\fR but the default filenames have to be used. It is recommended not to modify the default \fIfstypes\fR file or create your own unless you really know what you are doing.
 
-\fBclone.sh\fR searches for customized files if not run under the directory it is installed in (usually \fI/usr/local/bin/clone/\fR). The directory of the customized files must be \fI~/.config/clone/\fR and the default filenames have to be used.
+\fBclone.sh\fR searches for customized files if not run under its installation directory (usually \fI/usr/sbin/clone/\fR). The directory of the customized files must be \fI~/.config/clone/\fR and the default filenames have to be used.
 
 Customized files can also be provided when executing \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). This takes precedence over any other files and any valid pathnames can be used.
 

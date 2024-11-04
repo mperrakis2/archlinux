@@ -205,15 +205,17 @@ command line options
 -e <exclude_file> : pathname of file that contains files/dirs to be excluded
                     from cloning
 -f <fstypes_file> : pathname of file that contains the commands to format
-                    various filesystems
+                    various filesystems (recommend to use default, see below)
 
-if any of the above is not specified the default files are searched under:
+if any of the above is omitted its default file is read from:
 
-* /etc/clone/, if the script is run under the directory it is installed in
-(usually /usr/local/bin/clone/) or if ~/.config/clone/ does not exist
+* /etc/clone/, if the script is run under its installation directory
+  (usually /usr/sbin/clone/) or if ~/.config/clone/ does not exist
 
-* ~/.config/clone/, if it exists and the script is not run under the directory
-it is installed in
+* ~/.config/clone/, if it exists and the script is not run under its
+  installation directory
+
+for further info see man pages (man clone & man clone-exclude)
 usage_msg
             exit 0
             ;;
@@ -313,11 +315,18 @@ usage_msg
     done
 
     cat << usage_msg
+For further info see the man pages (man clone & man clone-exclude).
+
 ${YELLOW}LIMITATIONS
 ===========$OFF
-see ${YELLOW}LIMITS$OFF section in man page (man clone)
+See ${YELLOW}LIMITS$OFF section in man page (man clone).
 
-LIST OF DRIVES
+${YELLOW}WARNING
+=======
+Before proceeding close all programs on all user accounts and exit all user
+accounts but this one.${OFF}
+
+DRIVES
 usage_msg
 
     echo ${filters[0]} # print underlines
@@ -351,15 +360,6 @@ usage_msg
 USAGE
 =====
 Enter the number of the source drive followed by the number of the destination
-drive separated by a space (see "LIST OF DRIVES" section above), e.g. 1 2
-
-${YELLOW}WARNING
-=======
-Before proceeding close all programs on all user accounts and exit all user
-accounts but this one.${OFF}
-
-USER INPUT
-==========
 usage_msg
 }
 
@@ -367,7 +367,7 @@ usage_msg
 # return: 0 on success else 1
 user_input() {
     OPTIONS=()
-    echo -en "Enter drive numbers (see USAGE section above) or Ctrl-C to exit: "
+    echo -en "drive separated by a space, e.g. 1 2 or Ctrl-C to exit: "
     read -r -a OPTIONS # read cloning options into array
 
     START_DATE=$(date) # timestamp will be used to calculate the clone run time
