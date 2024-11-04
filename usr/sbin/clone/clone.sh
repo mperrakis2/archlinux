@@ -295,24 +295,6 @@ usage_msg
         cecho "$CYAN${filters[fd]}"
     done
     echo
-    
-    g_parted_data=()
-    
-    # get drive and partition data in human readable format
-    readarray -t g_parted_data < <(parted --script --list 2> /dev/null)
-
-    local line
-    local -i i
-
-    # create buf with chars of '=' with len >= longest line of parted output
-    ((fd=0))
-    filters=()
-    for line in "${g_parted_data[@]}"; do
-        if (( fd < ${#line} )); then
-            for (( i = 0; i < ${#line} - fd; ++i )); do filters[0]+="="; done
-            ((fd=${#line}))
-        fi
-    done
 
     cat << usage_msg
 For more info see the man pages (man clone & man clone-exclude).
@@ -329,12 +311,17 @@ accounts but this one.${OFF}
 DRIVES
 usage_msg
 
+    filters[0]="\
+    ===========================================================================\
+    "
+
     echo ${filters[0]} # print underlines
 
-    g_parted_data=()
-    
     # get drive and partition data in human readable format
+    g_parted_data=()
     readarray -t g_parted_data < <(parted --script --list 2> /dev/null)
+
+    local line
 
     # iterate over drive and partition data
     ((drv_cnt=0))
@@ -347,9 +334,9 @@ usage_msg
         if [[ "$line" =~ ^"Model: " ]]; then
             (( drv_cnt > 0 )) && echo # seperate one drive output from another
             ((++drv_cnt))
-            echo "$drv_cnt.  $line" # display drive model (see comment above)
+            echo "$drv_cnt. $line" # display drive model (see comment above)
         elif [[ "$line" =~ ^"Disk /dev/" ]]; then
-            echo "    $line" # display drive size (see comment above)
+            echo "   $line" # display drive size (see comment above)
         fi
     done
 
@@ -372,7 +359,7 @@ user_input() {
 
     START_DATE=$(date) # timestamp will be used to calculate the clone run time
 
-    local -a parted_data # drive data retrieved from 'parted' command
+    local -a parted_data
 
     # get parted data again
     readarray -t parted_data < <(parted --script --list 2> /dev/null)
