@@ -217,4 +217,4 @@ The following examples are invalid, as the second token contains some metacharac
 .SH STANDARDS
 The system files excluded from cloning are based on the Filesystem Hierarchy Standard (FHS).
 .SH SEE ALSO
-\fBclone\fR(1), \fBrsync\fR(1)
+\fBclone\fR(1)

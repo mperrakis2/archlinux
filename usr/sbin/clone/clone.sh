@@ -305,14 +305,14 @@ See ${YELLOW}LIMITS$OFF section in man page (man clone).
 
 ${YELLOW}WARNING
 =======
-Before proceeding close all programs on all user accounts and exit all user
-accounts but this one.${OFF}
+Before proceeding close all programs on all user accounts and logout from all
+user accounts but one that has sudo access.$OFF
 
 DRIVES
 usage_msg
 
     filters[0]="==============================================================="
-    filters[0]+="==============="
+    filters[0]+="=============="
 
     echo ${filters[0]} # print underlines
 
@@ -345,7 +345,8 @@ usage_msg
 
 USAGE
 =====
-Enter the number of the source drive followed by the number of the destination
+To cancel anytime press Ctrl-C. To continue, enter the number of the source
+drive followed by the number of the destination drive separated by a space,
 usage_msg
 }
 
@@ -353,7 +354,7 @@ usage_msg
 # return: 0 on success else 1
 user_input() {
     OPTIONS=()
-    echo -en "drive separated by a space, e.g. 1 2 or Ctrl-C to exit: "
+    echo -n "e.g. 1 2: "
     read -r -a OPTIONS # read cloning options into array
 
     START_DATE=$(date) # timestamp will be used to calculate the clone run time
