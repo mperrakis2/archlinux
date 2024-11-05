@@ -10,7 +10,6 @@ maintenance scripts
     wait.sh                # used in desktop launchers that launch scripts to prevent the script window from closing
 
 /usr/lib/systemd/scripts/
-    disable_wakeup.sh      # called from /etc/systemd/system/disable_wakeup.service (disable devices under acpi else system wakes up right after suspend)
     lightdm.sh             # called from /usr/lib/systemd/system/lightdm.service (upd cfg file for intel gfx driver so no Xorg freeze and then run lightdm)
     pkg_maint.sh           # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
                            # (remove orphan packages, clear the package cache and generate new mirrorlist file)
