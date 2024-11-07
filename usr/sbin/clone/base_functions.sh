@@ -644,10 +644,7 @@ convert_size() {
 
 # return: 0 on success else the error code of the command that failed
 read_cfg_into_mem() {
-    local -i err
-
-    files_exist
-    ((err=$?)); ((err)) && return $err
+    ! files_exist && return 1
 
     local -i fd
 
@@ -676,8 +673,6 @@ read_cfg_into_mem() {
     exec {fd}<&- # close file
 
     readonly FILTERS FSTYPES
-
-    return $err
 }
 
 # get sector size based on partition type and size
