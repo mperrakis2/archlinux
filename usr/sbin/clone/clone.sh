@@ -2,8 +2,8 @@
 
 # This script clones one drive to another. To see detailed info and usage read
 # the man page (man <script>, no file extention). For a quick description of the
-# command line options run '<script> -h'. Further clone options are entered by
-# the user after the script is run.
+# command line options run '<script>.sh -h'. Further clone options are entered
+# by the user after the script is run.
 
 # legend
 # ------
@@ -14,32 +14,31 @@
 # 
 # limitations
 # -----------
-# see LIMITS section in man page (man clone)
+# see LIMITS section in man page (man <script>, no file extention)
 #
-# text files used by the script
-# -----------------------------
+# conf files used by script
+# -------------------------
 # the following files are under /etc/clone/ and optionally under ~/.config/clone/
 #
-# 'fstypes'     : maps filesystem names of 'parted' cmd to 'mkfs' cmd
-# 'exclude'     : files and/or dirs to be excluded from or included in cloning
+# 'fstypes.conf' : maps filesystem names of 'parted' cmd to 'mkfs' cmd
+# 'exclude.conf' : files/dirs to be excluded from and/or included in cloning
 #
-# text files created by the script
-# --------------------------------
+# log files created by script
+# ---------------------------
 # 'log'          : the output of commands (stdout)
 # 'errors'       : errors, if any (stderr)
-# 'commands'     : the commands themselves
-# 'clone_pids'   : lock file to ensure that a clone script is executed only if
-#                  its src and dst are not destinations for another clone script
-#                  instance (multiple instances are allowed as long as 
+# 'commands'     : the commands used during cloning
+# 'clone_pids'   : lock file to ensure that the script is executed only if its
+#                  src and dst are not destinations for another script already
+#                  running (multiple instances are allowed as long as 
 #                  destinations are different)
-# 'slp_clone_pid': lock file to ensure that only one clone script instance is
+# 'slp_clone_pid': lock file to ensure that only one script instance is
 #                  responsible for masking/unmasking sleep (suspend/hibernate)
 #
-# * lock files are created under /var/lock/<script>.sh_$PUUID/ (see definition
-#   of $PUUID below) which is deleted after all clone script instances have
-#   terminated
-# * all other files are created under /var/log/<script>.sh_$PUUID/X_Y (X, Y:
-#   numbers provided by the user for src and dst respectively)
+# * lock files are created under /var/lock/<script>.sh_$PUUID/ (see $PUUID
+#   below) which is deleted after all script instances have terminated
+# * all other files are created under /var/log/<script>.sh_$PUUID/X_Y (see
+#   $PUUID below, X, Y: numbers entered by user for src and dst respectively)
 #
 # other scripts used by this script
 # ---------------------------------
@@ -230,9 +229,9 @@ usage_msg
 
     # if no cmd line options provided, get default cfg file names
     [[ -z "$FSTYPES_FILE" ]] &&
-        FSTYPES_FILE=$(get_cfg_fname fstypes) # get pathname of fstypes file
+        FSTYPES_FILE=$(get_cfg_fname fstypes.conf) # get pathname of fstypes file
     [[ -z "$FILTERS_FILE" ]] &&
-        FILTERS_FILE=$(get_cfg_fname exclude) # get pathname of exclude file
+        FILTERS_FILE=$(get_cfg_fname exclude.conf) # get pathname of exclude file
 
     local -i err
     
@@ -754,18 +753,15 @@ populate_arrays() {
 
     ((LOOP=0))
     readonly LOOP
-
-    # at this point there is no more looping so read cfg files into memory
-    local -i err
-
-    read_cfg_into_mem 
-    ((err=$?)); ((err)) && return $err
-
     readonly OPTIONS OPTIONS_S
     readonly LOGFILE ERRFILE CMDFILE
     readonly PTN_PREFIX SP DP
     readonly DST_DRV_NAME
     readonly START_DATE
+
+    # at this point there is no more looping so read cfg files into memory
+    read_cfg_into_mem
+    readonly FILTERS FSTYPES
 
     # finalize numbers of fields
     ((DPTN_TBL_TYPE=3))

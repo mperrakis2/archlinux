@@ -671,8 +671,6 @@ read_cfg_into_mem() {
         FILTERS+=("$REPLY")
     done
     exec {fd}<&- # close file
-
-    readonly FILTERS FSTYPES
 }
 
 # get sector size based on partition type and size
