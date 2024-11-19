@@ -18,7 +18,8 @@
 #
 # conf files used by script
 # -------------------------
-# the following files are under /etc/clone/ and optionally under ~/.config/clone/
+# the following files are under $DEF_CFG_DIR and optionally under $LCL_CFG_DIR
+# (variables defined below)
 #
 # 'fstypes.conf' : maps filesystem names of 'parted' cmd to 'mkfs' cmd
 # 'exclude.conf' : files/dirs to be excluded from and/or included in cloning
@@ -48,6 +49,8 @@ set -o pipefail
 shopt -s extglob
 
 # global constants
+readonly DEF_CFG_DIR="/etc/clone-script/"
+readonly LCL_CFG_DIR=".config/clone-script/"
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
@@ -208,10 +211,10 @@ command line options
 
 if any of the above is omitted its default file is read from:
 
-* /etc/clone/, if the script is run under its installation directory
-  (usually /usr/sbin/clone/) or if ~/.config/clone/ does not exist
+* $DEF_CFG_DIR, if the script is run under its installation directory
+  (usually /usr/sbin/clone/) or if ~/$LCL_CFG_DIR does not exist
 
-* ~/.config/clone/, if it exists and the script is not run under its
+* ~/$LCL_CFG_DIR, if it exists and the script is not run under its
   installation directory
 
 for more info see man pages (man clone-script & man clone-exclude.conf)

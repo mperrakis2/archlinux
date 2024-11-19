@@ -10,18 +10,18 @@ get_cfg_fname() {
         exit_with_stack "\nOne param required: filename. Exiting."
 
     local cwd
-    local gbl_cfgdir="/etc/clone" # global cfg dir
+    local gbl_cfgdir="$DEF_CFG_DIR" # global cfg dir
     local lcl_cfgdir
 
     cwd=$(pwd)
-    lcl_cfgdir=$(eval echo ~$(logname))"/.config/clone" # local cfg dir
+    lcl_cfgdir=$(eval echo ~$(logname))"/$LCL_CFG_DIR" # local cfg dir
 
-    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfgdir/$1" && \
-          -r "$lcl_cfgdir/$1" && -s "$lcl_cfgdir/$1" ]]
+    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfgdir$1" && \
+          -r "$lcl_cfgdir$1" && -s "$lcl_cfgdir$1" ]]
     then
-        echo "$lcl_cfgdir/$1"
+        echo "$lcl_cfgdir$1"
     else
-        echo "$gbl_cfgdir/$1"
+        echo "$gbl_cfgdir$1"
     fi
 }
 

@@ -7,7 +7,7 @@ clone-script \- clone one drive to another using \fBrsync\fR(1)
 .SH DESCRIPTION
 Source and destination drives need not be the same size as long as all source data fits on destination. If the source drive is bootable the destination will become bootable provided certain conditions are met (see \fBLIMITS\fR).
 
-If \fBclone.sh\fR is run without any command line options the default configuration files under \fI/etc/clone/\fR are used. Custom configuration files can be created under \fI~/.config/clone/\fR.
+If \fBclone.sh\fR is run without any command line options the default configuration files under \fI/etc/clone-script/\fR are used. Custom configuration files can be created under \fI~/.config/clone-script/\fR.
 
 After \fBclone.sh\fR is run a list of files/dirs excluded from cloning is displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. These files/dirs are read from the configuration file \fIexclude.conf\fR (see \fBFILES\fR). Also, a list of drives connected to the system is displayed and user input is required for source and destination drives. 
 
@@ -21,11 +21,11 @@ After \fBclone.sh\fR is run a user-friendly menu is displayed with the drives co
 .SH FILES
 The configuration files used by \fBclone.sh\fR are:
 
-\fI/etc/clone/exclude.conf\fR (see \fBman \fIclone-exclude.conf\fR)
+\fI/etc/clone-script/exclude.conf\fR (see \fBman \fIclone-exclude.conf\fR)
 
-\fI/etc/clone/fstypes.conf\fR (contains commands to format a partition for various filesystems)
+\fI/etc/clone-script/fstypes.conf\fR (contains commands to format a partition for various filesystems)
 
-The user can create custom files under \fI~/.config/clone/\fR but the default filenames have to be used. The custom files replace the default ones. It is recommended not to modify the default \fIfstypes.conf\fR file or create your own unless you really know what you are doing.
+The user can create custom files under \fI~/.config/clone-script/\fR but the default filenames have to be used. The custom files replace the default ones. It is recommended not to modify the default \fIfstypes.conf\fR file or create your own unless you really know what you are doing.
 
 \fBclone.sh\fR searches for custom files if not run under its installation directory (usually \fI/usr/sbin/clone/\fR).
 
