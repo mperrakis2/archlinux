@@ -1,13 +1,12 @@
-# for an explanation of the syntax see "man clone-exclude"
+# see "man clone-exclude" for the correct syntax to exclude files/dirs
 #
-# For clarity, put your entries here (above the default entries below), e.g.
+# for clarity, put your entries here (above the default entries below), e.g.
 #-/home/<user>/Music/*
 
 # DEFAULT ENTRIES - DON'T CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING
 # According to the Filesystem Hierarchy Standard (FHS) the following directories
-# contain data that is temporary and used while a system is running and may 
-# change or be deleted after a reboot. Therefore, they don't need to be cloned
-# and are excluded.
+# contain data that is temporary and used while a system is running and will be
+# deleted during reboot. Thus, they are excluded from cloning.
 -/dev/*
 -/proc/*
 -/run/*
