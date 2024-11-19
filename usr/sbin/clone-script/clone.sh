@@ -34,7 +34,8 @@
 #                  running (multiple instances are allowed as long as 
 #                  destinations are different)
 # 'slp_clone_pid': lock file to ensure that only one script instance is
-#                  responsible for masking/unmasking sleep (suspend/hibernate)
+#                  responsible for masking/unmasking system sleep
+#                  (suspend/hibernate)
 #
 # * lock files are created under /var/lock/<script>.sh_$PUUID/ (see $PUUID
 #   below) which is deleted after all script instances have terminated
@@ -1773,14 +1774,14 @@ create_partitions() {
     fi
 }
 
-# mask sleep (suspend/hibernate) if it is unmasked
+# mask system sleep (suspend/hibernate) if it is unmasked
 # return: 0 on success, 1 if parameter error else the error code of the command
 #         that failed
-mask_sleep() {
+mask_system_sleep() {
     valid_opt_param "$1" # validate parameter
     
     # some other clone process has completed or was interrupted and sent signal
-    # USR1 so that this process can handle masking/unmasking sleep 
+    # USR1 so that this process can handle masking/unmasking system sleep 
     # (suspend/hibernate)
     if (( $# == 1 )); then
         # sync and restore stdout and stderr to the terminal
@@ -1788,12 +1789,12 @@ mask_sleep() {
         exec &> /dev/tty
 
         cecho -e "\n\nReceived signal from another clone process"\
-                 "to disable/enable sleep (suspend/hibernate)..."
+                 "to disable/enable system sleep (suspend/hibernate)..."
     fi  
 
     local -i fd
 
-    exec {fd}>>"$SLPFILE" # append to the sleep lock file
+    exec {fd}>>"$SLPFILE" # append to the system sleep lock file
     
     # critical section follows
     flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
@@ -1803,24 +1804,25 @@ mask_sleep() {
         local SEP="//"
         readonly SEP
         
-        # mask/unmask sleep (suspend/hibernate) if no other clone process
+        # mask/unmask system sleep (suspend/hibernate) if no other clone process
         # already does
         if [[ ! -s "$SLPFILE" ]]; then
             local -a cmds
 
-            system_sleep cmds "mask" # add cmds to mask sleep (suspend/hibernate)
+            # add cmds to mask system sleep (suspend/hibernate)
+            system_sleep cmds "mask"
             if (( ${#cmds[@]} )); then
                 if (( $# == 1 )); then
-                    cecho -e "\nDisabling sleep (suspend/hibernate)..."
+                    cecho -e "\nDisabling system sleep (suspend/hibernate)..."
                 else
-                    echo "Disabling sleep (suspend/hibernate)..."
+                    echo "Disabling system sleep (suspend/hibernate)..."
                 fi
                 
                 cmds+=("chmod go=+r $SLPFILE")
                 exec_cmds "${cmds[@]}"
                 ((err=$?))
 
-                # add entry to sleep lock file
+                # add entry to system sleep lock file
                 if (( ! err )); then
                     echo "$$_$OPTIONS_S" >&$fd
                     echo -n "$SLP_CFG_MNT_DIR $SEP " >&$fd
@@ -1828,7 +1830,7 @@ mask_sleep() {
                 fi
             fi
         else
-            # if some other clone process is masking/unmasking sleep 
+            # if some other clone process is masking/unmasking system sleep 
             # (suspend/hibernate) then sleep lock file must be excluded from
             # cloning
             local slp_entry
@@ -1843,7 +1845,7 @@ mask_sleep() {
         fi
 
         (( ! err )) &&
-            trap_signals "mask_sleep 1" USR1 # signal handler for USR1
+            trap_signals "mask_system_sleep 1" USR1 # signal handler for USR1
 
         flock -u $fd # release lock
     fi
@@ -1851,10 +1853,12 @@ mask_sleep() {
     
     (( $# == 1 )) &&
         if (( err )); then
-            cecho -e "${RED}Disabling sleep (suspend/hibernate) was unsuccessful...\n"
+            cecho -e "${RED}Disabling system sleep (suspend/hibernate) was "\
+                     "unsuccessful...\n"
             cleanup 1
         else
-            cecho -e "${GREEN}Sleep (suspend/hibernate) was disabled successfully...\n"
+            cecho -e "${GREEN}System sleep (suspend/hibernate) was disabled "\
+                     "successfully...\n"
         fi
 
     return $err
@@ -2426,13 +2430,13 @@ cleanup() {
 
         rsync_params=()
         
-        echo -e "\tIgnore signal to disable/enable sleep (suspend/hibernate)..."
+        echo -e "\tIgnore signal to disable/enable system sleep (suspend/hibernate)..."
 
-        # ignore sig USR1 in order not to mask/unmask sleep (suspend/hibernate)
+        # ignore sig USR1 in order not to mask/unmask system sleep (suspend/hibernate)
         cmds=("trap '' USR1")
         exec_cmds "${cmds[@]}"
 
-        unmask_sleep
+        unmask_system_sleep
         ((tmp=$?))
         (( ! err )) && ((err=tmp))
         
@@ -2523,7 +2527,7 @@ readonly FSTYPES_FILE FILTERS_FILE
         populate_arrays   && # create data structures used for cloning
         calc_drvspace     && # check if src fits on dst
         create_partitions && # create partitions on dst if different than src
-        mask_sleep        &&
+        mask_system_sleep &&
         clone
         ((err=$?))
     done

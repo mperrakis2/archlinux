@@ -801,9 +801,9 @@ SLP_CFG_PTN=$(df -ak --sync --output=source "$SLP_CFG_DIR" | tail -1)
 readonly SLP_CFG_PTN
 SLP_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$SLP_CFG_PTN")
 readonly SLP_CFG_MNT_DIR
-declare -a sleep_cmds=()
+declare -a system_sleep_cmds=()
 
-# create mask/unmask sleep commands
+# create mask/unmask system sleep commands
 # $1: ref to str array, store the commands
 # $2: optional, str, valid value: mask
 system_sleep() {
@@ -817,15 +817,15 @@ system_sleep() {
         exit_with_stack "$msg"
     fi
 
-    if (( $# == 2 )); then # mask sleep
+    if (( $# == 2 )); then # mask system sleep
         local target
         local -a TARGETS=("sleep.target" "suspend.target" "hibernate.target")
-        local sleep_cmd=""
+        local system_sleep_cmd=""
         local rsync_exclude
 
         TARGETS+=("hybrid-sleep.target" "suspend-then-hibernate.target")
         readonly TARGETS
-        sleep_cmds=()
+        system_sleep_cmds=()
 
         # iterate over targets and create commands to mask unmasked ones
         for target in "${TARGETS[@]}"; do
@@ -834,10 +834,10 @@ system_sleep() {
             
             if (( ${PIPESTATUS[-1]} )); then # get output of last pipe, i.e. grep
                 # create cmd to mask target
-                if [[ "$sleep_cmd" ]]; then
-                    sleep_cmd+="$target "
+                if [[ "$system_sleep_cmd" ]]; then
+                    system_sleep_cmd+="$target "
                 else
-                    sleep_cmd+="systemctl $2 $target "
+                    system_sleep_cmd+="systemctl $2 $target "
                 fi
                 
                 rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
@@ -846,20 +846,20 @@ system_sleep() {
             fi
         done
         
-        [[ "$sleep_cmd" ]] && sleep_cmds+=("$sleep_cmd")
+        [[ "$system_sleep_cmd" ]] && system_sleep_cmds+=("$system_sleep_cmd")
     fi
 
-    # add command to mask/unmask sleep
-    if (( ${#sleep_cmds[@]} )); then
+    # add command to mask/unmask system sleep
+    if (( ${#system_sleep_cmds[@]} )); then
         local -n ref="$1"
     
-        ref+=("${sleep_cmds[@]}")
+        ref+=("${system_sleep_cmds[@]}")
         if (( $# == 2 )); then 
-            # unmask sleep
-            sleep_cmds=("${sleep_cmds[@]//$2/unmask}")
-            sleep_cmds+=("flock '$SLPFILE' truncate -s 0 '$SLPFILE'")
+            # unmask system sleep
+            system_sleep_cmds=("${system_sleep_cmds[@]//$2/unmask}")
+            system_sleep_cmds+=("flock '$SLPFILE' truncate -s 0 '$SLPFILE'")
         else
-            sleep_cmds=()
+            system_sleep_cmds=()
         fi
     fi
 }
@@ -1174,24 +1174,24 @@ valid_opt_param() {
 }
 
 # return: 0 on success else the error code of the command that failed
-unmask_sleep() {
+unmask_system_sleep() {
     local -a cmds=()
-    system_sleep cmds # add cmds to unmask sleep
+    system_sleep cmds # add cmds to unmask system sleep
     
-    (( ${#cmds[@]} )) && echo -e "\tEnabling sleep (suspend/hibernate)..."
+    (( ${#cmds[@]} )) && echo -e "\tEnabling system sleep (suspend/hibernate)..."
     exec_cmds "${cmds[@]}"
     local -i err=$?
 
     if (( ! err  && ${#cmds[@]} )); then
-        # if other clone processes exist, one of them must mask/unmask sleep so
-        # send signal USR1 to all of them
+        # if other clone processes exist, one of them must mask/unmask system
+        # sleep so send signal USR1 to all of them
         get_pids 1
         ((err=$?))
         
-        # In case the desktop environment attempted sleep (suspend/hibernate) 
-        # and it failed, a notification was sent and a popup appears on the
-        # desktop. The popup has no timeout so the following code clears all
-        # popups.
+        # In case the desktop environment attempted system sleep
+        # (suspend/hibernate) and it failed, a notification was sent and a popup
+        # appears on the desktop. The popup has no timeout so the following code
+        # clears all popups.
         if [[ "$DISPLAY" ]]; then            
             local -i nid
             local user
@@ -1271,7 +1271,7 @@ get_pids() {
                         cmds=("kill -s USR1 $pid")
                         if exec_cmds "${cmds[@]}"; then
                             cecho -e "\tSent signal to 'clone.sh' process with"\
-                                     "ID $pid to disable/enable sleep"\
+                                     "ID $pid to disable/enable system sleep"\
                                      "(suspend/hibernate)...\n"
                         fi
                     else
