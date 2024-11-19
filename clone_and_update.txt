@@ -26,12 +26,12 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
    and finally
 
-   $ /usr/bin/octopi-cachecleaner    # clean cache
    $ fwupdmgr update                 # update firmware
    run kodi to update kodi add ons
    run qBitTorrent and update plug ins
 
 3. clear space
    ===========
+   $ /usr/bin/octopi-cachecleaner &
    $ bleachbit
    $ sudo bleachbit
