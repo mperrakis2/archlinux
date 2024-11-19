@@ -72,7 +72,7 @@ bootctl status --no-pager (dir of grubx64.efi under section 'Boot', dir of BOOTX
 update /etc/kernel/cmdline # e.g. root=UUID=55e14ea4-8667-4d95-9b49-321c1b166e2b rw loglevel=6 resume=UUID=55e14ea4-8667-4d95-9b49-321c1b166e2b resume_offset=7542784
 
 add menu entries to grub.cfg for the two ukis (below)
-save cmdline file above and grub.cfg to google drive
+update cmdline file above and grub.cfg on github
 
 sudo sbctl bundle --save "$(bootctl -p)"/EFI/arch/uki-linux-x86_64.efi
 sudo sbctl bundle --save "$(bootctl -p)"/EFI/arch/uki-linux-lts-x86_64.efi --kernel-img "$(bootctl -p)"/vmlinuz-linux-lts  --initramfs "$(bootctl -p)"/initramfs-linux-lts.img
