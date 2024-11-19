@@ -212,7 +212,7 @@ command line options
 if any of the above is omitted its default file is read from:
 
 * $DEF_CFG_DIR, if the script is run under its installation directory
-  (usually /usr/sbin/clone/) or if ~/$LCL_CFG_DIR does not exist
+  (usually /usr/sbin/clone-script/) or if ~/$LCL_CFG_DIR does not exist
 
 * ~/$LCL_CFG_DIR, if it exists and the script is not run under its
   installation directory
