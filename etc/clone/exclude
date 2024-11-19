@@ -1,6 +1,6 @@
 # for an explanation of the syntax see "man clone-exclude"
 #
-# For clarity, put your entries here (above the default entries below).
+# For clarity, put your entries here (above the default entries below), e.g.
 #-/home/<user>/Music/*
 
 # According to the Filesystem Hierarchy Standard (FHS) the following directories
