@@ -1,5 +1,8 @@
 No amount of careful planning will ever replace dumb luck.
 Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain)
+a loser is not someone who fails but someone who doesn't try
+maintain just enough order to be creative
+the universe will do what it must
 
 1. run clone script (see group 'scripts & files')
 
@@ -15,13 +18,14 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
        a. $ pacaur -Syu              # update including AUR
        b. $ pacaur --aur-cleanall    # offer to remove all built packages
        c. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all \
-                      --rebuild tree # check if some packages are out of date
+                      --rebuild=tree # check if some packages are out of date or orphans
        d. $ paru --clean             # remove unneeded dependencies
        e. $ paru --repoctl --clean   # remove packages that are not currently installed from repos
 
    and finally
 
-   $ fwupdmgr update
+   $ /usr/bin/octopi-cachecleaner    # clean cache
+   $ fwupdmgr update                 # update firmware
    run kodi to update kodi add ons
    run qBitTorrent and update plug ins
 
