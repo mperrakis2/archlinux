@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script clones one drive to another. To see detailed info and usage read
-# the man page (man <script>, no file extention). For a quick description of the
+# the man page (man <script_name>-script). For a quick description of the
 # command line options run '<script>.sh -h'. Further clone options are entered
 # by the user after the script is run.
 
@@ -14,7 +14,7 @@
 # 
 # limitations
 # -----------
-# see LIMITS section in man page (man <script>, no file extention)
+# see LIMITS section in man page (man <script_name>-script)
 #
 # conf files used by script
 # -------------------------
@@ -214,7 +214,7 @@ if any of the above is omitted its default file is read from:
 * ~/.config/clone/, if it exists and the script is not run under its
   installation directory
 
-for more info see man pages (man clone & man clone-exclude)
+for more info see man pages (man clone-script & man clone-exclude.conf)
 usage_msg
             exit 0
             ;;
@@ -296,11 +296,11 @@ usage_msg
     echo
 
     cat << usage_msg
-For more info see the man pages (man clone & man clone-exclude).
+For more info see the man pages (man clone-script & man clone-exclude.conf).
 
 ${YELLOW}LIMITATIONS
 ===========$OFF
-See ${YELLOW}LIMITS$OFF section in man page (man clone).
+See ${YELLOW}LIMITS$OFF section in man page (man clone-script).
 
 ${YELLOW}WARNING
 =======
