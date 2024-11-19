@@ -5,11 +5,13 @@ exclude \- configuration file for \fBclone.sh\fR that contains files/dirs to be 
 .SH SYNOPSIS
 /etc/clone/exclude, ~/.config/clone/exclude, <custom pathname>
 .SH DESCRIPTION
-The default directory of the \fBexclude\fR configuration file is \fI/etc/clone/\fR. This file should never be deleted and if the default entries need to be changed or deleted it is best to create a custom file. However, new entries can be added.
+The default directory of the \fBexclude\fR configuration file is \fI/etc/clone/\fR. The file should never be deleted and if the default entries need to be changed or deleted it is best to create a custom file. However, new entries can be added to the default file.
 
 \fBclone.sh\fR searches for a custom file if not run under its installation directory (usually \fI/usr/sbin/clone/\fR). The directory of the custom file must be \fI~/.config/clone/\fR and the filename has to be \fBexclude\fR.
 
-A custom file can also be provided when executing \fBclone.sh\fR with the \fB-e\fR command line option. It takes precedence over any other files and any valid pathname can be used (the filename is not restricted to \fBexclude\fR).
+A custom file can also be provided when executing \fBclone.sh\fR with the \fB-e\fR command line option. It takes precedence over any other files (custom and default) and any valid pathname can be used (the filename is not restricted to \fBexclude\fR).
+
+A custom file does not override the default; it replaces it.
 .SH EXAMPLES
 .I GENERAL USE
 
