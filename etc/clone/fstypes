@@ -1,6 +1,12 @@
 # maps filesystem names of 'parted' command to 'mkfs' command
-# the last two fields are the min & max sector size respectively; if any of them
-# are zero the page size is assumed
+#
+# fields are separated by colon (:)
+#
+# first field    : 'parted' filesystem
+# second field   : 'mkfs' command for filesystem
+# last two fields: min & max sector size respectively (if any of them are zero
+#                  the page size is assumed)
+#
 # to support comments after the end of a line the last field MUST be delimited
 # by a colon
 
@@ -17,5 +23,5 @@ ntfs:mkfs.ntfs --force -q:256:4096
 reiserfs:mkfs.reiserfs -ffq:512:8192
 udf:mkfs.udf --utf8:512:32768
 xfs:mkfs.xfs -fq:512:32768
-hfs+:mkfs.hfsplus:0:0:    # case insensitive
-hfsx:mkfs.hfsplus -s:0:0: # case sensitive
+hfs+:mkfs.hfsplus:0:0:    # filesystem is case insensitive
+hfsx:mkfs.hfsplus -s:0:0: # filesystem is case sensitive
