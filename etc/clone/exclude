@@ -3,11 +3,11 @@
 # For clarity, put your entries here (above the default entries below), e.g.
 #-/home/<user>/Music/*
 
+# DEFAULT ENTRIES - DON'T CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING
 # According to the Filesystem Hierarchy Standard (FHS) the following directories
 # contain data that is temporary and used while a system is running and may 
-# change after a reboot. Therefore, they don't need to be cloned and are
-# excluded. It's best not to modify them unless you really know what you are
-# doing.
+# change or be deleted after a reboot. Therefore, they don't need to be cloned
+# and are excluded.
 -/dev/*
 -/proc/*
 -/run/*
