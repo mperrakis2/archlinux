@@ -2429,7 +2429,7 @@ cleanup() {
             # 0: don't run in the background
             # 0: don't redirect stdout
             # 0: don't redirect stderr
-            cmds=("000 kill -s TERM ${pids[*]} >> '$LOGFILE' 2>> '$ERRFILE' || true")
+            cmds=("000 kill -s KILL ${pids[*]} >> '$LOGFILE' 2>> '$ERRFILE' || true")
             exec_cmds "${cmds[@]}"
             ((err=$?))
         fi
