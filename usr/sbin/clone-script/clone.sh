@@ -258,38 +258,70 @@ usage_msg
 usage() {
     clear
 
-    # read file that contains files and/or directories to be excluded from or
-    # included in cloning and save them
+    local override_file="/etc/clone-script.d/exclude.conf"
+
+    # if there is no override for the file set it to empty str
+    if [[ ! "$FILTERS_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
+          ! -s "$override_file" || ! -r "$override_file" ]]
+    then
+        override_file=""
+    fi
+
+    # read files that contain dirs/files to be excluded from or included in
+    # cloning and save these entries into array
+    local file
     local -i fd
+    local -i i
     local -a filters=()
 
-    exec {fd}< "$FILTERS_FILE" # open filters file
-    while read -r -u $fd; do
-        # remove leading & trailing spaces and tabs
-        REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
-        [[ -z "$REPLY" ]]  && continue  # skip empty lines
+    for file in "$FILTERS_FILE" $override_file; do
+        exec {fd}< "$file" # open filters file
+        while read -r -u $fd; do
+            # remove leading & trailing spaces and tabs
+            REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' \
+                                        -e 's/[[:blank:]]*$//')
+            [[ -z "$REPLY" ]]  && continue  # skip empty lines
 
-        REPLY=$(expr "$REPLY" : "\(^[^#].*$\)") # get lines that are not comments
-        (( $? )) && continue # skip comments
+            # get lines that are not comments
+            REPLY=$(expr "$REPLY" : "\(^[^#].*$\)")
+            (( $? )) && continue # skip comments
 
-        # remove redundant /, * and space
-        while [[ "$REPLY" =~ ('//'|'**'|[[:blank:]][[:blank:]][[:blank:]]) ]]; do 
-            REPLY="${REPLY//'//'/'/'}"
-            REPLY="${REPLY//'**'/'*'}"
-            REPLY="${REPLY//[[:blank:]][[:blank:]][[:blank:]]/'  '}" # replace 3 with 2
-        done    
-        
-        filters+=("$REPLY") # save entry excluded from or included in cloning
+            # remove redundant /, * and space
+            while [[ "$REPLY" =~ ('//'|'**'|[[:blank:]][[:blank:]][[:blank:]]) ]]
+            do 
+                REPLY="${REPLY//'//'/'/'}"
+                REPLY="${REPLY//'**'/'*'}"
+
+                # replace 3 blanks with 2
+                REPLY="${REPLY//[[:blank:]][[:blank:]][[:blank:]]/'  '}"
+            done    
+            
+            if [[ "$file" == "$override_file" ]]; then
+                # iterate over existing array and update its elements
+                for (( i = 0; i < ${#filters[@]}; ++i )); do
+                    [[ "${filters[i]}" == "$REPLY" ]] && break
+                done
+                (( i == ${#filters[@]} )) && filters+=("$REPLY")
+            else
+                # save entry excluded from or included in cloning
+                filters+=("$REPLY")
+            fi
+        done
+        exec {fd}<&- # close the filters file
     done
-    exec {fd}<&- # close the filters file
 
     cat << usage_msg
 DESCRIPTION
 ===========
 This script will clone one drive to another. Source and destination drives need
 not be the same size as long as all source data fits on destination. Also, the
-files and/or directories contained in the following file
+files and/or directories contained in the following file(s)
 $YELLOW'$FILTERS_FILE'$OFF
+usage_msg
+
+    [[ "$override_file" ]] && cecho "'$override_file'"
+
+    cat << usage_msg
 will ${YELLOW}NOT$OFF be cloned. Here they are:
 
 usage_msg
@@ -764,7 +796,7 @@ populate_arrays() {
     readonly START_DATE
 
     # at this point there is no more looping so read cfg files into memory
-    read_cfg_into_mem
+    read_cfg
     readonly FILTERS FSTYPES
 
     # finalize numbers of fields
@@ -1993,7 +2025,7 @@ clone() {
                     # don't clone swap file (add to rsync filters)
                     rsync_filters[$srcmnt]+="-f \"- ${file//\"/\\\"}\" "
                     
-                    if [[ -f "$file" && -r "$file" && -w "$file" && -s "$file" ]]
+                    if [[ -f "$file" && -s "$file" && -r "$file" && -w "$file" ]]
                     then
                         # add commands to create swap files on dst
                         ((size=$(find "$file" -printf %s)))
@@ -2279,7 +2311,7 @@ clone() {
                 
                 # replace UUID and offset with that of dst in grub cfg default file
                 file="$dstmnt$GRUBDEF_FILE"
-                if [[ -f "$file" && -r "$file" && -s "$file" ]]; then
+                if [[ -f "$file" && -s "$file" && -r "$file" ]]; then
                     cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
                     cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
                 fi

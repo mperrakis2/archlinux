@@ -80,7 +80,7 @@ file_exists() {
         exit_with_stack "$msg"
     fi
 
-    if [[ ! -f "$1" || ! -r "$1" || ! -s "$1" ]]; then
+    if [[ ! -f "$1" || ! -s "$1" || ! -r "$1" ]]; then
         cecho -e "\n${RED}The $YELLOW$1$RED file does not exist or has zero size or"\
                  "${RED}is not readable.\n$RED$2"
 
@@ -643,34 +643,80 @@ convert_size() {
 }
 
 # return: 0 on success else the error code of the command that failed
-read_cfg_into_mem() {
+read_cfg() {
     ! files_exist && return 1
 
+    local override_file="/etc/clone-script.d/fstypes.conf"
+
+    # if there is no override for the file set it to empty str
+    if [[ ! "$FSTYPES_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
+          ! -s "$override_file" || ! -r "$override_file" ]]
+    then
+        override_file=""
+    fi
+
+    local file
     local -i fd
+    local -i i
 
-    exec {fd}< "$FSTYPES_FILE" # open file
-    while read -r -u $fd; do
-        # remove leading and trailing whitespace
-        REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
+    for file in "$FSTYPES_FILE" $override_file; do
+        exec {fd}< "$file" # open file
+        while read -r -u $fd; do
+            # remove leading and trailing whitespace
+            REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
 
-        # ignore empty lines & comments
-        [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
+            # ignore empty lines & comments
+            [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
 
-        FSTYPES+=("$REPLY")
+            # read and update contents of array
+            if [[ "$file" == "$override_file" ]]; then # override file exists
+                # iterate over existing array and update its elements
+                for (( i = 0; i < ${#FSTYPES[@]}; ++i )); do
+                    if [[ "${FSTYPES[i]}" =~ ^"$(field "$REPLY" 1)" ]]; then
+                        FSTYPES[i]="$REPLY"
+                        break
+                    fi
+                done
+                (( i == ${#FSTYPES[@]} )) && FSTYPES+=("$REPLY")
+            else
+                FSTYPES+=("$REPLY")
+            fi
+        done
+        exec {fd}<&- # close file
     done
-    exec {fd}<&- # close file
 
-    exec {fd}< "$FILTERS_FILE" # open file
-    while read -r -u $fd; do
-        # remove leading & trailing spaces and tabs
-        REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')
+    override_file="/etc/clone-script.d/exclude.conf"
 
-        # ignore empty lines & comments
-        [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
-        
-        FILTERS+=("$REPLY")
+    # if there is no override for the file set it to empty str
+    if [[ ! "$FILTERS_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
+          ! -s "$override_file" || ! -r "$override_file" ]]
+    then
+        override_file=""
+    fi
+
+    for file in "$FILTERS_FILE" $override_file; do
+        exec {fd}< "$file" # open file
+        while read -r -u $fd; do
+            # remove leading and trailing whitespace
+            REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' \
+                                        -e 's/[[:blank:]]*$//')
+
+            # ignore empty lines & comments
+            [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
+
+            # read and update contents of array
+            if [[ "$file" == "$override_file" ]]; then # override file exists
+                # iterate over existing array and update its elements
+                for (( i = 0; i < ${#FILTERS[@]}; ++i )); do
+                    [[ "${FILTERS[i]}" == "$REPLY" ]] && break
+                done
+                (( i == ${#FILTERS[@]} )) && FILTERS+=("$REPLY")
+            else
+                FILTERS+=("$REPLY")
+            fi
+        done
+        exec {fd}<&- # close file
     done
-    exec {fd}<&- # close file
 }
 
 # get sector size based on partition type and size
