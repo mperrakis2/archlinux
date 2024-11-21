@@ -16,7 +16,7 @@ maintenance scripts
 
 /usr/sbin/
     av.sh                  # anti virus
-    clone/
+    clone-script/
         base_functions.sh  # don't run this (used only by clone.sh) 
         clone.sh           # clone one drive to another
         manpages/
@@ -32,9 +32,9 @@ maintenance scripts
 
 configuration files
 ===================
-/etc/clone/README          # point the user to the man pages for clone script
-/etc/clone/exclude         # contains dirs/files to exclude from cloning            (used by /usr/sbin/clone/clone.sh above)
-/etc/clone/fstypes         # maps filesystem names to the command that creates them (ditto)
+/etc/clone-script/README   # point the user to the man pages for clone script
+/etc/clone-script/exclude  # contains dirs/files to exclude from cloning            (used by /usr/sbin/clone/clone.sh above)
+/etc/clone-script/fstypes  # maps filesystem names to the command that creates them (ditto)
 /etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
 /etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/polkit-1/rules.d/98-enable-inhibit.rules                        # enable inhibit without authorization
