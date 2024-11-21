@@ -11,7 +11,7 @@ If \fBclone.sh\fR is run without any command line options the default configurat
 
 After \fBclone.sh\fR is run a list of files/dirs excluded from cloning is displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. These files/dirs are read from the configuration file \fIexclude.conf\fR (see \fBFILES\fR). Also, a list of drives connected to the system is displayed and user input is required for source and destination drives. 
 
-During cloning, appropriate messages are produced on standard output indicating which command is being executed and a progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/\fR.
+During cloning, appropriate messages are produced on standard output indicating which command is being executed and a progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under \fI/var/log/clone-script/\fR.
 
 Multiple \fBclone.sh\fR instances can run in parallel provided the destination drives are (obviously) different. For example, if three drives are connected to the system one drive can be cloned to the other two at the same time.
 
@@ -31,7 +31,7 @@ The user can create new configuration files under \fI/etc/clone-script.d/\fR and
 
 Configuration files can also be provided when executing \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). They take priority over any other files and any valid pathnames can be used.
 
-Every time a cloning session is executed log directories from previous runs are deleted and the directory \fI/var/log/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/<x>_<y>/\fR is created where \fI<x>\fR is the number of the source drive and \fI<y>\fR is the number of the destination drive. The following files are created under this directory:
+Every time a cloning session is executed log directories from previous runs are deleted and the directory \fI/var/log/clone-script/<x>_<y>/\fR is created where \fI<x>\fR is the number of the source drive and \fI<y>\fR is the number of the destination drive. The following files are created under this directory:
 
 \fIlog\fR      (contains files/dirs cloned)
 
@@ -43,7 +43,7 @@ Sometimes it is useful to \fBtail\fR(1) the \fIlog\fR file to see which files/di
 
 Before cloning begins the following lock directory and files under it are created:
 
-\fI/var/lock/clone.sh_cdb68a8f-2050-4fcd-a789-c130cc98c1e5/\fR
+\fI/var/lock/clone-script/\fR
 
     \fIclone_pids\fR: ensures that \fBclone.sh\fR is executed only if its source and destination are not destinations of another \fBclone.sh\fR instance
 
