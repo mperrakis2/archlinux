@@ -1946,7 +1946,7 @@ clone() {
                 cmd="blkid $dstdrv$DP$ptn_cnt"
                 swap_ptn_UUIDs+=$(expr "$($cmd)" : ".* UUID=\"\(.*\)\" TYPE")
                 swap_ptns_UUIDs+=("$swap_ptn_UUIDs")
-                cmds+=("mkswap -c -f -q '$dstdrv$DP$ptn_cnt'")
+                cmds+=("mkswap -c -f '$dstdrv$DP$ptn_cnt'")
             elif [[ "$flags" =~ bios ]]; then
                 ((bios=1)) # set flag if bios partition
             else
@@ -2044,7 +2044,7 @@ clone() {
                                 cmd+="bs=1M count=$count status=progress"
                                 swap_file_cmds+=("$cmd")
                                 swap_file_cmds+=("chmod 0600 '$dstmnt'/'$file'")
-                                swap_file_cmds+=("mkswap -U clear '$dstmnt'/'$file'")
+                                swap_file_cmds+=("mkswap -c -f -U clear '$dstmnt'/'$file'")
                                 break
                             fi
                         done
