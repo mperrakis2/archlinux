@@ -1946,7 +1946,7 @@ clone() {
                 cmd="blkid $dstdrv$DP$ptn_cnt"
                 swap_ptn_UUIDs+=$(expr "$($cmd)" : ".* UUID=\"\(.*\)\" TYPE")
                 swap_ptns_UUIDs+=("$swap_ptn_UUIDs")
-                cmds+=("mkswap -f '$dstdrv$DP$ptn_cnt'")
+                cmds+=("mkswap -c -f -q '$dstdrv$DP$ptn_cnt'")
             elif [[ "$flags" =~ bios ]]; then
                 ((bios=1)) # set flag if bios partition
             else
