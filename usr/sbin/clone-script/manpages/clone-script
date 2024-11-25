@@ -3,7 +3,7 @@
 .SH NAME
 clone-script \- clone one drive to another using \fBrsync\fR(1)
 .SH SYNOPSIS
-.B clone.sh\fR \fI[\fB-e\fI exclude_file] [\fB-f\fI fstypes_file] 
+.B clone.sh \fR[\fIOPTION\fR]... 
 .SH DESCRIPTION
 Source and destination drives need not be the same size as long as all source data fits on destination. If the source drive is bootable the destination will become bootable provided certain conditions are met (see \fBLIMITS\fR).
 
@@ -11,7 +11,7 @@ If \fBclone.sh\fR is run without any command line options the default configurat
 
 After \fBclone.sh\fR is run a list of files/dirs excluded from cloning is displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. These files/dirs are read from the configuration file \fIexclude.conf\fR (see \fBFILES\fR). Also, a list of drives connected to the system is displayed and user input is required for source and destination drives. 
 
-During cloning, appropriate messages are produced on standard output indicating which command is being executed and a progress indicator, including total bytes and % cloned, is displayed as well. Log files are produced under \fI/var/log/clone-script/\fR.
+During cloning, appropriate messages are produced on standard output indicating which command is being executed and a progress indicator, including total bytes and percent (%) cloned, is displayed as well. Log files are produced under \fI/var/log/clone-script/\fR.
 
 Multiple \fBclone.sh\fR instances can run in parallel provided the destination drives are (obviously) different. For example, if three drives are connected to the system one drive can be cloned to the other two at the same time.
 
@@ -29,7 +29,7 @@ The user can create new configuration files under \fI/etc/clone-script.d/\fR and
 
 \fBclone.sh\fR uses the configuration files under \fI~/.config/clone-script/\fR if not run under its installation directory (usually \fI/usr/sbin/clone-script/\fR).
 
-Configuration files can also be provided when executing \fBclone.sh\fR with the \fB-e\fR or \fB-f\fR command line options (see \fIOPTIONS\fR). They take priority over any other files and any valid pathnames can be used.
+Configuration files can also be provided when executing \fBclone.sh\fR with command line options (see \fIOPTIONS\fR). They take priority over any other files and any valid pathnames can be used.
 
 Every time a cloning session is executed log directories from previous runs are deleted and the directory \fI/var/log/clone-script/<x>_<y>/\fR is created where \fI<x>\fR is the number of the source drive and \fI<y>\fR is the number of the destination drive. The following files are created under this directory:
 
@@ -53,9 +53,9 @@ The lock directory is deleted after cloning has completed.
 
 If multiple clone sessions are executed in parallel a log directory per session is created.
 .SH OPTIONS
-\fB-e\fR \fIexclude_file\fR
+\fB-e, --exclude\fR \fIexclude_file\fR
 
-\fB-f\fR \fIfstypes_file\fR
+\fB-f, --fstypes\fR \fIfstypes_file\fR
 
 Command line options take priority over any other configuration files (see \fBFILES\fR). Must be valid pathnames.
 .SH LIMITS

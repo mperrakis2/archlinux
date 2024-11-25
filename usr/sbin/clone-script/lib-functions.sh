@@ -2,6 +2,29 @@
 
 # base functions for clone.sh
 
+print_helpmsg() {
+        cat << helpmsg
+usage: clone.sh [OPTION]...
+clone one drive to another using rsync
+
+-e|--exclude <exclude_file> : pathname of file that contains files/dirs to be
+                              excluded from cloning
+-f|--fstypes <fstypes_file> : pathname of file that contains the commands to
+                              format various filesystems (recommended to use
+                              default, see below)
+
+if any of the above options is omitted the default file is read from:
+
+* $DEF_CFG_DIR if the script is run under its installation directory
+  (usually /usr/sbin/clone-script/) or if ~/$LCL_CFG_DIR does not exist
+
+* ~/$LCL_CFG_DIR if it exists and the script is not run under its
+  installation directory
+
+for more info see man pages (man clone-script & man clone-exclude.conf)
+helpmsg
+}
+
 # echo pathname of config file
 # $1    : str, filename
 # stdout: pathname of config file

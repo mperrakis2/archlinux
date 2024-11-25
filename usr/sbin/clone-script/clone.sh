@@ -67,9 +67,6 @@ readonly MIBIBYTE
 UNIT=B # unit supplied to 'parted' command is bytes
 readonly UNIT
 
-SCRIPT_NAME=$(basename "${BASH_SOURCE:-$0}") # get name of script
-readonly SCRIPT_NAME
-
 LCKDIR="/var/lock/$(basename "$SCRIPTDIR")"
 readonly LCKDIR
 LOGDIR="/var/log/$(basename "$SCRIPTDIR")"
@@ -187,43 +184,45 @@ declare -a g_parted_data=() # drive data retrieved from 'parted' command
 declare -i LOOP=1
 
 init() {
-    local option
+    local options
+    local script_name
+        
+    script_name=$(basename "${BASH_SOURCE:-$0}") # get name of script
 
-    # explanation for getopts string below
-    # ":" : process cmd line options quietly, i.e. don't display errors, if any
-    # "h" : display help message
-    #
-    # a colon after an option specifies a required arg
-    # "e:": pathname of exclude file
-    # "f:": pathname of fstypes file
-    while getopts ":he:f:" option; do
-        case ${option} in
-        h|:|\?)  cat << usage_msg
-command line options
---------------------
--e <exclude_file> : pathname of file that contains files/dirs to be excluded
-                    from cloning
--f <fstypes_file> : pathname of file that contains the commands to format
-                    various filesystems (recommend to use default, see below)
+    # Note the use of "$@" (quoted) to let each command line option expand to a
+    # separate word. 'options' is needed as 'eval set --' would lose the return
+    # value of getopt. A colon (:) after an option specifies a required arg.
+    options=$(getopt -q -o 'he:f:' -l 'help,exclude:,fstypes:' -n "$script_name" \
+                     -- "$@")
+    if (( $? )); then
+        print_helpmsg
+        exit 1
+    fi
 
-if any of the above is omitted its default file is read from:
+    eval set -- "$options" # quotes are required
 
-* $DEF_CFG_DIR, if the script is run under its installation directory
-  (usually /usr/sbin/clone-script/) or if ~/$LCL_CFG_DIR does not exist
-
-* ~/$LCL_CFG_DIR, if it exists and the script is not run under its
-  installation directory
-
-for more info see man pages (man clone-script & man clone-exclude.conf)
-usage_msg
-            exit 0
-            ;;
-        e)
-            FILTERS_FILE="$OPTARG"
-            ;;
-        f)
-            FSTYPES_FILE="$OPTARG"
-            ;;
+    while true; do
+        case "$1" in
+            '-h'|'--help')
+                print_helpmsg
+                exit 0
+                ;;
+            '-e'|'--exclude')
+                FILTERS_FILE="$2"
+                shift 2
+                ;;
+            '-f'|'--fstypes')
+                FSTYPES_FILE="$2"
+                shift 2
+                ;;
+            '--')
+                shift
+                break
+                ;;
+            *)
+                print_helpmsg
+                exit 1
+                ;;
         esac
     done
 
