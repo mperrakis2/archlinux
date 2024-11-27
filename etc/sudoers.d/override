@@ -1,8 +1,12 @@
-# allow members of group sudo to execute any command
+# allow members of group sudo to execute any command without password
 %sudo ALL=(ALL:ALL) NOPASSWD:ALL
 
-# allow all users to run an virus scan/clean
+# allow all users to run an virus scan/clean without password
 ALL ALL=NOPASSWD: /usr/sbin/av.sh
 
-# Set default EDITOR to restricted version of nano, and do not allow visudo to use EDITOR/VISUAL.
+# Set default EDITOR to restricted version of nano, and do not allow visudo to
+# use EDITOR/VISUAL.
 Defaults editor=/usr/bin/rnano, !env_editor
+
+Defaults rootpw
+Defaults passwd_timeout=0
