@@ -4,4 +4,5 @@
 # allow all users to run an virus scan/clean
 ALL ALL=NOPASSWD: /usr/sbin/av.sh
 
-Defaults editor="/usr/bin/nano" # default editor unless overwritten by the user
+# Set default EDITOR to restricted version of nano, and do not allow visudo to use EDITOR/VISUAL.
+Defaults editor=/usr/bin/rnano, !env_editor
