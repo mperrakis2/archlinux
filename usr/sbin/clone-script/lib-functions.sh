@@ -4,24 +4,21 @@
 
 print_helpmsg() {
         cat << helpmsg
+usage: clone.sh [OPTION]...
 clone one drive to another using rsync
 
-usage: clone.sh [OPTION]...
-
--d|--dry-run                : print commands but don't execute them
+-h|--help                   : display this help and exit
+-d|--dry-run                : display commands but don't execute them
 -e|--exclude <exclude_file> : pathname of file that contains files/dirs to be
                               excluded from cloning
 -f|--fstypes <fstypes_file> : pathname of file that contains the commands to
-                              format various filesystems (recommended to use
-                              default, see below)
+                              format various filesystems (don't use this unless
+                              you really know what you are doing)
 
 if '-e' or '-f' is omitted the default file is read from:
-
-* $DEF_CFG_DIR if the script is run under its directory (usually
-  /usr/sbin/clone-script/) or if ~/$LCL_CFG_DIR does not exist
-
-* ~/$LCL_CFG_DIR if it exists and the script is not run under its directory
-  (usually /usr/sbin/clone-script/)
+    * ~/$LCL_CFG_DIR if it exists and the script is not run under its own
+      directory (usually /usr/sbin/clone-script/)
+    * $DEF_CFG_DIR and $OVR_CFG_DIR in all other cases
 
 for more info see clone-script(1) & clone-exclude.conf(5)
 helpmsg
@@ -671,7 +668,7 @@ convert_size() {
 read_cfg() {
     ! files_exist && return 1
 
-    local override_file="/etc/clone-script.d/fstypes.conf"
+    local override_file="$OVR_CFG_DIR/fstypes.conf"
 
     # if there is no override for the file set it to empty str
     if [[ ! "$FSTYPES_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
@@ -710,7 +707,7 @@ read_cfg() {
         exec {fd}<&- # close file
     done
 
-    override_file="/etc/clone-script.d/exclude.conf"
+    override_file="$OVR_CFG_DIR/exclude.conf"
 
     # if there is no override for the file set it to empty str
     if [[ ! "$FILTERS_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \

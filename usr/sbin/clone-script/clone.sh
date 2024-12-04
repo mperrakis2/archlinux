@@ -50,7 +50,9 @@ set -o pipefail
 shopt -s extglob
 
 # global constants
-readonly DEF_CFG_DIR="/etc/clone-script/"
+readonly CFG_DIR="/etc/clone-script"
+readonly DEF_CFG_DIR="$CFG_DIR/"
+readonly OVR_CFG_DIR="$CFG_DIR.d/"
 readonly LCL_CFG_DIR=".config/clone-script/"
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
