@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# This script clones one drive to another. To see detailed info and usage read
-# the man page (man <script_name>-script). For a quick description of the
-# command line options run '<script>.sh -h'. Further clone options are entered
-# by the user after the script is run.
+# This script clones one drive to another. For detailed info and usage see
+# <script_name>-script(1). For a quick description of the command line options
+# run '<script_name>.sh -h|--help'. Further clone options are entered by the
+# user after the script is run.
 
 # legend
 # ------
@@ -14,7 +14,7 @@
 # 
 # limitations
 # -----------
-# see LIMITS section in man page (man <script_name>-script)
+# see LIMITS section in <script_name>-script(1)
 #
 # conf files used by script
 # -------------------------
@@ -327,11 +327,11 @@ usage_msg
     echo
 
     cat << usage_msg
-For more info see the man pages (man clone-script & man clone-exclude.conf).
+For more info see the clone-script(1) & clone-exclude.conf(5).
 
 ${YELLOW}LIMITATIONS
 ===========$OFF
-See ${YELLOW}LIMITS$OFF section in man page (man clone-script).
+See ${YELLOW}LIMITS$OFF section in clone-script(1).
 
 ${YELLOW}WARNING
 =======

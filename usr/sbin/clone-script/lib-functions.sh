@@ -21,7 +21,7 @@ if any of the above options is omitted the default file is read from:
 * ~/$LCL_CFG_DIR if it exists and the script is not run under its
   installation directory
 
-for more info see man pages (man clone-script & man clone-exclude.conf)
+for more info see clone-script(1) & clone-exclude.conf(5)
 helpmsg
 }
 
