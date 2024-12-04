@@ -57,7 +57,7 @@ readonly LCL_CFG_DIR=".config/clone-script/"
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
-declare -i DRY_RUN=0
+declare -i dry_run=0
 FILTERS_FILE=""
 FSTYPES_FILE=""
 
@@ -211,7 +211,7 @@ init() {
                 exit 0
                 ;;
             '-d'|'--dry-run')
-                ((DRY_RUN=1))
+                ((dry_run=1))
                 shift
                 ;;
             '-e'|'--exclude')
@@ -458,15 +458,13 @@ setup_env() {
 
     local -i fd
 
-    if (( ! DRY_RUN )); then
-        # create lock dir and set its access rights
-        mkdir -p "$LCKDIR" && chmod go+=rx "$LCKDIR"
-        ((fd=$?))
-        if (( fd )); then
-            cechot "${RED}The lock directory, $YELLOW'$LCKDIR'$RED, could not be"\
-                "${RED}created or set to read & execute. Exiting."
-            return $fd
-        fi
+    # create lock dir and set its access rights
+    mkdir -p "$LCKDIR" && chmod go+=rx "$LCKDIR"
+    ((fd=$?))
+    if (( fd )); then
+        cechot "${RED}The lock directory, $YELLOW'$LCKDIR'$RED, could not be"\
+            "${RED}created or set to read & execute. Exiting."
+        return $fd
     fi
 
     # in case this is not the first attempt, e.g. the user entered wrong data,
@@ -474,28 +472,23 @@ setup_env() {
     LOGDIR="${LOGDIR//$OPTIONS_S/}"
     OPTIONS_S="${OPTIONS[0]}_${OPTIONS[1]}"
 
-    if (( ! DRY_RUN )); then
-        # critical section
-        (
-            if ! flock $fd; then exit $?; fi
+    # critical section
+    (
+        if ! flock $fd; then exit $?; fi
 
-            # if there's no clone process other than this one then delete log dir
-            if [[ ! -s "$LCKFILE" ]]; then
-                echo -e "\tRemoving old clone log directories from $LOGDIR ..."
-
-                rm -rf "$LOGDIR"/*
-            fi
-                    
-        ) {fd}>> "$LCKFILE"
-        ((fd=$?))
-        if (( fd )); then 
-            cechot "${RED}The lock file $YELLOW'$LCKFILE'$RED could not be"\
-                   "${RED}created. Exiting."
-            return $fd
-        fi
-    else
-        [[ ! -s "$LCKFILE" ]] &&
+        # if there's no clone process other than this one then delete log dir
+        if [[ ! -s "$LCKFILE" ]]; then
             echo -e "\tRemoving old clone log directories from $LOGDIR ..."
+
+            if (( ! dry_run )); then rm -rf "$LOGDIR"/*; fi
+        fi
+                
+    ) {fd}>> "$LCKFILE"
+    ((fd=$?))
+    if (( fd )); then 
+        cechot "${RED}The lock file $YELLOW'$LCKFILE'$RED could not be"\
+                "${RED}created. Exiting."
+        return $fd
     fi
 
     # complete the filename of log dir
@@ -510,54 +503,52 @@ setup_env() {
     ERRFILE="$LOGDIR/errors"
     CMDFILE="$LOGDIR/commands"
 
-    if (( ! DRY_RUN )); then
-        # create log dir and set access rights
-        mkdir -p "$LOGDIR" &&
-        chmod go+=rx "$LOGDIR" && 
-        touch "$LOGFILE" "$ERRFILE" "$CMDFILE" &&
-        chmod go=+r "$LOGFILE" "$ERRFILE" "$CMDFILE"
-        ((fd=$?))
-        if (( fd )); then
-            cechot "${RED}The log directory, $YELLOW'$LOGDIR'$RED, could not be"\
-                    "${RED}created or set to read & execute or one of"\
-                    "$YELLOW'$LOGFILE'$RED, $YELLOW'$ERRFILE'$RED or"\
-                    "$YELLOW'$CMDFILE'$RED, could not be created or set to read."\
-                    "${RED}Exiting."
-            return $fd
-        fi
+    # create log dir and set access rights
+    mkdir -p "$LOGDIR" &&
+    chmod go+=rx "$LOGDIR" && 
+    touch "$LOGFILE" "$ERRFILE" "$CMDFILE" &&
+    chmod go=+r "$LOGFILE" "$ERRFILE" "$CMDFILE"
+    ((fd=$?))
+    if (( fd )); then
+        cechot "${RED}The log directory, $YELLOW'$LOGDIR'$RED, could not be"\
+                "${RED}created or set to read & execute or one of"\
+                "$YELLOW'$LOGFILE'$RED, $YELLOW'$ERRFILE'$RED or"\
+                "$YELLOW'$CMDFILE'$RED, could not be created or set to read."\
+                "${RED}Exiting."
+        return $fd
+    fi
 
-        # critical section
-        (
-            if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
+    # critical section
+    (
+        if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
 
-            # exit if src or dst drives are currently used as destinations by
-            # other clone processes
-            for option in "${OPTIONS[@]}"; do
-                clone_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
-                if (( $? == 0 )); then
-                    cat << error_msg
+        # exit if src or dst drives are currently used as destinations by
+        # other clone processes
+        for option in "${OPTIONS[@]}"; do
+            clone_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
+            if (( $? == 0 )); then
+                cat << error_msg
 ${RED}A clone process with pid $YELLOW$(expr "$clone_process" : "^\([0-9]\+\)")
 ${RED}is currently running and using ${YELLOW}drive $option$RED as a destination.
 $OFF
 error_msg
-                    exit 1
-                fi
-            done
-            
-            declare -i err
-            
-            chmod go=+r "$LCKFILE" &&  # set access rights of lock file
-            echo "$$_$OPTIONS_S" >&$fd # add entry to lock file
-            ((err=$?))
-
-            echo
-            if ((err)); then
-                cechot "${RED}The lock file, $YELLOW'$LCKFILE'$RED, could not be set"\
-                    "${RED}to read or append to. Exiting." | tee -a "$ERRFILE"
-                exit 2
+                exit 1
             fi
-        ) {fd}>> "$LCKFILE" # open for append
-    fi
+        done
+        
+        declare -i err
+        
+        chmod go=+r "$LCKFILE" &&  # set access rights of lock file
+        echo "$$_$OPTIONS_S" >&$fd # add entry to lock file
+        ((err=$?))
+
+        echo
+        if ((err)); then
+            cechot "${RED}The lock file, $YELLOW'$LCKFILE'$RED, could not be set"\
+                "${RED}to read or append to. Exiting." | tee -a "$ERRFILE"
+            exit 2
+        fi
+    ) {fd}>> "$LCKFILE" # open for append
 
     if (( $? == 1 )); then prompt LOOP; fi
 }
@@ -570,7 +561,7 @@ populate_arrays() {
     local -a parted_data # drive data retrieved from 'parted' command
 
     # get drive and partition data for all drives in machine parsable format
-    readarray -t parted_data < <(parted -mls 2>> "$ERRFILE")
+    readarray -t parted_data < <(parted -mls 2>> /dev/null) #"$ERRFILE")
 
     local line
     local -i drv_num=0 # drive number used as index in associative array
@@ -1837,12 +1828,10 @@ mask_system_sleep() {
 
     local -i fd
 
-    if (( ! DRY_RUN )); then
-        exec {fd}>>"$SLPFILE" # append to the system sleep lock file
-        
-        # critical section follows
-        flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
-    fi
+    exec {fd}>>"$SLPFILE" # append to the system sleep lock file
+    
+    # critical section follows
+    flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
 
     local -i err=$?
 
@@ -1869,7 +1858,7 @@ mask_system_sleep() {
                 ((err=$?))
 
                 # add entry to system sleep lock file
-                if (( ! err && ! DRY_RUN )); then
+                if (( ! err )); then
                     echo "$$_$OPTIONS_S" >&$fd
                     echo -n "$SLP_CFG_MNT_DIR $SEP " >&$fd
                     echo "${rsync_filters[$SLP_CFG_MNT_DIR]}" >&$fd
@@ -1893,9 +1882,9 @@ mask_system_sleep() {
         (( ! err )) &&
             trap_signals "mask_system_sleep 1" USR1 # signal handler for USR1
 
-        (( ! DRY_RUN )) && flock -u $fd # release lock
+        flock -u $fd # release lock
     fi
-    (( ! DRY_RUN )) && exec {fd}>&- # close sleep lock file
+    exec {fd}>&- # close sleep lock file
     
     (( $# == 1 )) &&
         if (( err )); then
@@ -2529,7 +2518,7 @@ result() {
 
         declare -a cmds=()
 
-        cmds+=("rm -rf '$LCKDIR'")
+        cmds+=("rm -rf '$LCKDIR'"); ((dry_run=0))
         exec_cmds "${cmds[@]}"
         ((err=$?))
     fi
@@ -2560,7 +2549,7 @@ declare -i err=0
 
 source "$SCRIPTDIR"/lib-functions.sh && init $@
 ((err=$?))
-readonly DRY_RUN FILTERS_FILE FSTYPES_FILE
+readonly FILTERS_FILE FSTYPES_FILE
 
 (( ! err )) &&
     while (( LOOP )); do

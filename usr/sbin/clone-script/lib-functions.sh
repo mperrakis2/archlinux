@@ -1127,7 +1127,7 @@ exec_cmds() {
         
         # run cmd and use 'eval' to take into account spaces between arguments
         # but not within each argument
-        if (( ! DRY_RUN )); then
+        if (( ! dry_run )); then
             eval "${cmds[i]}" "${fd[1]}" "${fd[2]}" "${fd[0]}"
             err=$?
             if (( err )); then
@@ -1151,7 +1151,7 @@ exec_cmds() {
 
                 # run cmd and use 'eval' to take into account spaces between
                 # arguments but not within each argument
-                if (( ! DRY_RUN )); then
+                if (( ! dry_run )); then
                     eval wait $pid "${fd[1]}" "${fd[2]}"
                     ((err=$?))
                 fi
@@ -1312,8 +1312,6 @@ get_pids() {
         msg+="USR1. Exiting."
         exit_with_stack "$msg"
     fi
-    
-    (( DRY_RUN )) && return
     
     local -i fd
     
