@@ -4,22 +4,24 @@
 
 print_helpmsg() {
         cat << helpmsg
-usage: clone.sh [OPTION]...
 clone one drive to another using rsync
 
+usage: clone.sh [OPTION]...
+
+-d|--dry-run                : print commands but don't execute them
 -e|--exclude <exclude_file> : pathname of file that contains files/dirs to be
                               excluded from cloning
 -f|--fstypes <fstypes_file> : pathname of file that contains the commands to
                               format various filesystems (recommended to use
                               default, see below)
 
-if any of the above options is omitted the default file is read from:
+if '-e' or '-f' is omitted the default file is read from:
 
-* $DEF_CFG_DIR if the script is run under its installation directory
-  (usually /usr/sbin/clone-script/) or if ~/$LCL_CFG_DIR does not exist
+* $DEF_CFG_DIR if the script is run under its directory (usually
+  /usr/sbin/clone-script/) or if ~/$LCL_CFG_DIR does not exist
 
-* ~/$LCL_CFG_DIR if it exists and the script is not run under its
-  installation directory
+* ~/$LCL_CFG_DIR if it exists and the script is not run under its directory
+  (usually /usr/sbin/clone-script/)
 
 for more info see clone-script(1) & clone-exclude.conf(5)
 helpmsg
@@ -1128,13 +1130,15 @@ exec_cmds() {
         
         # run cmd and use 'eval' to take into account spaces between arguments
         # but not within each argument
-        eval "${cmds[i]}" "${fd[1]}" "${fd[2]}" "${fd[0]}"
-        err=$?
-        if (( err )); then
-            print_err_msg "${cmds[i]}"
-            break
+        if (( ! DRY_RUN )); then
+            eval "${cmds[i]}" "${fd[1]}" "${fd[2]}" "${fd[0]}"
+            err=$?
+            if (( err )); then
+                print_err_msg "${cmds[i]}"
+                break
+            fi
         fi
-        
+
         # if the command currently running takes a long time to complete and the
         # script receives a signal, the handler wouldn't get called unless the
         # command completed. To avoid this, long running commands are executed
@@ -1150,8 +1154,11 @@ exec_cmds() {
 
                 # run cmd and use 'eval' to take into account spaces between
                 # arguments but not within each argument
-                eval wait $pid "${fd[1]}" "${fd[2]}"
-                ((err=$?))
+                if (( ! DRY_RUN )); then
+                    eval wait $pid "${fd[1]}" "${fd[2]}"
+                    ((err=$?))
+                fi
+
                 if (( err )); then
                     if (( err < SIGMASK )); then
                         # ignore if 'rsync' failed and err=24, i.e. partial
@@ -1308,6 +1315,8 @@ get_pids() {
         msg+="USR1. Exiting."
         exit_with_stack "$msg"
     fi
+    
+    (( DRY_RUN )) && return
     
     local -i fd
     

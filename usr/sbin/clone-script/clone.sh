@@ -55,8 +55,9 @@ readonly LCL_CFG_DIR=".config/clone-script/"
 SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
-FSTYPES_FILE=""
+declare -i DRY_RUN=0
 FILTERS_FILE=""
+FSTYPES_FILE=""
 
 declare -a FSTYPES=()
 declare -a FILTERS=()
@@ -192,8 +193,8 @@ init() {
     # Note the use of "$@" (quoted) to let each command line option expand to a
     # separate word. 'options' is needed as 'eval set --' would lose the return
     # value of getopt. A colon (:) after an option specifies a required arg.
-    options=$(getopt -q -o 'he:f:' -l 'help,exclude:,fstypes:' -n "$script_name" \
-                     -- "$@")
+    options=$(getopt -q -o 'hde:f:' -l 'help,dry-run,exclude:,fstypes:' \
+                     -n "$script_name" -- "$@")
     if (( $? )); then
         print_helpmsg
         exit 1
@@ -206,6 +207,10 @@ init() {
             '-h'|'--help')
                 print_helpmsg
                 exit 0
+                ;;
+            '-d'|'--dry-run')
+                ((DRY_RUN=1))
+                shift
                 ;;
             '-e'|'--exclude')
                 FILTERS_FILE="$2"
@@ -445,54 +450,53 @@ validate_params
 setup_env() {
     echo "Initializing..."
 
+    # in case this is not the first attempt, e.g. the user entered wrong data,
+    # get existing cloning options
     OPTIONS_S=$(expr "$LOGDIR" : "^.\+\([0-9]\+_[0-9]\+\)$")
+
+    local -i fd
+
+    if (( ! DRY_RUN )); then
+        # create lock dir and set its access rights
+        mkdir -p "$LCKDIR" && chmod go+=rx "$LCKDIR"
+        ((fd=$?))
+        if (( fd )); then
+            cechot "${RED}The lock directory, $YELLOW'$LCKDIR'$RED, could not be"\
+                "${RED}created or set to read & execute. Exiting."
+            return $fd
+        fi
+    fi
 
     # in case this is not the first attempt, e.g. the user entered wrong data,
     # remove any cloning options from log dir
     LOGDIR="${LOGDIR//$OPTIONS_S/}"
+    OPTIONS_S="${OPTIONS[0]}_${OPTIONS[1]}"
 
-    local -i fd
+    if (( ! DRY_RUN )); then
+        # critical section
+        (
+            if ! flock $fd; then exit $?; fi
 
-    # create lock dir and set its access rights
-    mkdir -p "$LCKDIR" && chmod go+=rx "$LCKDIR"
-    ((fd=$?))
-    if (( fd )); then
-        cechot "The lock directory, $YELLOW'$LCKDIR'$RED, could not be created " \
-               "or set to read & execute. Exiting."
-        return $fd
-    fi
+            # if there's no clone process other than this one then delete log dir
+            if [[ ! -s "$LCKFILE" ]]; then
+                echo -e "\tRemoving old clone log directories from $LOGDIR ..."
 
-    # critical section
-    (
-        if ! flock $fd; then exit $?; fi
-
-        # if there's no clone process other than this one then delete all log, 
-        # error and command files from the previous run
-        if [[ ! -s "$LCKFILE" ]]; then
-            echo -e "\tRemoving old clone log directories from $LOGDIR ..."
-
-            rm -rf "$LOGDIR"/*
+                rm -rf "$LOGDIR"/*
+            fi
+                    
+        ) {fd}>> "$LCKFILE"
+        ((fd=$?))
+        if (( fd )); then 
+            cechot "${RED}The lock file $YELLOW'$LCKFILE'$RED could not be"\
+                   "${RED}created. Exiting."
+            return $fd
         fi
-                
-    ) {fd}>> "$LCKFILE"
-    ((fd=$?))
-    if (( fd )); then 
-        cechot "The lock file, $YELLOW'$LCKFILE'$RED, could not be created. " \
-               "Exiting."
-        return $fd
-    fi
-
-    # create log dir and set access rights
-    mkdir -p "$LOGDIR" && chmod go+=rx "$LOGDIR"
-    ((fd=$?))
-    if (( fd )); then 
-        cechot "The log directory, $YELLOW'$LOGDIR'$RED, could not be created " \
-               "or set to read & execute. Exiting."
-        return $fd
+    else
+        [[ ! -s "$LCKFILE" ]] &&
+            echo -e "\tRemoving old clone log directories from $LOGDIR ..."
     fi
 
     # complete the filename of log dir
-    OPTIONS_S="${OPTIONS[0]}_${OPTIONS[1]}"
     if [[ "${LOGDIR: -1}" == "/" ]]; then
         LOGDIR+="$OPTIONS_S"
     else
@@ -504,51 +508,54 @@ setup_env() {
     ERRFILE="$LOGDIR/errors"
     CMDFILE="$LOGDIR/commands"
 
-    # create log dir and set access rights
-    mkdir -p "$LOGDIR" &&
-    chmod go+=rx "$LOGDIR" && 
-    touch "$LOGFILE" "$ERRFILE" "$CMDFILE" &&
-    chmod go=+r "$LOGFILE" "$ERRFILE" "$CMDFILE"
-    ((fd=$?))
-    if (( fd )); then
-        cechot "The log directory, $YELLOW'$LOGDIR'$RED, could not be created"\
-               "or set to read & execute or one of $YELLOW'$LOGFILE'$RED,"\
-               "$YELLOW'$ERRFILE'$RED or $YELLOW'$CMDFILE'$RED, could not be"\
-               "created or set to read. Exiting."
-        return $fd
-    fi
+    if (( ! DRY_RUN )); then
+        # create log dir and set access rights
+        mkdir -p "$LOGDIR" &&
+        chmod go+=rx "$LOGDIR" && 
+        touch "$LOGFILE" "$ERRFILE" "$CMDFILE" &&
+        chmod go=+r "$LOGFILE" "$ERRFILE" "$CMDFILE"
+        ((fd=$?))
+        if (( fd )); then
+            cechot "${RED}The log directory, $YELLOW'$LOGDIR'$RED, could not be"\
+                    "${RED}created or set to read & execute or one of"\
+                    "$YELLOW'$LOGFILE'$RED, $YELLOW'$ERRFILE'$RED or"\
+                    "$YELLOW'$CMDFILE'$RED, could not be created or set to read."\
+                    "${RED}Exiting."
+            return $fd
+        fi
 
-    # critical section
-    (
-        if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
+        # critical section
+        (
+            if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
 
-        # exit if src or dst drives are currently used as destinations by
-        # other clone processes
-        for option in "${OPTIONS[@]}"; do
-            clone_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
-            if (( $? == 0 )); then
-                cat << error_msg
+            # exit if src or dst drives are currently used as destinations by
+            # other clone processes
+            for option in "${OPTIONS[@]}"; do
+                clone_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
+                if (( $? == 0 )); then
+                    cat << error_msg
 ${RED}A clone process with pid $YELLOW$(expr "$clone_process" : "^\([0-9]\+\)")
 ${RED}is currently running and using ${YELLOW}drive $option$RED as a destination.
 $OFF
 error_msg
-                exit 1
-            fi
-        done
-        
-        declare -i err
-        
-        chmod go=+r "$LCKFILE" &&  # set access rights of lock file
-        echo "$$_$OPTIONS_S" >&$fd # add entry to lock file
-        ((err=$?))
+                    exit 1
+                fi
+            done
+            
+            declare -i err
+            
+            chmod go=+r "$LCKFILE" &&  # set access rights of lock file
+            echo "$$_$OPTIONS_S" >&$fd # add entry to lock file
+            ((err=$?))
 
-        echo
-        if ((err)); then
-            cechot "The lock file, $YELLOW'$LCKFILE'$RED, could not be set to " \
-                   "read or append to. Exiting." | tee -a "$ERRFILE"
-            exit 2
-        fi
-    ) {fd}>> "$LCKFILE" # open for append
+            echo
+            if ((err)); then
+                cechot "${RED}The lock file, $YELLOW'$LCKFILE'$RED, could not be set"\
+                    "${RED}to read or append to. Exiting." | tee -a "$ERRFILE"
+                exit 2
+            fi
+        ) {fd}>> "$LCKFILE" # open for append
+    fi
 
     if (( $? == 1 )); then prompt LOOP; fi
 }
@@ -776,7 +783,7 @@ populate_arrays() {
             else
                 # exit if no partitions to clone
                 cecho -e "\n${RED}Source drive $YELLOW$srcdrv$RED has no"\
-                         "partitions to clone! Exiting." | tee -a "$ERRFILE"
+                         "${RED}partitions to clone! Exiting." | tee -a "$ERRFILE"
                 return 1
             fi
         fi
@@ -1092,7 +1099,14 @@ calc_drvspace() {
         # 'eval' to treat it as a single argument. Also, use 'dirname' in case
         # 'paths' includes a pattern that will expand to more than one entry.
         srcptn=$(eval \
-                 df -ak --sync --output=source "$(dirname "${paths[0]:1}")" | tail -1)
+                 df -ak --sync --output=source "$(dirname "${paths[0]:1}")" \
+                    2>> "$ERRFILE" | tail -1)
+
+        if (( $? )); then
+            cechot "$CYAN'${paths[*]}'$YELLOW does not exist and will be omitted."\
+                   "$MSG."
+            continue
+        fi
 
         # skip files/dirs not on source drive. e.g. virtual file systems like
         # /sys, /proc, etc
@@ -1821,10 +1835,13 @@ mask_system_sleep() {
 
     local -i fd
 
-    exec {fd}>>"$SLPFILE" # append to the system sleep lock file
-    
-    # critical section follows
-    flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
+    if (( ! DRY_RUN )); then
+        exec {fd}>>"$SLPFILE" # append to the system sleep lock file
+        
+        # critical section follows
+        flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
+    fi
+
     local -i err=$?
 
     if (( ! err )); then
@@ -1850,7 +1867,7 @@ mask_system_sleep() {
                 ((err=$?))
 
                 # add entry to system sleep lock file
-                if (( ! err )); then
+                if (( ! err && ! DRY_RUN )); then
                     echo "$$_$OPTIONS_S" >&$fd
                     echo -n "$SLP_CFG_MNT_DIR $SEP " >&$fd
                     echo "${rsync_filters[$SLP_CFG_MNT_DIR]}" >&$fd
@@ -1874,9 +1891,9 @@ mask_system_sleep() {
         (( ! err )) &&
             trap_signals "mask_system_sleep 1" USR1 # signal handler for USR1
 
-        flock -u $fd # release lock
+        (( ! DRY_RUN )) && flock -u $fd # release lock
     fi
-    exec {fd}>&- # close sleep lock file
+    (( ! DRY_RUN )) && exec {fd}>&- # close sleep lock file
     
     (( $# == 1 )) &&
         if (( err )); then
@@ -2043,7 +2060,7 @@ clone() {
                                 cmd+="bs=1M count=$count status=progress"
                                 swap_file_cmds+=("$cmd")
                                 swap_file_cmds+=("chmod 0600 '$dstmnt'/'$file'")
-                                swap_file_cmds+=("mkswap -c -f -U clear '$dstmnt'/'$file'")
+                                swap_file_cmds+=("mkswap -f -U clear '$dstmnt'/'$file'")
                                 break
                             fi
                         done
@@ -2104,7 +2121,7 @@ clone() {
                          "$dstmnt$RED is too small. It is $YELLOW$size KiB"\
                          "${RED}but should be $YELLOW> $used KiB$RED. Delete"\
                          "${RED}some data in source partition"\
-                         "$YELLOW$(field "$ptn_pair" "$((MPTN))")$RED mounted on"\
+                         "$(field "$ptn_pair" "$((MPTN))")$RED mounted on"\
                          "$srcmnt$RED. Exiting.\n"
                 return 1
             fi
@@ -2471,7 +2488,7 @@ cleanup() {
 
         cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
-    elif [[ "$OPTIONS_S" && "$CMDFILE" =~ $OPTIONS_S ]]; then
+    elif [[ "$OPTIONS_S" ]]; then
         echo -e "\tIgnoring trapped signals during cleanup..."
 
         cmds=("trap '' USR1 $CANCEL_SIGNALS")
@@ -2503,19 +2520,16 @@ cleanup() {
 result() {
     local -i err=0
 
-    if [[ "$OPTIONS_S" && "$CMDFILE" =~ $OPTIONS_S ]]; then
-        # get number of clone script instances
-        if get_pids; then
-            # if this is the only clone process then pid & sleep lock files can
-            # be safely removed
-            echo -e "\tDeleting lock files directory $LCKDIR ..."
+    if [[ "$OPTIONS_S" ]] && get_pids; then
+        # if this is the only clone process then pid & sleep lock files can be
+        # safely removed
+        echo -e "\tDeleting lock files directory $LCKDIR ..."
 
-            declare -a cmds=()
+        declare -a cmds=()
 
-            cmds+=("rm -rf '$LCKDIR'")
-            exec_cmds "${cmds[@]}"
-            ((err=$?))
-        fi
+        cmds+=("rm -rf '$LCKDIR'")
+        exec_cmds "${cmds[@]}"
+        ((err=$?))
     fi
 
     [[ "$1" ]] && cecho -e "$1"
@@ -2544,7 +2558,7 @@ declare -i err=0
 
 source "$SCRIPTDIR"/lib-functions.sh && init $@
 ((err=$?))
-readonly FSTYPES_FILE FILTERS_FILE
+readonly DRY_RUN FILTERS_FILE FSTYPES_FILE
 
 (( ! err )) &&
     while (( LOOP )); do
