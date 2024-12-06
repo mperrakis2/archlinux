@@ -1,14 +1,16 @@
 #! /bin/bash
 
-# base functions for clone.sh
+# base functions for clone script
 
 print_helpmsg() {
         cat << helpmsg
-usage: clone.sh [OPTION]...
+usage: $SCRIPTNAME.sh [OPTION]...
 clone one drive to another using rsync
 
 -h|--help                   : display this help and exit
--d|--dry-run                : display commands but don't execute them
+-d|--dry-run                : display commands but don't execute them (WARNING: 
+                              this will delete existing log directory from 
+                              previous run with same source and destination)
 -e|--exclude <exclude_file> : pathname of file that contains files/dirs to be
                               excluded from cloning
 -f|--fstypes <fstypes_file> : pathname of file that contains the commands to
@@ -17,10 +19,10 @@ clone one drive to another using rsync
 
 if '-e' or '-f' is omitted the default file is read from:
     * ~/$LCL_CFG_DIR if it exists and the script is not run under its own
-      directory (usually /usr/sbin/clone-script/)
+      directory (usually /usr/sbin/)
     * $DEF_CFG_DIR and $OVR_CFG_DIR in all other cases
 
-for more info see clone-script(1) & clone-exclude.conf(5)
+for more info see $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5)
 helpmsg
 }
 
@@ -129,7 +131,7 @@ prompt() {
         local -a cmds=()
         local -i err
 
-        echo -e "\tRemoving the entry of this clone process from the lock file..."
+        echo -e "\tRemoving the entry of this $SCRIPTNAME process from the lock file..."
 
         cmds+=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")        
         exec_cmds "${cmds[@]}"
@@ -1302,8 +1304,7 @@ readonly SCRIPT_FNAME
 
 # get the number of pids of clone processes running or send signal USR1
 # $1    : optional, int, valid value: 1, boolean to send signal USR1
-# return: 0 if signal USR1 was sent else the number of clone pids in the lock
-#         file
+# return: 0 if signal USR1 was sent else the number of pids in the lock file
 get_pids() {
     # validate param
     if (( $# > 1 )) || (( $# == 1 )) && [[ $1 -ne 1 ]]; then
@@ -1343,9 +1344,9 @@ get_pids() {
                     if (( $# == 1 )); then
                         cmds=("kill -s USR1 $pid")
                         if exec_cmds "${cmds[@]}"; then
-                            cecho -e "\tSent signal to 'clone.sh' process with"\
-                                     "ID $pid to disable/enable system sleep"\
-                                     "(suspend/hibernate)...\n"
+                            cecho -e "\tSent signal to '$SCRIPTNAME.sh' process"\
+                                     "with ID $pid to disable/enable system"\
+                                     "slepp (suspend/hibernate)...\n"
                         fi
                     else
                         ((++i))

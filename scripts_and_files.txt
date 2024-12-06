@@ -4,37 +4,37 @@ maintenance scripts
 /etc/initcpio/post/kernel-sbsign                    # sign linux kernel and update grub.cfg (see /usr/bin/grub_cfg_upd.sh)
 
 /usr/bin/
-    cp_kodi_cfg.sh         # copy kodi config files from one user account to another
-    grub_cfg_upd.sh        # update grub.cfg when installing/upgrading linux kernels
-    pacman_keyring.sh      # update pacman DB and keyring packages if there's an updated keyring package
-    wait.sh                # used in desktop launchers that launch scripts to prevent the script window from closing
+    cp_kodi_cfg.sh        # copy kodi config files from one user account to another
+    grub_cfg_upd.sh       # update grub.cfg when installing/upgrading linux kernels
+    pacman_keyring.sh     # update pacman DB and keyring packages if there's an updated keyring package
+    wait.sh               # used in desktop launchers that launch scripts to prevent the script window from closing
 
 /usr/lib/systemd/scripts/
-    lightdm.sh             # called from /usr/lib/systemd/system/lightdm.service (upd cfg file for intel gfx driver so no Xorg freeze and then run lightdm)
-    pkg_maint.sh           # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
-                           # (remove orphan packages, clear the package cache and generate new mirrorlist file)
+    lightdm.sh            # called from /usr/lib/systemd/system/lightdm.service (upd cfg file for intel gfx driver so no Xorg freeze and then run lightdm)
+    pkg_maint.sh          # called from /etc/systemd/system/pkg_maint.service which is called from /etc/systemd/system/pkg_maint.timer
+                          # (remove orphan packages, clear the package cache and generate new mirrorlist file)
 
 /usr/sbin/
-    av.sh                  # anti virus
-    clone-script/
-        base_functions.sh  # don't run this (used only by clone.sh) 
-        clone.sh           # clone one drive to another
+    av.sh                   # anti virus
+    cloneup/
+        lib-functions.sh    # don't run this (used only by cloneup.sh) 
         manpages/
-            clone          # man page for clone script
-            clone-exclude  # man page for exclude configuration file for clone script 
-            manpages.sh    # create man pages for clone script 
-    cpshim.sh              # copy shim binaries to boot partition when installing/upgrading shim signed               (see configuration files)
-    grub_sbsign.sh         # install and sign grub bootloader and update grub cfg file when installing/upgrading grub (ditto)
+            cloneup         # man page for cloneup script
+            cloneup-exclude # man page for exclude configuration file for cloneup script 
+            manpages.sh     # create man pages for cloneup script 
+    cloneup.sh              # clone one drive to another
+    cpshim.sh               # copy shim binaries to boot partition when installing/upgrading shim signed               (see configuration files)
+    grub_sbsign.sh          # install and sign grub bootloader and update grub cfg file when installing/upgrading grub (ditto)
     useradd/
-        new_user/          # directory that contains new user data
-        useradd.sh         # add a new user and delete destination if it exists already
-    userdel.sh             # delete a user
+        new_user/           # directory that contains new user data
+        useradd.sh          # add a new user and delete destination if it exists already
+    userdel.sh              # delete a user
 
 configuration files
 ===================
-/etc/clone-script/README   # point the user to the man pages for clone script
-/etc/clone-script/exclude  # contains dirs/files to exclude from cloning            (used by /usr/sbin/clone/clone.sh above)
-/etc/clone-script/fstypes  # maps filesystem names to the command that creates them (ditto)
+/etc/cloneup/README  # point the user to the man pages for cloneup script
+/etc/cloneup/exclude # contains dirs/files to exclude from cloning            (used by /usr/sbin/cloneup/cloneup.sh above)
+/etc/cloneup/fstypes # maps filesystem names to the command that creates them (ditto)
 /etc/grub.d/09_unrestricted_menu_entries                             # custom grub file to make menu entries unrestricted
 /etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/polkit-1/rules.d/98-enable-inhibit.rules                        # enable inhibit without authorization

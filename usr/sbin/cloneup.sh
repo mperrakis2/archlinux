@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script clones one drive to another. For detailed info and usage see
-# <script_name>-script(1). For a quick description of the command line options
+# <script_name>(1). For a quick description of the command line options
 # run '<script_name>.sh -h|--help'. Further clone options are entered by the
 # user after the script is run.
 
@@ -14,7 +14,7 @@
 # 
 # limitations
 # -----------
-# see LIMITS section in <script_name>-script(1)
+# see LIMITS section in <script_name>(1)
 #
 # conf files used by script
 # -------------------------
@@ -26,16 +26,16 @@
 #
 # log files created by script
 # ---------------------------
-# 'log'          : the output of commands (stdout)
-# 'errors'       : errors, if any (stderr)
-# 'commands'     : the commands used during cloning
-# 'clone_pids'   : lock file to ensure that the script is executed only if its
-#                  src and dst are not destinations for another script already
-#                  running (multiple instances are allowed as long as 
-#                  destinations are different)
-# 'slp_clone_pid': lock file to ensure that only one script instance is
-#                  responsible for masking/unmasking system sleep
-#                  (suspend/hibernate)
+# 'log'                  : the output of commands (stdout)
+# 'errors'               : errors, if any (stderr)
+# 'commands'             : the commands used during cloning
+# '<script_name>_pids'   : lock file to ensure that the script is executed only
+#                          if its src and dst are not destinations for another
+#                          script already running (multiple instances are
+#                          allowed as long as destinations are different)
+# 'slp_<script_name>_pid': lock file to ensure that only one script instance is
+#                          responsible for masking/unmasking system sleep
+#                          (suspend/hibernate)
 #
 # * lock files are created under /var/lock/<script-dir>/ which is deleted after
 #   all script instances have terminated
@@ -50,12 +50,17 @@ set -o pipefail
 shopt -s extglob
 
 # global constants
-readonly CFG_DIR="/etc/clone-script"
+SCRIPTDIR="${BASH_SOURCE:-$0}"      # script pathname
+SCRIPTNAME=$(basename "$SCRIPTDIR") # script filename
+SCRIPTNAME="${SCRIPTNAME/.*}"       # remove file extention
+readonly SCRIPTNAME
+SCRIPTDIR=$(dirname "$SCRIPTDIR")   # script dir
+readonly SCRIPTDIR
+
+readonly CFG_DIR="/etc/$SCRIPTNAME"
 readonly DEF_CFG_DIR="$CFG_DIR/"
 readonly OVR_CFG_DIR="$CFG_DIR.d/"
-readonly LCL_CFG_DIR=".config/clone-script/"
-SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
-readonly SCRIPTDIR
+readonly LCL_CFG_DIR=".config/$SCRIPTNAME/"
 
 declare -i dry_run=0
 FILTERS_FILE=""
@@ -70,16 +75,16 @@ readonly MIBIBYTE
 UNIT=B # unit supplied to 'parted' command is bytes
 readonly UNIT
 
-LCKDIR="/var/lock/$(basename "$SCRIPTDIR")"
+LCKDIR=/var/lock/"$SCRIPTNAME"
 readonly LCKDIR
-LOGDIR="/var/log/$(basename "$SCRIPTDIR")"
+LOGDIR=/var/log/"$SCRIPTNAME"
 DRV_SUFFIX="[0-9]+$"
 readonly DRV_SUFFIX
 CANCEL_SIGNALS="ABRT HUP INT QUIT TERM"
 readonly CANCEL_SIGNALS
-LCKFILE="$LCKDIR/clone_pids"
+LCKFILE="$LCKDIR/${SCRIPTNAME}_pids"
 readonly LCKFILE
-SLPFILE="$LCKDIR/slp_clone_pid"
+SLPFILE="$LCKDIR/slp_${SCRIPTNAME}_pid"
 readonly SLPFILE
 
 # bold colors foreground
@@ -260,7 +265,7 @@ init() {
 usage() {
     clear
 
-    local override_file="/etc/clone-script.d/exclude.conf"
+    local override_file="/etc/$SCRIPTNAME.d/exclude.conf"
 
     # if there is no override for the file set it to empty str
     if [[ ! "$FILTERS_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
@@ -334,11 +339,11 @@ usage_msg
     echo
 
     cat << usage_msg
-For more info see the clone-script(1) & clone-exclude.conf(5).
+For more info see the $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5).
 
 ${YELLOW}LIMITATIONS
 ===========$OFF
-See ${YELLOW}LIMITS$OFF section in clone-script(1).
+See ${YELLOW}LIMITS$OFF section in $SCRIPTNAME(1).
 
 ${YELLOW}WARNING
 =======
@@ -394,7 +399,7 @@ user_input() {
             "cancel: "
     read -r -a OPTIONS # read cloning options into array
 
-    START_DATE=$(date) # timestamp will be used to calculate the clone run time
+    START_DATE=$(date) # timestamp will be used to calculate the run time
 
     local -a parted_data
 
@@ -447,7 +452,7 @@ validate_params
     fi
 }
 
-# setup clone variables
+# setup variables
 # return: 0 on success else the error code of the command that failed
 setup_env() {
     echo "Initializing..."
@@ -472,15 +477,22 @@ setup_env() {
     LOGDIR="${LOGDIR//$OPTIONS_S/}"
     OPTIONS_S="${OPTIONS[0]}_${OPTIONS[1]}"
 
+    # complete the filename of log dir
+    if [[ "${LOGDIR: -1}" == "/" ]]; then
+        LOGDIR+="$OPTIONS_S"
+    else
+        LOGDIR+="/$OPTIONS_S"
+    fi
+    
     # critical section
     (
         if ! flock $fd; then exit $?; fi
 
-        # if there's no clone process other than this one then delete log dir
+        # if there's no $SCRIPTNAME process other than this one then delete log dir
         if [[ ! -s "$LCKFILE" ]]; then
-            echo -e "\tRemoving old clone log directories from $LOGDIR ..."
+            echo -e "\tRemoving old $SCRIPTNAME log directory $LOGDIR ..."
 
-            if (( ! dry_run )); then rm -rf "$LOGDIR"/*; fi
+            if (( ! dry_run )); then rm -rf "$LOGDIR"; fi
         fi
                 
     ) {fd}>> "$LCKFILE"
@@ -491,13 +503,6 @@ setup_env() {
         return $fd
     fi
 
-    # complete the filename of log dir
-    if [[ "${LOGDIR: -1}" == "/" ]]; then
-        LOGDIR+="$OPTIONS_S"
-    else
-        LOGDIR+="/$OPTIONS_S"
-    fi
-    
     # set complete filename for log, error and command files
     LOGFILE="$LOGDIR/log"
     ERRFILE="$LOGDIR/errors"
@@ -523,12 +528,12 @@ setup_env() {
         if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
 
         # exit if src or dst drives are currently used as destinations by
-        # other clone processes
+        # other $SCRIPTNAME processes
         for option in "${OPTIONS[@]}"; do
-            clone_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
+            script_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
             if (( $? == 0 )); then
                 cat << error_msg
-${RED}A clone process with pid $YELLOW$(expr "$clone_process" : "^\([0-9]\+\)")
+${RED}A $SCRIPTNAME process with pid $YELLOW$(expr "$script_process" : "^\([0-9]\+\)")
 ${RED}is currently running and using ${YELLOW}drive $option$RED as a destination.
 $OFF
 error_msg
@@ -561,7 +566,7 @@ populate_arrays() {
     local -a parted_data # drive data retrieved from 'parted' command
 
     # get drive and partition data for all drives in machine parsable format
-    readarray -t parted_data < <(parted -mls 2>> /dev/null) #"$ERRFILE")
+    readarray -t parted_data < <(parted -mls 2>> "$ERRFILE")
 
     local line
     local -i drv_num=0 # drive number used as index in associative array
@@ -593,7 +598,7 @@ populate_arrays() {
     # if script is running on dst drive exit with error
     srcptn=$(df -ak --sync --output=source "$SCRIPTDIR" | tail -1)
     if [[ "$srcptn" =~ $dstdrv$DP ]]; then
-        prompt LOOP "\nYou can't run the clone script on the destination drive.\n"
+        prompt LOOP "\nYou can't run the $SCRIPTNAME script on the destination drive.\n"
         return $?
     fi
 
@@ -603,7 +608,7 @@ populate_arrays() {
     # would destroy the system. This extreme case is possible if:
     # 1. the clone directory is copied to a drive that was not used to boot the
     #    system
-    # 2. the clone script is executed on that drive and the drive that is selected
+    # 2. the script is executed on that drive and the drive that is selected
     #    as destination is the drive that was used to boot the system 
     if [[ "$BOOTPTN" =~ $dstdrv$DP ]]; then
         msg="\nThe destination drive can't be the drive that was used to boot the"
@@ -1822,7 +1827,7 @@ mask_system_sleep() {
         sync
         exec &> /dev/tty
 
-        cecho -e "\n\nReceived signal from another clone process"\
+        cecho -e "\n\nReceived signal from another $SCRIPTNAME process"\
                  "to disable/enable system sleep (suspend/hibernate)..."
     fi  
 
@@ -1971,8 +1976,7 @@ clone() {
         fi
     done
 
-    echo -e "\tCreating list of system files and directories to exclude from cloning..."
-    echo -e "\tCreating list of files created by clone script to exclude from cloning..."
+    echo -e "\tCreating list of files and directories to exclude from cloning..."
 
     local srcptn
 
@@ -2127,7 +2131,7 @@ clone() {
         # contents are displayed correctly.
         [[ "$(findmnt -no FSTYPE "$srcmnt")" =~ hfs ]] && flags="${flags:0:-1}"
 
-        # create clone command; the following two numbers at the beginning of the 
+        # create rsync command; the following two numbers at the beginning of the 
         # command are parsed as follows:
         # 1: run in the background
         # 0: don't redirect stdout
@@ -2475,7 +2479,7 @@ cleanup() {
         ((tmp=$?))
         (( ! err )) && ((err=tmp))
         
-        echo -e "\tRemove the entry of this clone process from the lock file..."
+        echo -e "\tRemove the entry of this $SCRIPTNAME process from the lock file..."
 
         cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
@@ -2506,7 +2510,7 @@ cleanup() {
     return $err
 }
 
-# called just before the script terminates printing the clone result and run time
+# called just before the script terminates printing the result and run time
 # $1: str, optional, a message to print
 result() {
     local -i err=0
@@ -2526,7 +2530,7 @@ result() {
     [[ "$1" ]] && cecho -e "$1"
     
     if [[ "$START_DATE" ]]; then
-        # the timestamp will be used to calculate the clone run time
+        # the timestamp will be used to calculate the run time
         local end_date
         end_date=$(date)
         local -i runtime
@@ -2547,7 +2551,7 @@ result() {
 
 declare -i err=0
 
-source "$SCRIPTDIR"/lib-functions.sh && init $@
+source "$SCRIPTDIR/$SCRIPTNAME"/lib-functions.sh && init $@
 ((err=$?))
 readonly FILTERS_FILE FSTYPES_FILE
 
