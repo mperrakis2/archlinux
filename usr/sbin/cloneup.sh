@@ -488,12 +488,12 @@ setup_env() {
     (
         if ! flock $fd; then exit $?; fi
 
-        # if there's no $SCRIPTNAME process other than this one then delete log dir
-        if [[ ! -s "$LCKFILE" && $dry_run -eq 0 ]]; then
+        # if no clone process with same src & dst then delete log dir
+        if ! grep -q "$OPTIONS_S" "$LCKFILE" && (( ! dry_run )); then
             echo -e "\tRemoving old $SCRIPTNAME log directory $LOGDIR ..."
-            rm -rf "$LOGDIR";
+            rm -rf "$LOGDIR"
         fi
-                
+
     ) {fd}>> "$LCKFILE"
     ((fd=$?))
     if (( fd )); then 
@@ -527,7 +527,7 @@ setup_env() {
         if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
 
         # exit if src or dst drives are currently used as destinations by
-        # other $SCRIPTNAME processes
+        # other clone processes
         for option in "${OPTIONS[@]}"; do
             script_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
             if (( $? == 0 )); then
