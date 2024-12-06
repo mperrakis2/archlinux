@@ -489,10 +489,9 @@ setup_env() {
         if ! flock $fd; then exit $?; fi
 
         # if there's no $SCRIPTNAME process other than this one then delete log dir
-        if [[ ! -s "$LCKFILE" ]]; then
+        if [[ ! -s "$LCKFILE" && $dry_run -eq 0 ]]; then
             echo -e "\tRemoving old $SCRIPTNAME log directory $LOGDIR ..."
-
-            if (( ! dry_run )); then rm -rf "$LOGDIR"; fi
+            rm -rf "$LOGDIR";
         fi
                 
     ) {fd}>> "$LCKFILE"
@@ -556,6 +555,17 @@ error_msg
     ) {fd}>> "$LCKFILE" # open for append
 
     if (( $? == 1 )); then prompt LOOP; fi
+
+    # if this is a dry run append to all log files a dry run message
+    if (( dry_run )); then
+        local file
+
+        for file in "$CMDFILE" "$ERRFILE" "$LOGFILE"; do
+            echo -e "\n\nTHE FOLLOWING WERE APPENDED AS THE SCRIPT WAS RUN\n"\
+                    "WITH THE DRY RUN COMMAND LINE OPTION (-d or --dry-run)\n\n"\
+                    >> "$file"
+        done
+    fi
 }
 
 # save src & dst drive data based on user input

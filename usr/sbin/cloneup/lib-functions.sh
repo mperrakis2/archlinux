@@ -8,9 +8,7 @@ usage: $SCRIPTNAME.sh [OPTION]...
 clone one drive to another using rsync
 
 -h|--help                   : display this help and exit
--d|--dry-run                : display commands but don't execute them (WARNING: 
-                              this will delete existing log directory from 
-                              previous run with same source and destination)
+-d|--dry-run                : display commands but don't execute them
 -e|--exclude <exclude_file> : pathname of file that contains files/dirs to be
                               excluded from cloning
 -f|--fstypes <fstypes_file> : pathname of file that contains the commands to
