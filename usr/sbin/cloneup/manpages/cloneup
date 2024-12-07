@@ -51,7 +51,7 @@ If multiple clone sessions are executed in parallel a log directory per session 
     prints a short help message
 
 \fB-d\fR, \fB--dry-run\fR
-    prints commands to be used during cloning without executing them (this will append to the log files from the previous run if it has the same source and destination as the dry run)
+    prints commands to be used during cloning without executing them (this will append to the log files, see \fBFILES\fR, from the previous run if it has the same source and destination as the dry run)
 
 \fB-e\fR, \fB--exclude\fR \fIexclude_file\fR
     takes priority over other configuration files (see \fBFILES\fR) and must be a valid pathname
