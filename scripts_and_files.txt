@@ -32,6 +32,7 @@ maintenance scripts
 
 configuration files
 ===================
+/etc/bash.bashrc     # system-wide aliases (affect all users)
 /etc/cloneup/README  # point the user to the man pages for cloneup script
 /etc/cloneup/exclude # contains dirs/files to exclude from cloning            (used by /usr/sbin/cloneup/cloneup.sh above)
 /etc/cloneup/fstypes # maps filesystem names to the command that creates them (ditto)

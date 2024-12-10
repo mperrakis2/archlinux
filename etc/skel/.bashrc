@@ -1,21 +1,6 @@
 # If not running interactively, don't do anything
 [[ "${-#*i}" == "$-" ]] && return
 
-alias ls="ls -F --color=auto"
-alias l=ls
-alias la="ls -A"
-alias ll="ls -lah"
-
-alias cp="cp -f"
-alias mv="mv -f"
-alias rm="rm -f"
-
-alias grep="grep --color=auto"
-alias fgrep="grep -F --color=auto"
-alias egrep="grep -E --color=auto"
-
-alias diff='diff --color=auto'
-
 # different parts of displayed text
 # ---------------------------------
 # E: errors and informational messages
@@ -38,8 +23,6 @@ alias diff='diff --color=auto'
 export LESS='-WR --use-color -DEwr$DPkG$$DNc$DSkg$DWkc$Dd+Y$Ds+wk$Du+C$'
 export MANPAGER="less $LESS"
 export MANROFFOPT="-P -c"
-
-alias sudo="sudo " # so that aliases can be used when calling sudo
 
 # colors for bash prompt
 #
@@ -71,10 +54,3 @@ fi
 
 export PS1="[\[\e[1;${color}m\]\\u\[\e[0m\]@\[\e[1;32m\]\\H\[\e[0m\]: \[\e[1;${color}m\]\\w\[\e[0m\] \[\e[1;32m\]\\A\[\e[0m\]]$suffix "
 export HISTCONTROL=erasedups
-
-if groups "$(whoami)" | grep sudo &> /dev/null; then
-    alias pacman="/usr/bin/pacman_keyring.sh && sudo pacman"
-    alias pacaur="sudo /usr/bin/pacman_keyring.sh && pacaur"
-    alias paru="sudo /usr/bin/pacman_keyring.sh && paru"
-    export SUDO_EDITOR=mousepad
-fi
