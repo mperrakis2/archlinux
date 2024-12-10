@@ -17,7 +17,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    or
 
    Use command line:
-       a. $ pacaur -Syu              # update including AUR
+       a. $ pacaur -Syu --noconfirm  # update including AUR
        b. $ pacaur --aur-cleanall    # offer to remove all built packages
        c. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all \
                       --rebuild=tree # check if some packages are out of date or orphans
