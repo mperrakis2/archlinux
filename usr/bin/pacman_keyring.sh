@@ -3,7 +3,7 @@
 # this script is called whenever pacman or paru are run; it's in aliases in
 # /etc/skel/.bashrc
 
-pacman=$(which pacman)
+pacman="sudo $(which pacman)"
 declare -i err=0
 
 if "$pacman" -Qu archlinux-keyring; then       # check update for keyring
