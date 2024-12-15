@@ -40,7 +40,8 @@ configuration files
 /etc/grub.d/39_add_password                                          # custom grub file to add grub user and password for command line and menu entries
 /etc/polkit-1/rules.d/98-enable-inhibit.rules                        # enable inhibit without authorization
 /etc/polkit-1/rules.d/99-enable-sleep.rules                          # enable sleep without authorization
-/etc/skel/.bashrc                                                    # useful stuff for all users
+/etc/skel/.bash_logout                                               # useful stuff for all users
+/etc/skel/.bashrc                                                    # ditto
 /etc/skel/.config/locale.conf                                        # default language for new user
 /etc/sudoers.d/override                                              # users added to the sudo group don't have to use their password
 /etc/systemd/logind.conf.d/override.conf                             # override default user login settings

@@ -54,3 +54,5 @@ fi
 
 export PS1="[\[\e[1;${color}m\]\\u\[\e[0m\]@\[\e[1;32m\]\\H\[\e[0m\]: \[\e[1;${color}m\]\\w\[\e[0m\] \[\e[1;32m\]\\A\[\e[0m\]]$suffix "
 export HISTCONTROL=erasedups
+
+source /usr/share/doc/pkgfile/command-not-found.bash
