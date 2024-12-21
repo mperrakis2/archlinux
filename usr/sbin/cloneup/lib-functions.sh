@@ -5,7 +5,7 @@
 print_helpmsg() {
         cat << helpmsg
 usage: $SCRIPTNAME.sh [OPTION]...
-clone one drive to another using rsync
+clone one drive to another using rsync(1)
 
 -h|--help                   : display this help and exit
 -d|--dry-run                : display commands but don't execute them
