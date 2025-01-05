@@ -114,7 +114,7 @@ readonly CMDFILE+="$$.cmd" # the commands themselves
 
 cmds+=("rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
               --chown='$NEWUSER':'$NEWUSER' -aAhHxlzEUtX --no-i-r --numeric-ids \
-              /usr/sbin/useradd.d/new_user/ /home/'$NEWUSER'/" \
+              /usr/sbin/useradd.sh.d/new_user/ /home/'$NEWUSER'/" \
        "rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
               --chown='$NEWUSER':'$NEWUSER' -aAhHxlzEUtX --no-i-r --numeric-ids \
               /etc/skel/.bash* /home/'$NEWUSER'/" \
