@@ -2427,7 +2427,8 @@ cleanup() {
     valid_opt_param "$1" # validate parameter
 
     local -i err=0
-    local -a cmds
+    local -i tmp
+    local -a cmds=()
 
     # if cancellation signal was received
     if (( $# == 1 )); then
@@ -2438,7 +2439,14 @@ cleanup() {
         local -a pids
         mapfile -t pids < <(jobs -p)
 
-        if (( ${#pids[@]} )); then # kill processes running in background
+        local -i ppid
+
+        for (( tmp = 0; tmp < ${#pids[@]}; ++tmp )); do
+            (( ppid=$(ps -ho ppid --pid ${pids[tmp]} | xargs) ))
+            (( ppid == $$ )) && cmds+=(${pids[tmp]})
+        done
+
+        if (( ${#cmds[@]} )); then # kill processes running in background
             echo -e "\tKilling jobs running in the background..."
             
             # create command to terminate any processes running in background
@@ -2447,15 +2455,13 @@ cleanup() {
             # 0: don't run in the background
             # 0: don't redirect stdout
             # 0: don't redirect stderr
-            cmds=("000 kill -s KILL ${pids[*]} >> '$LOGFILE' 2>> '$ERRFILE' || true")
+            cmds=("000 kill -s KILL ${cmds[*]} >> '$LOGFILE' 2>> '$ERRFILE' || true")
             exec_cmds "${cmds[@]}"
             ((err=$?))
         fi
     else
         echo "Cleaning up..."
     fi
-
-    local -i tmp
     
     if grep ^$$ "$LCKFILE" &> /dev/null; then
         echo -e "\tIgnoring trapped cancel signals during cleanup..."
