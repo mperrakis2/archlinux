@@ -1,5 +1,5 @@
 # allow members of group sudo to execute any command without password
-%sudo ALL=(ALL:ALL) NOPASSWD:ALL
+%wheel ALL=(ALL:ALL) NOPASSWD:ALL
 
 # allow all users to run an virus scan/clean without password
 ALL ALL=NOPASSWD: /usr/sbin/av.sh
