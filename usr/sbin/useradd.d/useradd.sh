@@ -79,14 +79,14 @@ while read -er -p "$prompt" NEWUSER; do
     fi
 done
 
-# ask for sudo group
-prompt="Add new user to sudo group? (y/n): "
-while read -er -n 1 -p "$prompt" IS_SUDO; do
-    [[ "${IS_SUDO,,}" =~ y|n ]] && break
+# ask for wheel group
+prompt="Add new user to wheel group? (y/n): "
+while read -er -n 1 -p "$prompt" IS_WHEEL; do
+    [[ "${IS_WHEEL,,}" =~ y|n ]] && break
 done
 
 START=$(date +%s) # the timestamp will be used to calculate the copy run time
-readonly NEWUSER IS_SUDO START
+readonly NEWUSER IS_WHEEL START
 
 declare -a cmds=() # commands to be executed
 
@@ -94,11 +94,11 @@ cmds+=("useradd $NEWUSER") # add new user
 cmds+=("echo $NEWUSER:$NEWUSER | chpasswd") # change password to username
 
 # add groups to new user
-cmds+=("usermod -aG sys,ftp,log,http,games,rfkill,systemd-journal,uucp,wheel,adm \
+cmds+=("usermod -aG sys,ftp,log,http,games,rfkill,systemd-journal,uucp,adm \
                 '$NEWUSER'")
                     
-# add sudo group to new user                    
-[[ "${IS_SUDO,,}" == y ]] && cmds+=("usermod -aG sudo '$NEWUSER'")
+# add wheel group to new user                    
+[[ "${IS_WHEEL,,}" == y ]] && cmds+=("usermod -aG wheel '$NEWUSER'")
 
 readonly LOGDIR="/var/log/"
 LOGFILE="$LOGDIR/$(basename "${BASH_SOURCE:-$0}")_"
@@ -118,7 +118,7 @@ cmds+=("rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
        "rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
               --chown='$NEWUSER':'$NEWUSER' -aAhHxlzEUtX --no-i-r --numeric-ids \
               /etc/skel/.bash* /home/'$NEWUSER'/" \
-       "if groups '$NEWUSER' | grep --quiet sudo; then \
+       "if groups '$NEWUSER' | grep --quiet wheel; then \
             rm /home/$NEWUSER/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xmlE; \
         else \
             desktop=\$(su - '$NEWUSER' -c 'xdg-user-dir DESKTOP | xargs -0 basename'); \
@@ -179,7 +179,7 @@ readonly BGDIMG_FILES
 (( ! ${#BGDIMG_FILES[@]} )) && error "$cmd"
 
 # set the filename of the desktop background image
-if groups "$NEWUSER" | grep --quiet sudo; then
+if groups "$NEWUSER" | grep --quiet wheel; then
     BGDIMG_FILE=${BGDIMG_FILES[1]}
 else
     BGDIMG_FILE=${BGDIMG_FILES[0]}
