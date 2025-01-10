@@ -24,35 +24,27 @@ export LESS='-WR --use-color -DEwr$DPkG$$DNc$DSkg$DWkc$Dd+Y$Ds+wk$Du+C$'
 export MANPAGER="less $LESS"
 export MANROFFOPT="-P -c"
 
-# colors for bash prompt
-#
-# Black       0;30     Dark Gray     1;30
-# Blue        0;34     Light Blue    1;34
-# Green       0;32     Light Green   1;32
-# Cyan        0;36     Light Cyan    1;36
-# Red         0;31     Light Red     1;31
-# Purple      0;35     Light Purple  1;35
-# Brown       0;33     Yellow        1;33
-# Light Gray  0;37     White         1;37
-#
-# \[\e[1;34m\] <attrib> \[\e[0m\] <- light blue <attrib>
-#
-# where <attrib> is
-#
-# \\u: username
-# \\H: hostname
-# \\W: present working directory
-# \\A: 24 hour format
+BOLD=$(tput bold) # bold colors foreground
+CYAN="$BOLD$(tput setaf 6)"   
+RED="$BOLD$(tput setaf 1)"
+GREEN="$BOLD$(tput setaf 2)"  
+OFF=$(tput sgr0) # turn off all attributes
 
 if [[ "$USER" == root ]]; then # color & prompt suffix for root
-    declare -i color=31 # red
+    color="$RED"
     suffix="#"
 else # color & prompt suffix for all other users
-    declare -i color=36 # light cyan
+    color="$CYAN"
     suffix="$"
 fi
 
-export PS1="[\[\e[1;${color}m\]\\u\[\e[0m\]@\[\e[1;32m\]\\H\[\e[0m\]: \[\e[1;${color}m\]\\w\[\e[0m\] \[\e[1;32m\]\\A\[\e[0m\]]$suffix "
+# \u: username
+# \H: hostname
+# \W: present working directory
+# \A: 24 hour format
+export PS1="[$color\u$OFF@$GREEN\H$OFF: $color\w$OFF $GREEN\A$OFF]$suffix "
+unset BOLD CYAN RED GREEN OFF
+
 export HISTCONTROL=erasedups
 
 source /usr/share/doc/pkgfile/command-not-found.bash
