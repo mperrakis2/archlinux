@@ -1837,9 +1837,6 @@ mask_system_sleep() {
         # sync and restore stdout and stderr to the terminal
         sync
         exec &> /dev/tty
-
-        cecho -e "\n\nReceived signal from another $SCRIPTNAME process"\
-                 "to disable/enable system sleep (suspend/hibernate)..."
     fi  
 
     local -i fd
@@ -1864,6 +1861,9 @@ mask_system_sleep() {
             system_sleep cmds "mask"
             if (( ${#cmds[@]} )); then
                 if (( $# == 1 )); then
+                    cecho -e "\n\nReceived signal from another $SCRIPTNAME"\
+                             "process to disable/enable system sleep"\
+                             "(suspend/hibernate)..."
                     cecho -e "\nDisabling system sleep (suspend/hibernate)..."
                 else
                     echo "Disabling system sleep (suspend/hibernate)..."
