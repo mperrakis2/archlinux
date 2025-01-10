@@ -1864,7 +1864,6 @@ mask_system_sleep() {
                     cecho -e "\n\nReceived signal from another $SCRIPTNAME"\
                              "process to disable/enable system sleep"\
                              "(suspend/hibernate)..."
-                    cecho -e "\nDisabling system sleep (suspend/hibernate)..."
                 else
                     echo "Disabling system sleep (suspend/hibernate)..."
                 fi
