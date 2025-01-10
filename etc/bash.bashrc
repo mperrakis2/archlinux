@@ -17,7 +17,7 @@ alias diff='diff --color=auto'
 
 alias sudo="sudo " # so that aliases can be used when calling sudo
 
-if groups "$(whoami)" | grep sudo &> /dev/null; then
+if groups "$(whoami)" | grep wheel &> /dev/null; then
     alias pacman="sudo /usr/bin/pacman_keyring.sh && sudo pacman"
     alias pacaur="sudo /usr/bin/pacman_keyring.sh && pacaur -y"
     alias paru="sudo /usr/bin/pacman_keyring.sh && paru"
