@@ -39,10 +39,10 @@ export MANROFFOPT="-P -c"
 #
 # where <attrib> is
 #
-# \\u: username
-# \\H: hostname
-# \\W: present working directory
-# \\A: 24 hour format
+# \u: username
+# \H: hostname
+# \W: present working directory
+# \A: 24 hour format
 
 if [[ "$USER" == root ]]; then # color & prompt suffix for root
     declare -i color=31 # red
@@ -52,7 +52,9 @@ else # color & prompt suffix for all other users
     suffix="$"
 fi
 
-export PS1="[\[\e[1;${color}m\]\\u\[\e[0m\]@\[\e[1;32m\]\\H\[\e[0m\]: \[\e[1;${color}m\]\\w\[\e[0m\] \[\e[1;32m\]\\A\[\e[0m\]]$suffix "
+PS1="[\[\e[1;${color}m\]\u\[\e[0m\]@\[\e[1;32m\]\H\[\e[0m\]: "
+PS1+="\[\e[1;${color}m\]\w\[\e[0m\] \[\e[1;32m\]\A\[\e[0m\]]$suffix "
+export PS1
 export HISTCONTROL=erasedups
 
 source /usr/share/doc/pkgfile/command-not-found.bash
