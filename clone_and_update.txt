@@ -17,7 +17,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    or
 
    Use command line:
-       a. # pacman -Syu
+       a. $ sudo pacman -Syu
        b. $ pacaur --noconfirm -Syu           # update AUR
        c. $ pacaur --noconfirm --aur-cleanall # offer to remove all built packages
        d. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all \
