@@ -1904,11 +1904,11 @@ mask_system_sleep() {
     (( $# == 1 )) &&
         if (( err )); then
             cecho -e "${RED}Disabling system sleep (suspend/hibernate) was"\
-                     "${RED}unsuccessful...\n"
+                     "${RED}unsuccessful.\n"
             cleanup 1
         else
             cecho -e "${GREEN}System sleep (suspend/hibernate) was disabled"\
-                     "${GREEN}successfully...\n"
+                     "${GREEN}successfully.\n"
         fi
 
     return $err
