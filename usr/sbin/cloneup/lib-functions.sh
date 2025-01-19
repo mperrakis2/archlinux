@@ -1344,7 +1344,7 @@ get_pids() {
                         if exec_cmds "${cmds[@]}"; then
                             cecho -e "\tSent signal to '$SCRIPTNAME.sh' process"\
                                      "with ID $pid to disable/enable system"\
-                                     "sleep (suspend/hibernate)...\n"
+                                     "sleep (suspend/hibernate).\n"
                         fi
                     else
                         ((++i))
