@@ -2348,26 +2348,24 @@ clone() {
 
         dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
 
-        # if boot partition and bios flag is set, install grub on bios partition
-        if [[ $bios -eq 1 && "${grubcfg_files[*]}" ]] && 
-           which grub-install &> /dev/null
-        then
-            echo -e "\tCreating command to install grub on bios"\
-                    "partition on destination drive..."
-            
-            for ptn_num in "${boot_ptn_nums[@]}"; do
-                if [[ "$dstptn" == "$dstdrv$DP$ptn_num" ]]; then
-                    # the following 3 numbers at the beginning of the command
-                    # are parsed as follows:
-                    # 0: don't run in the background
-                    # 1: redirect stdout
-                    # 0: don't redirect stderr
-                    cmds+=("010 grub-install --target=i386-pc \
-                                             --boot-directory='$dstmnt' \
-                                             --recheck '$dstdrv'")
-                    break
-                fi
-            done
+        # if bios flag is set, install grub bootloader for non-UEFI (bios) system
+        if (( bios )); then
+            cmd=$(find "$dstmnt" -name grub-install) # grub installer pathname
+
+            if [[ "$cmd" ]]; then
+                echo -e "\tCreating command to install grub bootloader on bios"\
+                        "and boot partition on destination drive..."
+        
+                # the following three numbers at the beginning of the command
+                # are parsed as follows:
+                # 0: don't run in the background
+                # 1: redirect stdout
+                # 0: don't redirect stderr
+                cmds+=("010 $cmd --target=i386-pc --boot-directory='$dstmnt' \
+                                 --recheck '$dstdrv'")
+                ((bios=0)) # install grub bootloader only once
+                break
+            fi
         fi
         
         # if esp partition and UEFI boot is enabled, install UEFI boot
