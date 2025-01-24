@@ -423,7 +423,7 @@ user_input() {
     done
 
     if [[ ! "${OPTIONS[i]}" =~ ^[0-9]+$ ]]; then # if not num display usage again
-        prompt LOOP "\nSource & destination drives have to be selected as numbers.\n"
+        prompt LOOP "\nSource & destination drives have to numbers.\n"
         return $?
     fi
     
@@ -437,10 +437,7 @@ validate_params
 
     # validate cloning options and if error, prompt the user to try again
     if (( ${#OPTIONS[@]} != 2 )); then
-        local msg="\nExactly two cloning parameters are needed. See description"
-        
-        msg+=" and examples above.\n"
-        prompt LOOP "$msg"
+        prompt LOOP "\nExactly two cloning parameters are needed. See usage above.\n"
     elif (( OPTIONS[0] > drv_cnt || OPTIONS[0] < 1 )); then
         prompt LOOP "\nSource drive has to be an option within [1, $drv_cnt].\n"
     elif (( OPTIONS[1] > drv_cnt || OPTIONS[1] < 1 )); then
@@ -484,13 +481,43 @@ setup_env() {
     else
         LOGDIR+="/$OPTIONS_S"
     fi
+
+    local -a parted_data # drive data retrieved from 'parted' command
+
+    # get drive and partition data for all drives in machine parsable format
+    readarray -t parted_data < <(parted -mls 2> /dev/null)
+
+    local line
+    local -i drv_num=0 # drive number used as index in associative array
+
+    # iterate over drive data to get drive names
+    drv_data=()
+    for line in "${parted_data[@]}"; do
+        if [[ "$line" =~ ^/dev/ ]]; then
+            ((++drv_num))
+
+            # if the drive is src or dst save drive name in associative array of drives
+            (( drv_num == OPTIONS[0] || drv_num == OPTIONS[1] )) && 
+                drv_data[$drv_num]=$(field "$line" $DNAME)
+        fi
+    done
+
+    srcdrv="${drv_data[${OPTIONS[0]}]}" # extract src drive name
+    dstdrv="${drv_data[${OPTIONS[1]}]}" # extract dst drive name
+
+    # device names that end in a number have their partitions prefixed by the
+    # following literal 
+    local ptn_prefix="p"
+
+    if [[ "$srcdrv" =~ $DRV_SUFFIX ]]; then SP="$ptn_prefix"; else SP=""; fi
+    if [[ "$dstdrv" =~ $DRV_SUFFIX ]]; then DP="$ptn_prefix"; else DP=""; fi
     
     # critical section
     (
         if ! flock $fd; then exit $?; fi
 
-        # if no clone process with same src & dst then delete log dir
-        if ! grep -q "$OPTIONS_S" "$LCKFILE" && (( ! dry_run )); then
+        # if no clone process with same dst then delete log dir
+        if ! grep -q "$dstdrv" "$LCKFILE" && (( ! dry_run )); then
             echo -e "\tRemoving old $SCRIPTNAME log directory $LOGDIR ..."
             rm -rf "$LOGDIR"
         fi
@@ -523,87 +550,6 @@ setup_env() {
         return $fd
     fi
 
-    # critical section
-    (
-        if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
-
-        # exit if src or dst drives are currently used as destinations by
-        # other clone processes
-        for option in "${OPTIONS[@]}"; do
-            script_process=$(grep -E "^[0-9]+_[0-9]+_$option$" "$LCKFILE")
-            if (( $? == 0 )); then
-                cat << error_msg
-${RED}A $SCRIPTNAME process with pid $YELLOW$(expr "$script_process" : "^\([0-9]\+\)")
-${RED}is currently running and using ${YELLOW}drive $option$RED as a destination.
-$OFF
-error_msg
-                exit 1
-            fi
-        done
-        
-        declare -i err
-        
-        chmod go=+r "$LCKFILE" &&  # set access rights of lock file
-        echo "$$_$OPTIONS_S" >&$fd # add entry to lock file
-        ((err=$?))
-
-        echo
-        if ((err)); then
-            cechot "${RED}The lock file, $YELLOW'$LCKFILE'$RED, could not be set"\
-                "${RED}to read or append to. Exiting." | tee -a "$ERRFILE"
-            exit 2
-        fi
-    ) {fd}>> "$LCKFILE" # open for append
-
-    if (( $? == 1 )); then prompt LOOP; fi
-
-    # if this is a dry run append to all log files a dry run message
-    if (( dry_run )); then
-        local file
-
-        for file in "$CMDFILE" "$ERRFILE" "$LOGFILE"; do
-            echo -e "\n\nTHE FOLLOWING WERE APPENDED AS THE SCRIPT WAS RUN\n"\
-                    "WITH THE DRY RUN COMMAND LINE OPTION (-d or --dry-run)\n\n"\
-                    >> "$file"
-        done
-    fi
-}
-
-# save src & dst drive data based on user input
-# return: 0 on success else 1
-populate_arrays() {
-    echo "Creating internal data structures..."
-
-    local -a parted_data # drive data retrieved from 'parted' command
-
-    # get drive and partition data for all drives in machine parsable format
-    readarray -t parted_data < <(parted -mls 2>> "$ERRFILE")
-
-    local line
-    local -i drv_num=0 # drive number used as index in associative array
-
-    # iterate over drive data to get drive names
-    drv_data=()
-    for line in "${parted_data[@]}"; do
-        if [[ "$line" =~ ^/dev/ ]]; then
-            ((++drv_num))
-
-            # if the drive is src or dst save drive name in associative array of drives
-            (( drv_num == OPTIONS[0] || drv_num == OPTIONS[1] )) && 
-                drv_data[$drv_num]=$(field "$line" $DNAME)
-        fi
-    done
-
-    srcdrv="${drv_data[${OPTIONS[0]}]}" # extract src drive name
-    dstdrv="${drv_data[${OPTIONS[1]}]}" # extract dst drive name
-
-    # device names that end in a number have their partitions prefixed by the
-    # following literal 
-    local PTN_PREFIX="p"
-
-    if [[ "$srcdrv" =~ $DRV_SUFFIX ]]; then SP="$PTN_PREFIX"; else SP=""; fi
-    if [[ "$dstdrv" =~ $DRV_SUFFIX ]]; then DP="$PTN_PREFIX"; else DP=""; fi
-    
     local srcptn
 
     # if script is running on dst drive exit with error
@@ -628,6 +574,64 @@ populate_arrays() {
         return $?
     fi
     
+    # critical section
+    (
+        if ! flock $fd >> "$LOGFILE" 2>> "$ERRFILE"; then exit 1; fi
+
+        # exit if src or dst drives are currently used as destinations by
+        # other clone processes
+        for drv in "$srcdrv" "$dstdrv"; do
+            script_process=$(grep -E "^[0-9]+_[0-9]+_[0-9]+_$drv$" "$LCKFILE")
+            if (( $? == 0 )); then
+                cat << error_msg
+${RED}A $SCRIPTNAME process with pid $YELLOW$(expr "$script_process" : "^\([0-9]\+\)")
+${RED}is currently running and using ${YELLOW}$drv$RED as a destination.
+$OFF
+error_msg
+                exit 1
+            fi
+        done
+        
+        declare -i err
+        
+        chmod go=+r "$LCKFILE" &&  # set access rights of lock file
+        echo "$$_${OPTIONS_S}_$dstdrv" >&$fd # add entry to lock file
+        ((err=$?))
+
+        echo
+        if ((err)); then
+            cechot "${RED}The lock file, $YELLOW'$LCKFILE'$RED, could not be set"\
+                "${RED}to read or append to. Exiting." | tee -a "$ERRFILE"
+            exit 2
+        fi
+    ) {fd}>> "$LCKFILE" # open for append
+
+    local -i err=$?
+
+    if (( err == 1 )); then
+        prompt LOOP;
+        return $?
+    elif (( err == 2 )); then
+        return 1
+    fi
+
+    # if this is a dry run append to all log files a dry run message
+    if (( dry_run )); then
+        local file
+
+        for file in "$CMDFILE" "$ERRFILE" "$LOGFILE"; do
+            echo -e "\n\nTHE FOLLOWING WERE APPENDED AS THE SCRIPT WAS RUN\n"\
+                    "WITH THE DRY RUN COMMAND LINE OPTION (-d or --dry-run)\n\n"\
+                    >> "$file"
+        done
+    fi
+}
+
+# save src & dst drive data based on user input
+# return: 0 on success else 1
+populate_arrays() {
+    echo "Creating internal data structures..."
+
     local DST_DRV_NAME
     DST_DRV_NAME=$(expr "$(lsblk -dP -o NAME "$dstdrv")" : "^NAME=\"\(.*\)\"$")
 
@@ -650,6 +654,8 @@ populate_arrays() {
     if (( ! start )); then
         start=$(cat /sys/block/"$DST_DRV_NAME"/queue/minimum_io_size)
 
+        local msg
+    
         # if minimum_io_size exists return if not power of 2
         if (( start )); then
             if (( $(bc -l <<< "x=l($start)/l(2); scale=0; 2^((x+0.5)/1)") != start ))
@@ -672,6 +678,7 @@ populate_arrays() {
 
     local -i page_size
     local -a page_sizes
+    local line
 
     # get page size
     readarray -t page_sizes < <(getconf -a 2>> "$ERRFILE" | grep -iE "pagesize|page_size")
@@ -695,6 +702,8 @@ populate_arrays() {
     esp_ptn_nums=()
     boot_ptn_nums=(0 0)
     ((bios_ptn=0))
+    local -i drv_num     # drive number used as index in associative array
+    local -a parted_data # drive data retrieved from 'parted' command
     local -i ptn_num
     local -i ptn_cnt
     local -i startb
@@ -798,11 +807,10 @@ populate_arrays() {
         fi
     done
 
-    ((LOOP=0))
     readonly LOOP
     readonly OPTIONS OPTIONS_S
     readonly LOGFILE ERRFILE CMDFILE
-    readonly PTN_PREFIX SP DP
+    readonly SP DP
     readonly DST_DRV_NAME
     readonly START_DATE
 
@@ -2497,7 +2505,7 @@ cleanup() {
         
         echo -e "\tRemove the entry of this $SCRIPTNAME process from the lock file..."
 
-        cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")
+        cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}_$dstdrv[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
     elif [[ "$OPTIONS_S" ]]; then
         echo -e "\tIgnoring trapped signals during cleanup..."

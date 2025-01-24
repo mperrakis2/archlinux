@@ -111,8 +111,8 @@ file_exists() {
 }
 
 # prompt the user to reselect cloning options
-# $1    : optional, str, prompt
-# $2    : int, 0 or 1, loop or not
+# $1    : ref to int, 0 or 1, loop or not
+# $2    : optional, str, prompt
 # return: 1
 prompt() {
     local -n ref_loop="$1"
@@ -124,20 +124,6 @@ prompt() {
         exit_with_stack "$msg"
     fi
     
-    # check if this process has an entry in the lock file
-    if grep ^$$ "$LCKFILE" &> /dev/null; then
-        local -a cmds=()
-        local -i err
-
-        echo -e "\tRemoving the entry of this $SCRIPTNAME process from the lock file..."
-
-        cmds+=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}[[:space:]]+||g' '$LCKFILE'")        
-        exec_cmds "${cmds[@]}"
-        ((err=$?))
-        
-        if (( err )); then return $err; fi
-    fi
-
     local MSG="Would you like to re-enter cloning options? (y/yes/n/no) "
     readonly MSG
 
