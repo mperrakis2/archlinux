@@ -169,7 +169,7 @@ declare -a src_ptn_data=()
 srcdrv=""
 dstdrv=""
 declare -iA esp_ptn_nums=()
-declare -ia boot_ptn_nums=(0 0)
+declare -iA boot_ptn_nums=()
 declare -i bios_ptn=0
 
 declare -i start=0
@@ -700,7 +700,7 @@ populate_arrays() {
     partitions=()
     ((no_resize=0))
     esp_ptn_nums=()
-    boot_ptn_nums=(0 0)
+    boot_ptn_nums=()
     ((bios_ptn=0))
     local -i drv_num     # drive number used as index in associative array
     local -a parted_data # drive data retrieved from 'parted' command
@@ -786,10 +786,7 @@ populate_arrays() {
                     fi
 
                     # save partition number of boot partition
-                    if [[ "$flags" =~ boot ]]; then
-                        ((boot_ptn_nums[0]=ptn_num))
-                        ((boot_ptn_nums[1]=ptn_cnt))
-                    fi
+                    [[ "$flags" =~ boot ]] && ((boot_ptn_nums[$ptn_num]=ptn_cnt))
                 fi
             fi
         done
@@ -2351,22 +2348,26 @@ clone() {
 
         dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
 
-        # if boot partition and bios flag is set, install grub on bios
-        # partition
-        if [[ "$dstptn" == "$dstdrv$DP${boot_ptn_nums[1]}" && $bios -eq 1 && \
-              "${grubcfg_files[*]}" ]] && which grub-install &> /dev/null
+        # if boot partition and bios flag is set, install grub on bios partition
+        if [[ $bios -eq 1 && "${grubcfg_files[*]}" ]] && 
+           which grub-install &> /dev/null
         then
             echo -e "\tCreating command to install grub on bios"\
                     "partition on destination drive..."
             
-            # the following three numbers at the beginning of the command
-            # are parsed as follows:
-            # 0: don't run in the background
-            # 1: redirect stdout
-            # 0: don't redirect stderr
-            cmds+=("010 grub-install --target=i386-pc \
-                                     --boot-directory='$dstmnt' \
-                                     --recheck '$dstdrv'")
+            for ptn_num in "${boot_ptn_nums[@]}"; do
+                if [[ "$dstptn" == "$dstdrv$DP$ptn_num" ]]; then
+                    # the following 3 numbers at the beginning of the command
+                    # are parsed as follows:
+                    # 0: don't run in the background
+                    # 1: redirect stdout
+                    # 0: don't redirect stderr
+                    cmds+=("010 grub-install --target=i386-pc \
+                                             --boot-directory='$dstmnt' \
+                                             --recheck '$dstdrv'")
+                    break
+                fi
+            done
         fi
         
         # if esp partition and UEFI boot is enabled, install UEFI boot
