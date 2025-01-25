@@ -158,8 +158,8 @@ readonly BOOTPTN
 # global variable declarations
 declare -A drv_data=() # data on drives (-A for associative array)
 declare -a partitions=()
-declare -a OPTIONS=()    # cloning options entered by the user
-declare -i drv_cnt=0    # number of available drives
+declare -a OPTIONS=()  # cloning options entered by the user
+declare -i drv_cnt=0   # number of available drives
 
 # total amount of space that can't be resized, i.e. esp, bios, boot and swap 
 # partitions
@@ -192,6 +192,7 @@ DP="" # dst partiion prefix
 declare -a rsync_params=()
 declare -a g_parted_data=() # drive data retrieved from 'parted' command
 declare -i LOOP=1
+declare -i script=0 # script mode, i.e. no user input other than cmd line args
 
 init() {
     local options
@@ -202,7 +203,8 @@ init() {
     # Note the use of "$@" (quoted) to let each command line option expand to a
     # separate word. 'options' is needed as 'eval set --' would lose the return
     # value of getopt. A colon (:) after an option specifies a required arg.
-    options=$(getopt -q -o 'hde:f:' -l 'help,dry-run,exclude:,fstypes:' \
+    options=$(getopt -q -o 'hre:f:s:d:' \
+                     -l 'help,dry-run,exclude:,fstypes:,src:,dst:' \
                      -n "$script_name" -- "$@")
     if (( $? )); then
         print_helpmsg
@@ -217,7 +219,7 @@ init() {
                 print_helpmsg
                 exit 0
                 ;;
-            '-d'|'--dry-run')
+            '-r'|'--dry-run')
                 ((dry_run=1))
                 shift
                 ;;
@@ -227,6 +229,14 @@ init() {
                 ;;
             '-f'|'--fstypes')
                 FSTYPES_FILE="$2"
+                shift 2
+                ;;
+            '-s'|'--src')
+                srcdrv="$2"
+                shift 2
+                ;;
+            '-d'|'--dst')
+                dstdrv="$2"
                 shift 2
                 ;;
             '--')
@@ -240,16 +250,21 @@ init() {
         esac
     done
 
+    # script mode, i.e. no user input other than cmd line args
+    if [[ "$srcdrv" && "$dstdrv" ]]; then
+        ((script=1))
+    elif [[ ("$srcdrv" && ! "$dstdrv") || (! "$srcdrv" && "$dstdrv") ]]; then
+        cecho "${RED}Source or destination drives don't exist."
+        return 1
+    fi
+
     # if no cmd line options provided, get default cfg file names
     [[ -z "$FSTYPES_FILE" ]] &&
         FSTYPES_FILE=$(get_cfg_fname fstypes.conf) # get pathname of fstypes file
     [[ -z "$FILTERS_FILE" ]] &&
         FILTERS_FILE=$(get_cfg_fname exclude.conf) # get pathname of exclude file
 
-    local -i err
-    
-    files_exist # check that text files needed by script exist
-    ((err=$?)); ((err)) && return $err
+    ! files_exist && return $? # check that text files needed by script exist
 
     local signals
     local D="[0-9]" # digit
@@ -265,7 +280,7 @@ init() {
 # display list of detected drives and cloning usage
 # return: 0 on success else 1
 usage() {
-    clear
+    (( ! script )) && clear # if src & dst not specified as cmd line args
 
     local override_file="/etc/$SCRIPTNAME.d/exclude.conf"
 
@@ -319,7 +334,8 @@ usage() {
         exec {fd}<&- # close the filters file
     done
 
-    cat << usage_msg
+    if (( ! script )); then # if src & dst not specified as cmd line args
+        cat << usage_msg
 DESCRIPTION
 ===========
 This script will clone one drive to another using rsync(1). Source and
@@ -329,20 +345,20 @@ file(s)
 $YELLOW'$FILTERS_FILE'$OFF
 usage_msg
 
-    [[ "$override_file" ]] && cecho "'$override_file'"
+        [[ "$override_file" ]] && cecho "'$override_file'"
 
-    cat << usage_msg
+        cat << usage_msg
 will ${YELLOW}NOT$OFF be cloned. Here they are:
 
 usage_msg
 
-    for fd in "${!filters[@]}"; do
-        cecho "$CYAN${filters[fd]}"
-    done
-    echo
+        for fd in "${!filters[@]}"; do
+            cecho "$CYAN${filters[fd]}"
+        done
+        echo
 
-    cat << usage_msg
-For more info see the $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5).
+        cat << usage_msg
+For more info see $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5).
 
 ${YELLOW}LIMITATIONS
 ===========$OFF
@@ -356,58 +372,103 @@ user accounts but one that will be used to run this script.$OFF
 DRIVES
 usage_msg
 
-    filters[0]="==============================================================="
-    filters[0]+="==============="
+        filters[0]="==============================================================="
+        filters[0]+="==============="
 
-    echo ${filters[0]} # print underlines
+        echo ${filters[0]} # print underlines
+    fi
 
     # get drive and partition data
     g_parted_data=()
     readarray -t g_parted_data < <(parted --machine --script --list 2> /dev/null)
 
-    local line
+    if (( ! script )); then # if src & dst not specified as cmd line args
+        local line
 
-    # iterate over drive and partition data
-    ((drv_cnt=0))
-    for line in "${g_parted_data[@]}"; do
-        # the output of 'parted' command is something like:
-        #
-        # BYT;
-        # /dev/nvme0n1:512GB:nvme:512:512:gpt:KBG40ZNS512G NVMe KIOXIA 512GB:;
-        # 1:1049kB:11.5MB:10.5MB::BIOS:bios_grub;
-        # 2:11.5MB:536MB:524MB:fat32:UEFI:boot, esp;
-        # 3:536MB:512GB:512GB:ext4:ROOT:;
-        if [[ "$line" =~ ^/dev/ ]]; then
-            (( drv_cnt > 0 )) && echo # seperate one drive output from another
-            ((++drv_cnt))
+        # iterate over drive and partition data
+        ((drv_cnt=0))
+        for line in "${g_parted_data[@]}"; do
+            # the output of 'parted' command is something like:
+            #
+            # BYT;
+            # /dev/nvme0n1:512GB:nvme:512:512:gpt:KBG40ZNS512G NVMe KIOXIA 512GB:;
+            # 1:1049kB:11.5MB:10.5MB::BIOS:bios_grub;
+            # 2:11.5MB:536MB:524MB:fat32:UEFI:boot, esp;
+            # 3:536MB:512GB:512GB:ext4:ROOT:;
+            if [[ "$line" =~ ^/dev/ ]]; then
+                (( drv_cnt > 0 )) && echo # seperate one drive output from another
+                ((++drv_cnt))
 
-            # display drive model and type (see comment above)
-            echo "$drv_cnt. Model: $(field "$line" $DMODEL) ($(field "$line" $DTYPE))"
+                # display drive model and type (see comment above)
+                echo "$drv_cnt. Model: $(field "$line" $DMODEL) ($(field "$line" $DTYPE))"
 
-            # display drive size (see comment above)
-            echo "   Disk $(field "$line" $DNAME): $(field "$line" $DSIZE)"
-        fi
-    done
+                # display drive size (see comment above)
+                echo "   Disk $(field "$line" $DNAME): $(field "$line" $DSIZE)"
+            fi
+        done
 
-    echo ${filters[0]} # print underlines
+        echo ${filters[0]} # print underlines
 
-    cat << usage_msg
+        cat << usage_msg
 
 USAGE
 =====
 Enter the number of the source drive followed by the number of the destination
 usage_msg
+    fi
 }
 
 # Get and validate cloning options.
 # return: 0 on success else 1
 user_input() {
-    OPTIONS=()
-    echo -n "drive separated by space, e.g. 1 2 or press Ctrl-C anytime to"\
-            "cancel: "
-    read -r -a OPTIONS # read cloning options into array
+    if (( ! script )); then # if src & dst not specified as cmd line args
+        OPTIONS=()
+        echo -n "drive separated by space, e.g. 1 2 or press Ctrl-C anytime to"\
+                "cancel: "
+        read -r -a OPTIONS # read cloning options into array
+    fi
 
     START_DATE=$(date) # timestamp will be used to calculate the run time
+
+    if (( script )); then # if src & dst specified as cmd line args
+        local line
+
+        # iterate over drive and partition data to validate src & dst drives
+        for line in "${g_parted_data[@]}"; do
+            # the output of 'parted' command is something like:
+            #
+            # BYT;
+            # /dev/nvme0n1:512GB:nvme:512:512:gpt:KBG40ZNS512G NVMe KIOXIA 512GB:;
+            # 1:1049kB:11.5MB:10.5MB::BIOS:bios_grub;
+            # 2:11.5MB:536MB:524MB:fat32:UEFI:boot, esp;
+            # 3:536MB:512GB:512GB:ext4:ROOT:;
+            if [[ "$line" =~ ^/dev/ ]]; then
+                ((++drv_cnt))
+
+                if [[ "$line" =~ "$srcdrv:" ]]; then # ':' is the field delimeter
+                    if (( ${#OPTIONS[@]} )); then # dst drive already validated
+                        # prepend valid src drive
+                        OPTIONS=("$drv_cnt" "${OPTIONS[@]}")
+                        break
+                    else
+                        OPTIONS+=("$drv_cnt") # add valid src drive
+                    fi
+                fi
+
+                if [[ "$line" =~ "$dstdrv:" ]]; then # ':' is the field delimeter
+                    OPTIONS+=("$drv_cnt") # add valid dst drive
+                    (( ${#OPTIONS[@]} == 2 )) && break
+                fi
+            fi
+        done
+
+        # exit if none or only one drive is valid
+        if (( ${#OPTIONS[@]} == 0 )); then
+            prompt LOOP "Source and destination drives don't exist."
+        elif (( ${#OPTIONS[@]} == 1 )); then
+            prompt LOOP "Source or destination drive doesn't exist."
+        fi
+    fi
 
     local -a parted_data
 
@@ -416,7 +477,7 @@ user_input() {
 
     # compare current parted data with original
     if [[ "${parted_data[*]}" != "${g_parted_data[*]}" ]]; then
-        prompt LOOP "\nThe drive configuration has changed.\n"
+        prompt LOOP "The drive configuration has changed."
         return $?
     fi
 
@@ -430,7 +491,7 @@ user_input() {
     done
 
     if [[ ! "${OPTIONS[i]}" =~ ^[0-9]+$ ]]; then # if not num display usage again
-        prompt LOOP "\nSource & destination drives have to numbers.\n"
+        prompt LOOP "Source & destination drives have to numbers."
         return $?
     fi
     
@@ -444,13 +505,13 @@ validate_params
 
     # validate cloning options and if error, prompt the user to try again
     if (( ${#OPTIONS[@]} != 2 )); then
-        prompt LOOP "\nExactly two cloning parameters are needed. See usage above.\n"
+        prompt LOOP "Exactly two cloning parameters are needed. See usage above."
     elif (( OPTIONS[0] > drv_cnt || OPTIONS[0] < 1 )); then
-        prompt LOOP "\nSource drive has to be an option within [1, $drv_cnt].\n"
+        prompt LOOP "Source drive has to be an option within [1, $drv_cnt]."
     elif (( OPTIONS[1] > drv_cnt || OPTIONS[1] < 1 )); then
-        prompt LOOP "\nDestination drive has to be an option within [1, $drv_cnt].\n"
+        prompt LOOP "Destination drive has to be an option within [1, $drv_cnt]."
     elif (( OPTIONS[0] == OPTIONS[1] )); then
-        prompt LOOP "\nSource and destination drives can't be the same.\n"
+        prompt LOOP "Source and destination drives can't be the same."
     else
         ((LOOP=0))
         echo 
@@ -473,7 +534,7 @@ setup_env() {
     ((fd=$?))
     if (( fd )); then
         cechot "${RED}The lock directory, $YELLOW'$LCKDIR'$RED, could not be"\
-            "${RED}created or set to read & execute. Exiting."
+               "${RED}created or set to read & execute. Exiting."
         return $fd
     fi
 
@@ -528,7 +589,7 @@ setup_env() {
     ((fd=$?))
     if (( fd )); then 
         cechot "${RED}The lock file $YELLOW'$LCKFILE'$RED could not be"\
-                "${RED}created. Exiting."
+               "${RED}created. Exiting."
         return $fd
     fi
 
@@ -557,7 +618,7 @@ setup_env() {
     # if script is running on dst drive exit with error
     srcptn=$(df -ak --sync --output=source "$SCRIPTDIR" | tail -1)
     if [[ "$srcptn" =~ $dstdrv$DP ]]; then
-        prompt LOOP "\nYou can't run the $SCRIPTNAME script on the destination drive.\n"
+        prompt LOOP "You can't run the $SCRIPTNAME script on the destination drive."
         return $?
     fi
 
@@ -570,8 +631,8 @@ setup_env() {
     # 2. the script is executed on that drive and the drive that is selected
     #    as destination is the drive that was used to boot the system 
     if [[ "$BOOTPTN" =~ $dstdrv$DP ]]; then
-        msg="\nThe destination drive can't be the drive that was used to boot the"
-        msg+=" system.\n"
+        msg="The destination drive can't be the drive that was used to boot the"
+        msg+=" system."
         prompt LOOP "$msg"
         return $?
     fi
@@ -623,7 +684,7 @@ error_msg
 
         for file in "$CMDFILE" "$ERRFILE" "$LOGFILE"; do
             echo -e "\n\nTHE FOLLOWING WERE APPENDED AS THE SCRIPT WAS RUN\n"\
-                    "WITH THE DRY RUN COMMAND LINE OPTION (-d or --dry-run)\n\n"\
+                    "WITH THE DRY RUN COMMAND LINE OPTION (-r or --dry-run)\n\n"\
                     >> "$file"
         done
     fi
@@ -874,7 +935,7 @@ populate_arrays() {
             
             # get sector size for partition
             ((sector_size=$(get_sector_size)))
-            if (( sector_size == 1 )); then return $sector_size; fi
+            (( sector_size == 1 )) && return $sector_size
             
             # get partition alignment
             ((alignment=$(align_ptn $DST_ALIGN "$fstype" "$flags")))
@@ -892,7 +953,7 @@ populate_arrays() {
                 
                 # get sector size for next partition
                 ((sector_size=$(get_sector_size)))
-                if (( sector_size == 1 )); then return $sector_size; fi
+                (( sector_size == 1 )) && return $sector_size
                 
                 ((prev_alignment=alignment))
 
@@ -977,9 +1038,8 @@ calc_drvspace() {
             
             # mount all src partitions other than swap and bios_grub
             if [[ ! "$fstype" =~ swap && ! "$flags" =~ bios ]]; then
-                mount_ptn "$srcdrv" $ptn_num srcmnt # mount src partition
-                ((err=$?))
-                if (( err )); then return $err; fi
+                # mount src partition
+                ! mount_ptn "$srcdrv" $ptn_num srcmnt && return $?
                 mount_points+=("$srcmnt")
                 
                 # return if any src partition does not have UUID
@@ -1051,9 +1111,7 @@ calc_drvspace() {
 
     # unmount src partitions that were mounted
     for ptn in "${mount_points[@]}"; do
-        umount_ptn "$ptn"
-        ((err=$?))
-        if (( err )); then return $err; fi
+        ! umount_ptn "$ptn" && return $?
     done
 
     echo -e "\n\tChecking files/directories excluded from source drive..."
@@ -1979,12 +2037,11 @@ clone() {
             elif [[ "$flags" =~ bios ]]; then
                 ((bios=1)) # set flag if bios partition
             else
-                mount_ptn "$srcdrv" "$ptn_num" srcmnt # mount src partition
-                ((err=$?))
-                if (( err )); then return $err; fi                
-                mount_ptn "$dstdrv" "$ptn_cnt" dstmnt # mount dst partition
-                ((err=$?))
-                if (( err )); then return $err; fi                
+                # mount src partition
+                ! mount_ptn "$srcdrv" "$ptn_num" srcmnt && return $?
+
+                # mount dst partition
+                ! mount_ptn "$dstdrv" "$ptn_cnt" dstmnt && return $?
 
                 # pair src and dst mount points so that they can be used as src
                 # and dst parameters in rsync
@@ -2163,9 +2220,7 @@ clone() {
     
     echo -e "\n\tExecuting cloning commands (this may take a while)..."
 
-    exec_cmds "${cmds[@]}" # execute commands created above
-    ((err=$?))
-    if (( err )); then return $err; fi
+    ! exec_cmds "${cmds[@]}" && return $? # execute commands created above
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
     files=($(dst_pathname "$FSTAB_FILE" "${rsync_params[@]}"))

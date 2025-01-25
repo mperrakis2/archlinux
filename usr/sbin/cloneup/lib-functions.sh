@@ -7,13 +7,17 @@ print_helpmsg() {
 usage: $SCRIPTNAME.sh [OPTION]...
 clone one drive to another using rsync(1)
 
--h|--help                   : display this help and exit
--d|--dry-run                : display commands but don't execute them
--e|--exclude <exclude_file> : pathname of file that contains files/dirs to be
-                              excluded from cloning
--f|--fstypes <fstypes_file> : pathname of file that contains the commands to
-                              format various filesystems (don't use this unless
-                              you really know what you are doing)
+-d|--dst <dst_drive>       : destination drive in the form /dev/<drv>, e.g. /dev/sdb
+                             must be combined with '-s|--src' option
+-e|--exclude <exclude_file>: pathname of file that contains files/dirs to be
+                             excluded from cloning
+-f|--fstypes <fstypes_file>: pathname of file that contains the commands to
+                             format various filesystems (don't use this unless
+                             you really know what you are doing)
+-h|--help                  : display this help and exit
+-r|--dry-run               : display commands but don't execute them
+-s|--src <src_drive>       : source drive in the form /dev/<drv>, e.g. /dev/sda
+                             must be combined with '-d|--dst' option
 
 if '-e' or '-f' is omitted the default file is read from:
     * ~/$LCL_CFG_DIR if it exists and the script is not run under its own
@@ -64,7 +68,7 @@ trap_signals() {
     ((err=$?))
     
     (( err )) && 
-        cecho -e "\n${RED}Error while trapping signals, error code: $err. Exiting."
+    cecho -e "\n${RED}Error while trapping signals, error code: $err. Exiting."
 
     return $err
 }
@@ -124,22 +128,27 @@ prompt() {
         exit_with_stack "$msg"
     fi
     
-    local MSG="Would you like to re-enter cloning options? (y/yes/n/no) "
-    readonly MSG
+    if (( script )); then # if src & dst specified as cmd line args
+        [[ "$2" ]] && cecho -e "$RED$2"
+        ((ref_loop=0))
+    else
+        local MSG="Would you like to re-enter cloning options? (y/yes/n/no) "
+        readonly MSG
 
-    while read -rn 3 -p "$(cecho -e "$RED$2$MSG")"; do
-        case "${REPLY,,}" in
-            y | yes)
-                ((ref_loop=1))
-                break
-                ;;
-            n | no)
-                ((ref_loop=0))
-                break
-                ;;
-        esac 
-    done
-    
+        while read -rn 3 -p "$(cecho -e "$RED\n$2\n$MSG")"; do
+            case "${REPLY,,}" in
+                y | yes)
+                    ((ref_loop=1))
+                    break
+                    ;;
+                n | no)
+                    ((ref_loop=0))
+                    break
+                    ;;
+            esac 
+        done
+    fi
+
     (( ! ref_loop )) && kill -s TERM $$ # exit if user selected no
         
     return 1
@@ -537,7 +546,7 @@ rm_tuple_entries() {
         # all include entries are matched
         if (( ${#abuf[@]} == ${#ref_removed_entries[@]} )); then
             ref_removed_entries=()
-            return 0
+            return
         fi
     fi
 
@@ -983,12 +992,8 @@ mount_ptn() {
             cmds+=("mount '$1$p$2' $mnt_dir")
         fi
         
-        local -i err
-
         # execute commands created above
-        exec_cmds "${cmds[@]}"
-        err=$?
-        if (( err )); then return $err; fi
+        ! exec_cmds "${cmds[@]}" && return $?
         ((is_mnt=1))
     fi
 
@@ -1070,7 +1075,7 @@ exec_cmds() {
     for i in "${!cmds[@]}"; do # remove empty commands
         [[ -z "${cmds[i]//[[:space:]]}" ]] && unset cmds[i]
     done
-    if (( ! ${#cmds[@]} )); then return 0; fi # return if no commands
+    (( ! ${#cmds[@]} )) && return # return if no commands
 
     # file discriptor array that enables/disables stdout, stderr and execution
     # in the background
