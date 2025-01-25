@@ -39,9 +39,10 @@ If the dry run command line option is used (see \fBOPTIONS\fR), the log director
 Sometimes it is useful to \fBtail\fR(1) the \fIlog\fR file to see which files/dirs are being transferred by \fBrsync\fR(1).
 
 Before cloning begins the following lock directory and files under it are created:
-    \fI/var/lock/cloneup/\fR
-        \fIcloneup_pids\fR: ensures that \fBcloneup.sh\fR is executed only if its source and destination are not destinations of another \fBcloneup.sh\fR instance
-        \fIslp_cloneup_pid\fR: ensures that only one \fBcloneup.sh\fR instance is responsible for disabling/enabling system sleep (suspend/hibernate)
+
+\fI/var/lock/cloneup/\fR
+    \fIcloneup_pids\fR: ensures that \fBcloneup.sh\fR is executed only if its source and destination are not destinations of another \fBcloneup.sh\fR instance
+    \fIslp_cloneup_pid\fR: ensures that only one \fBcloneup.sh\fR instance is responsible for disabling/enabling system sleep (suspend/hibernate)
 
 The lock directory is deleted after cloning has completed.
 
