@@ -109,10 +109,12 @@ readonly REDB
 # BEGIN
 declare -i DNAME=1
 declare -i DSIZE=2
+declare -i DTYPE=3
 declare -i DSECTOR_SIZE=4
 declare -i DPTN_TBL_TYPE=6 # updated during execution and then declared readonly
+declare -i DMODEL=7
 
-readonly DNAME DSIZE DSECTOR_SIZE
+readonly DNAME DSIZE DTYPE DSECTOR_SIZE DMODEL
 
 declare -i PDRV_NUM=1
 declare -i PPTN_NUM=1 # updated during execution and then declared readonly
@@ -359,9 +361,9 @@ usage_msg
 
     echo ${filters[0]} # print underlines
 
-    # get drive and partition data in human readable format
+    # get drive and partition data
     g_parted_data=()
-    readarray -t g_parted_data < <(parted --script --list 2> /dev/null)
+    readarray -t g_parted_data < <(parted --machine --script --list 2> /dev/null)
 
     local line
 
@@ -370,15 +372,20 @@ usage_msg
     for line in "${g_parted_data[@]}"; do
         # the output of 'parted' command is something like:
         #
-        # Model: ATA TOSHIBA MQ01ABD1 (scsi)
-        # Disk /dev/sda: 1000GB
-
-        if [[ "$line" =~ ^"Model: " ]]; then
+        # BYT;
+        # /dev/nvme0n1:512GB:nvme:512:512:gpt:KBG40ZNS512G NVMe KIOXIA 512GB:;
+        # 1:1049kB:11.5MB:10.5MB::BIOS:bios_grub;
+        # 2:11.5MB:536MB:524MB:fat32:UEFI:boot, esp;
+        # 3:536MB:512GB:512GB:ext4:ROOT:;
+        if [[ "$line" =~ ^/dev/ ]]; then
             (( drv_cnt > 0 )) && echo # seperate one drive output from another
             ((++drv_cnt))
-            echo "$drv_cnt. $line" # display drive model (see comment above)
-        elif [[ "$line" =~ ^"Disk /dev/" ]]; then
-            echo "   $line" # display drive size (see comment above)
+
+            # display drive model and type (see comment above)
+            echo "$drv_cnt. Model: $(field "$line" $DMODEL) ($(field "$line" $DTYPE))"
+
+            # display drive size (see comment above)
+            echo "   Disk $(field "$line" $DNAME): $(field "$line" $DSIZE)"
         fi
     done
 
@@ -405,7 +412,7 @@ user_input() {
     local -a parted_data
 
     # get parted data again
-    readarray -t parted_data < <(parted --script --list 2> /dev/null)
+    readarray -t parted_data < <(parted --machine --script --list 2> /dev/null)
 
     # compare current parted data with original
     if [[ "${parted_data[*]}" != "${g_parted_data[*]}" ]]; then
@@ -482,17 +489,12 @@ setup_env() {
         LOGDIR+="/$OPTIONS_S"
     fi
 
-    local -a parted_data # drive data retrieved from 'parted' command
-
-    # get drive and partition data for all drives in machine parsable format
-    readarray -t parted_data < <(parted -mls 2> /dev/null)
-
     local line
     local -i drv_num=0 # drive number used as index in associative array
 
     # iterate over drive data to get drive names
     drv_data=()
-    for line in "${parted_data[@]}"; do
+    for line in "${g_parted_data[@]}"; do
         if [[ "$line" =~ ^/dev/ ]]; then
             ((++drv_num))
 
