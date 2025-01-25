@@ -69,13 +69,15 @@ All escaped characters have to be specified as $'\\<ec>'.
 
 .I VALID ENTRIES
 
+Valid entries are:
+
 .B a)\fR blank lines
 
 .B b)\fR comments, a line starting with '#' is a comment.
 
-.B c)\fR -|+<fspec>
+.B c)\fR any line with the syntax '-|+<fspec>' where:
 
-A leading sign ('-' or '+') followed by a mandatory file specification (<fspec>) and an optional '/'. <fspec> specifies pathnames of files or directories and all metacharacters of the bash shell can be used. <fspec> must have a leading '/' and if it has a trailing '/' a directory is specified else a directory or file is specified.
+A leading sign ('-' or '+') is followed by a mandatory file specification (<fspec>). <fspec> specifies pathnames of files or directories (all metacharacters of the bash shell can be used). <fspec> must have a leading '/' and if it has a trailing '/' a directory is specified else a directory or file is specified.
   
 .I examples
 
@@ -123,27 +125,43 @@ A leading sign ('-' or '+') followed by a mandatory file specification (<fspec>)
 
 -/dir1/dir2/!(*.jpg|*.mp3)     (files that do NOT have 'jpg' OR 'mp3' extention)
 
-.B d)\fR -|+/[<path>] [<path>]<name>
+.B d)\fR any line with the syntax '-|+/[<path>] [<path>]<name>' where:
 
-A leading sign ('-' or '+') followed by a '/' and a <path> which is optional and can have a trailing '/'. All metacharacters of the bash shell can be used in <path>. The next token contains an optional <path> which can't have a leading '/'. <name> specifies filenames or dirnames. <path> (in the second token) and <name> must be separated by a '/'. The following metacharacters can be used in [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies a directory only (not a file).
-  
+A leading sign ('-' or '+') is followed by a '/' and an optional <path> which can have a trailing '/' (all metacharacters of the bash shell can be used in <path>). The next token contains an optional <path> which must not have a leading '/' and a mandatory  <name> which specifies filenames or dirnames. If both <path> and <name> are used they must be separated by a '/'. The following metacharacters can be used in [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies a directory only (no file).
+
+.I invalid examples
+
+The following examples are invalid, as the second token contains some metacharacters that are interpreted as plain characters (valid metacharacters for the second token are *, ?, [], [^]).
+
+-/dir1/di*r2/ +(*.jpg|*.mp3)    , interpreted as plain characters: + ( | )
+
+-/dir1/di*r2  !(*.jpg|*.mp3)    , interpreted as plain characters: ! ( | )
+
+-/dir1/di*r2/ ?(*.jpg|*.mp3)    , interpreted as plain characters: ( | )
+
+-/dir1/di*r2  *(*.jpg|*.mp3)    , interpreted as plain characters: ( | )
+
+-/dir1/di*r2  *{.jpg,.mp3}      , interpreted as plain characters: { , }
+
+-/dir1/di*r2/ {?????.sh,*st.txt}, interpreted as plain characters: { , }
+
 .I examples
 
--/dir1/dir2/ report* (exclude all files and directories beginning with 'report' that are under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2/ report* (exclude all files and directories beginning with 'report' that are under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
 
--/dir1/dir2 report*/ (exclude directories beginning with 'report' that are under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2 report*/ (exclude directories beginning with 'report' that are under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
 
--/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
 
--/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
 
 .I exclude/include tuple example
 
--/dir1/dir2 dir3/dir4/ (exclude directory 'dir4' that is under any 'dir3' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
+-/dir1/dir2 dir3/dir4/ (exclude directory 'dir4' that is under any 'dir3' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
 
-+/dir1/dir2 dir3/dir4/file1.txt (include 'file1.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
++/dir1/dir2 dir3/dir4/file1.txt (include 'file1.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
 
-+/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any directory that is under '/dir1/dir2/')
++/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
 
 .I other examples
 
@@ -198,22 +216,6 @@ A leading sign ('-' or '+') followed by a '/' and a <path> which is optional and
 -/dir1/+(*jpg|*mp3)/          dir2/dir3/[^p]*
 
 -/dir1/!(*jpg|*mp3)           dir2/dir3/[^p]*/
-
-.I INVALID ENTRIES
-
-The following examples are invalid, as the second token contains some metacharacters that are interpreted as plain characters (valid metacharacters for the second token are *, ?, [], [^]).
-
--/dir1/di*r2/ +(*.jpg|*.mp3)    , interpreted as plain characters: + ( | )
-
--/dir1/di*r2  !(*.jpg|*.mp3)    , interpreted as plain characters: ! ( | )
-
--/dir1/di*r2/ ?(*.jpg|*.mp3)    , interpreted as plain characters: ( | )
-
--/dir1/di*r2  *(*.jpg|*.mp3)    , interpreted as plain characters: ( | )
-
--/dir1/di*r2  *{.jpg,.mp3}      , interpreted as plain characters: { , }
-
--/dir1/di*r2/ {?????.sh,*st.txt}, interpreted as plain characters: { , }
 .SH STANDARDS
 The system files excluded from cloning are based on the Filesystem Hierarchy Standard (FHS).
 .SH SEE ALSO
