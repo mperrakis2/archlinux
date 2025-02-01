@@ -148,7 +148,7 @@ readonly SPTN SUUID SDST
 # END
 # the variables above are field numbers used by the field() function
 
-BOOTDIR=$(bootctl -p) # get boot directory
+BOOTDIR=$(bootctl -x) # get boot directory
 readonly BOOTDIR
 
 # get partition of boot directory
@@ -2360,6 +2360,7 @@ clone() {
     local RE_OFFSET="${PREFIX_OFFSET}[0-9]\+"
     readonly PREFIX_UUID RE_UUID PREFIX_OFFSET RE_OFFSET
 
+    local dst_bootdir=""
     local dstptn
     local EFI="[Ee][Ff][Ii]"
     local BOOT="[Bb][Oo][Oo][Tt]"
@@ -2367,6 +2368,7 @@ clone() {
     readonly EFI BOOT SHIM
     local distro
 
+    cmd=""
     for ptn_pair in "${rsync_params[@]}"; do
         dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
         mapfile -t entries < <(grep swap "$dstmnt$FSTAB_FILE" 2>> "$ERRFILE")
@@ -2403,22 +2405,24 @@ clone() {
             fi
         done
 
-        dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
+        # if bios flag is set, get dst boot dir
+        [[ $bios -ne 0 && -d "$dstmnt/grub" && -z "$dst_bootdir" ]] &&
+            dst_bootdir="$dstmnt"
 
         # if bios flag is set, install grub bootloader for non-UEFI (bios) system
         if (( bios )); then
-            cmd=$(find "$dstmnt" -name grub-install) # grub installer pathname
-
-            if [[ "$cmd" ]]; then
+            [[ -z "$cmd" ]] &&
+                cmd=$(find "$dstmnt" -name grub-install) # grub installer pathname
+            if [[ "$cmd" && "$dst_bootdir" ]]; then
                 echo -e "\tCreating command to install grub bootloader on bios"\
                         "and boot partition on destination drive..."
-        
+
                 # the following three numbers at the beginning of the command
                 # are parsed as follows:
                 # 0: don't run in the background
                 # 1: redirect stdout
                 # 0: don't redirect stderr
-                cmds+=("010 $cmd --target=i386-pc --boot-directory='$dstmnt' \
+                cmds+=("010 $cmd --target=i386-pc --boot-directory='$dst_bootdir' \
                                  --recheck '$dstdrv'")
                 ((bios=0)) # install grub bootloader only once
                 break
@@ -2427,6 +2431,7 @@ clone() {
         
         # if esp partition and UEFI boot is enabled, install UEFI boot
         # entries if required
+        dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
         for ptn_num in "${esp_ptn_nums[@]}"; do
             if [[ "$dstptn" == "$dstdrv$DP$ptn_num" ]]; then
                 buf=$(efibootmgr 2>> "$ERRFILE")

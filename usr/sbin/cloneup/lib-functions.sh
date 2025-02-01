@@ -174,7 +174,7 @@ stack() {
 	    local -i line="${BASH_LINENO[i-1]}"
 	    local src="${BASH_SOURCE[$i]:-(no file)}"
 
-	    stack+=("\t($i) $func $src:$line")
+	    stack+=("\t($i) file: $src, function: $func, line: $line")
     done
     (IFS=$'\n'; cecho -e "$RED$*${stack[*]}\n")
     
