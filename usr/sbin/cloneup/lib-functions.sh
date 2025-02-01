@@ -867,35 +867,52 @@ readonly SLP_CFG_MNT_DIR
 declare -a system_sleep_cmds=()
 
 # create mask/unmask system sleep commands
-# $1: ref to str array, store the commands
-# $2: optional, str, valid value: mask
+# $1: ref to str array to store the commands or str with valid value "filter"
+# $2: optional, str, valid value: "mask"
 system_sleep() {
     local -i err=0
     
-    (( $# == 2 )) && [[ "$2" != "mask" ]] && ((err=1))
+    [[ $# -eq 2 && "$2" != "mask" ]] && ((err=1))
     if (( err || $# < 1 || $# > 2 )); then
-        local msg="\nOne or two params required: reference to cmds array "
+        local msg="\nOne or two params required: reference to cmds array or "
         
-        msg+="and optional param == 'mask'. Exiting."
+        msg+="str == 'filter' and optional param == 'mask'. Exiting."
         exit_with_stack "$msg"
     fi
 
-    if (( $# == 2 )); then # mask system sleep
-        local target
-        local -a TARGETS=("sleep.target" "suspend.target" "hibernate.target")
-        local system_sleep_cmd=""
-        local rsync_exclude
+    local target
+    local -a TARGETS=("sleep.target" "suspend.target" "hibernate.target")
+    local rsync_exclude
 
-        TARGETS+=("hybrid-sleep.target" "suspend-then-hibernate.target")
-        readonly TARGETS
+    TARGETS+=("hybrid-sleep.target" "suspend-then-hibernate.target")
+    readonly TARGETS
+
+    if [[ $# -eq 1 && "$1" == "filter" ]]; then # add rsync filters
+        local slp_entry
+        local mnt_dir
+        local rsync_excludes
+        
+        slp_entry=$(tail -1 "$SLPFILE")
+        mnt_dir=$(expr "$slp_entry" : "^\(.\+\) $SEP")
+        rsync_excludes=$(expr "$slp_entry" : "^.\+ $SEP \(.\+\)$")
+
+        for target in "${TARGETS[@]}"; do
+            if [[ "$rsync_excludes" =~ "$target" ]]; then # add rsync filter
+                rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
+                rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
+            fi
+        done
+    elif (( $# == 2 )); then # create cmd to mask system sleep
+        local system_sleep_cmd=""
+
         system_sleep_cmds=()
 
-        # iterate over targets and create commands to mask unmasked ones
         for target in "${TARGETS[@]}"; do
             # check if target is masked
             systemctl status "$target" | grep masked &> /dev/null
             
-            if (( ${PIPESTATUS[-1]} )); then # get output of last pipe, i.e. grep
+            # if not masked get output of last pipe, i.e. grep
+            if (( ${PIPESTATUS[-1]} )); then
                 # create cmd to mask target
                 if [[ "$system_sleep_cmd" ]]; then
                     system_sleep_cmd+="$target "
@@ -903,9 +920,11 @@ system_sleep() {
                     system_sleep_cmd+="systemctl $2 $target "
                 fi
                 
-                rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
-                [[ ! "${rsync_filters[$SLP_CFG_MNT_DIR]}" =~ $rsync_exclude ]] &&
+                if [[ ! "${rsync_filters[$SLP_CFG_MNT_DIR]}" =~ "$target" ]]
+                then
+                    rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
                     rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
+                fi
             fi
         done
         

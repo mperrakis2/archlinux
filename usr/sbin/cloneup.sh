@@ -1897,7 +1897,6 @@ mask_system_sleep() {
     
     # some other clone process has completed or was interrupted and sent signal
     # USR1 so that this process can handle masking/unmasking system sleep 
-    # (suspend/hibernate)
     if (( $# == 1 )); then
         # sync and restore stdout and stderr to the terminal
         sync
@@ -1917,12 +1916,11 @@ mask_system_sleep() {
         local SEP="//"
         readonly SEP
         
-        # mask/unmask system sleep (suspend/hibernate) if no other clone process
-        # already does
+        # mask system sleep if no other clone process already has
         if [[ ! -s "$SLPFILE" ]]; then
             local -a cmds
 
-            # add cmds to mask system sleep (suspend/hibernate)
+            # add cmds to mask system sleep
             system_sleep cmds "mask"
             if (( ${#cmds[@]} )); then
                 if (( $# == 1 )); then
@@ -1945,18 +1943,8 @@ mask_system_sleep() {
                 fi
             fi
         else
-            # if some other clone process is masking/unmasking system sleep 
-            # (suspend/hibernate) then sleep lock file must be excluded from
-            # cloning
-            local slp_entry
-            local mnt_dir
-            local excludes
-            
-            slp_entry=$(tail -1 "$SLPFILE")
-            mnt_dir=$(expr "$slp_entry" : "^\(.\+\) $SEP")
-            excludes=$(expr "$slp_entry" : "^.\+ $SEP \(.\+\)$")
-            [[ ! "${rsync_filters[$mnt_dir]}" =~ $excludes ]] && 
-                rsync_filters[$mnt_dir]+="$excludes"
+            # add rsync filters to exclude system sleep target files
+            system_sleep "filter"
         fi
 
         (( ! err )) &&
@@ -2523,7 +2511,7 @@ cleanup() {
             # 0: don't run in the background
             # 0: don't redirect stdout
             # 0: don't redirect stderr
-            cmds=("000 kill -s KILL ${cmds[*]} >> '$LOGFILE' 2>> '$ERRFILE' || true")
+            cmds=("000 kill -s TERM ${cmds[*]} >> '$LOGFILE' 2>> '$ERRFILE' || true")
             exec_cmds "${cmds[@]}"
             ((err=$?))
         fi
@@ -2556,7 +2544,7 @@ cleanup() {
         
         echo -e "\tIgnore signal to disable/enable system sleep (suspend/hibernate)..."
 
-        # ignore sig USR1 in order not to mask/unmask system sleep (suspend/hibernate)
+        # ignore sig USR1 in order not to mask/unmask system sleep
         cmds=("trap '' USR1")
         exec_cmds "${cmds[@]}"
 
