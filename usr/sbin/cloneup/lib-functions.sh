@@ -1011,8 +1011,12 @@ mount_ptn() {
             cmds+=("mount '$1$p$2' $mnt_dir")
         fi
         
+        local -i err
+
         # execute commands created above
-        ! exec_cmds "${cmds[@]}" && return $?
+        exec_cmds "${cmds[@]}"
+        ((err=$?)); ((err)) && return $err
+        
         ((is_mnt=1))
     fi
 
@@ -1047,7 +1051,7 @@ umount_ptn() {
             dirname=$(field "$1" "$((field_num-1))") # extract directory name
 
             # create command to unmount partition
-            cmds+=("umount --recursive '$dirname'")
+            cmds+=("umount '$dirname'")
 
             # create cmd to remove the directory the partition was mounted on
             cmds+=("rm -rf '$dirname'")
@@ -1094,7 +1098,7 @@ exec_cmds() {
     for i in "${!cmds[@]}"; do # remove empty commands
         [[ -z "${cmds[i]//[[:space:]]}" ]] && unset cmds[i]
     done
-    (( ! ${#cmds[@]} )) && return # return if no commands
+    (( ! ${#cmds[@]} )) && return 0 # return if no commands
 
     # file discriptor array that enables/disables stdout, stderr and execution
     # in the background

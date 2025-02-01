@@ -264,7 +264,10 @@ init() {
     [[ -z "$FILTERS_FILE" ]] &&
         FILTERS_FILE=$(get_cfg_fname exclude.conf) # get pathname of exclude file
 
-    ! files_exist && return $? # check that text files needed by script exist
+    local -i err
+
+    files_exist # check that text files needed by script exist
+    ((err=$?)); ((err)) && return $err
 
     local signals
     local D="[0-9]" # digit
@@ -1039,7 +1042,9 @@ calc_drvspace() {
             # mount all src partitions other than swap and bios_grub
             if [[ ! "$fstype" =~ swap && ! "$flags" =~ bios ]]; then
                 # mount src partition
-                ! mount_ptn "$srcdrv" $ptn_num srcmnt && return $?
+                mount_ptn "$srcdrv" $ptn_num srcmnt
+                ((err=$?)); ((err)) && return $err
+
                 mount_points+=("$srcmnt")
                 
                 # return if any src partition does not have UUID
@@ -1111,7 +1116,8 @@ calc_drvspace() {
 
     # unmount src partitions that were mounted
     for ptn in "${mount_points[@]}"; do
-        ! umount_ptn "$ptn" && return $?
+        umount_ptn "$ptn"
+        ((err=$?)); ((err)) && return $err
     done
 
     echo -e "\n\tChecking files/directories excluded from source drive..."
@@ -2026,10 +2032,12 @@ clone() {
                 ((bios=1)) # set flag if bios partition
             else
                 # mount src partition
-                ! mount_ptn "$srcdrv" "$ptn_num" srcmnt && return $?
+                mount_ptn "$srcdrv" "$ptn_num" srcmnt
+                ((err=$?)); ((err)) && return $err
 
                 # mount dst partition
-                ! mount_ptn "$dstdrv" "$ptn_cnt" dstmnt && return $?
+                mount_ptn "$dstdrv" "$ptn_cnt" dstmnt
+                ((err=$?)); ((err)) && return $err
 
                 # pair src and dst mount points so that they can be used as src
                 # and dst parameters in rsync
@@ -2208,7 +2216,8 @@ clone() {
     
     echo -e "\n\tExecuting cloning commands (this may take a while)..."
 
-    ! exec_cmds "${cmds[@]}" && return $? # execute commands created above
+    exec_cmds "${cmds[@]}" # execute commands created above
+    ((err=$?)); ((err)) && return $err
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
     files=($(dst_pathname "$FSTAB_FILE" "${rsync_params[@]}"))
