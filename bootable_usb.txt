@@ -24,23 +24,23 @@ https://wiki.archlinux.org/title/GRUB#Shim-lock
 1. a. grub_modules="all_video boot btrfs cat chain configfile echo efifwsetup efinet ext2 fat font gettext gfxmenu gfxterm gfxterm_background gzio halt help hfsplus iso9660 jpeg keystatus loadenv loopback linux ls lsefi lsefimmap lsefisystab lssal memdisk minicmd normal ntfs part_apple part_msdos part_gpt password_pbkdf2 png probe reboot regexp search search_fs_uuid search_fs_file search_label sleep smbios squash4 test true video xfs zfs zfscrypt zfsinfo cpuid	play tpm cryptodisk gcry_arcfour gcry_blowfish gcry_camellia gcry_cast5 gcry_crc gcry_des gcry_dsa gcry_idea gcry_md4 gcry_md5 gcry_rfc2268 gcry_rijndael gcry_rmd160 gcry_rsa gcry_seed gcry_serpent gcry_sha1 gcry_sha256 gcry_sha512 gcry_tiger gcry_twofish gcry_whirlpool luks lvm mdraid09 mdraid1x raid5rec raid6rec http tftp"
 
    # grub-install
-   b. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --boot-directory="$(bootctl -p)" --efi-directory="$(bootctl -p)" --recheck --target=x86_64-efi --removable /dev/nvme0n1
+   b. sudo grub-install --modules="$grub_modules" --sbat=/usr/share/grub/sbat.csv --boot-directory="$(bootctl -x)" --efi-directory="$(bootctl -x)" --recheck --target=x86_64-efi --removable /dev/nvme0n1
 
-   c. sudo mv "$(bootctl -p)"/EFI/BOOT/BOOTX64.EFI "$(bootctl -p)"/EFI/BOOT/grubx64.efi # rename bootloader
-   d. sudo cp "$(bootctl -p)"/EFI/BOOT/grubx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/   # copy bootloader
+   c. sudo mv "$(bootctl -x)"/EFI/BOOT/BOOTX64.EFI "$(bootctl -x)"/EFI/BOOT/grubx64.efi # rename bootloader
+   d. sudo cp "$(bootctl -x)"/EFI/BOOT/grubx64.efi "$(bootctl -x)"/EFI/"$(uname -n)"/   # copy bootloader
 
 # check https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#shim
 
 2. install shim-signed & sbsigntools packages
 
-3. a. sudo cp /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/BOOT/
-   b. sudo cp /usr/share/shim-signed/shimx64.efi "$(bootctl -p)"/EFI/BOOT/BOOTX64.EFI
-   c. sudo cp /usr/share/shim-signed/shimx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -p)"/EFI/"$(uname -n)"/
+3. a. sudo cp /usr/share/shim-signed/mmx64.efi "$(bootctl -x)"/EFI/BOOT/
+   b. sudo cp /usr/share/shim-signed/shimx64.efi "$(bootctl -x)"/EFI/BOOT/BOOTX64.EFI
+   c. sudo cp /usr/share/shim-signed/shimx64.efi /usr/share/shim-signed/mmx64.efi "$(bootctl -x)"/EFI/"$(uname -n)"/
    if efi boot entry with label="shim-$(uname -n)" and loader=/EFI/"$(uname -n)"/shimx64.efi does not exist then
       sudo efibootmgr --unicode --disk /dev/nvme0n1 --part 2 --create --label "shim-$(uname -n)" --loader /EFI/"$(uname -n)"/shimx64.efi
    fi
 
-4. a. cd "$(bootctl -p)"/EFI
+4. a. cd "$(bootctl -x)"/EFI
    if no certificate then
       sudo openssl req -newkey rsa:2048 -nodes -keyout MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=my Machine Owner Key/" -out MOK.crt
       sudo openssl x509 -outform DER -in MOK.crt -out MOK.cer
@@ -65,7 +65,7 @@ unified kernel images
 https://wiki.archlinux.org/title/Unified_kernel_image#sbctl
 
 uname -m   # get architecture
-bootctl -p # ESP mount dir
+bootctl -x # ESP mount dir
 bootctl -x # bootloader mount dir
 bootctl status --no-pager (dir of grubx64.efi under section 'Boot', dir of BOOTX64.efi under section 'Available')
 
@@ -74,8 +74,8 @@ update /etc/kernel/cmdline # e.g. root=UUID=55e14ea4-8667-4d95-9b49-321c1b166e2b
 add menu entries to grub.cfg for the two ukis (below)
 update cmdline file above and grub.cfg on github
 
-sudo sbctl bundle --save "$(bootctl -p)"/EFI/arch/uki-linux-x86_64.efi
-sudo sbctl bundle --save "$(bootctl -p)"/EFI/arch/uki-linux-lts-x86_64.efi --kernel-img "$(bootctl -p)"/vmlinuz-linux-lts  --initramfs "$(bootctl -p)"/initramfs-linux-lts.img
+sudo sbctl bundle --save "$(bootctl -x)"/EFI/arch/uki-linux-x86_64.efi
+sudo sbctl bundle --save "$(bootctl -x)"/EFI/arch/uki-linux-lts-x86_64.efi --kernel-img "$(bootctl -x)"/vmlinuz-linux-lts  --initramfs "$(bootctl -x)"/initramfs-linux-lts.img
 sudo sbctl generate-bundles [--sign]
 
 UEFI stub
