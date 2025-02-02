@@ -887,22 +887,7 @@ system_sleep() {
     TARGETS+=("hybrid-sleep.target" "suspend-then-hibernate.target")
     readonly TARGETS
 
-    if [[ $# -eq 1 && "$1" == "filter" ]]; then # add rsync filters
-        local slp_entry
-        local mnt_dir
-        local rsync_excludes
-        
-        slp_entry=$(tail -1 "$SLPFILE")
-        mnt_dir=$(expr "$slp_entry" : "^\(.\+\) $SEP")
-        rsync_excludes=$(expr "$slp_entry" : "^.\+ $SEP \(.\+\)$")
-
-        for target in "${TARGETS[@]}"; do
-            if [[ "$rsync_excludes" =~ "$target" ]]; then # add rsync filter
-                rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
-                rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
-            fi
-        done
-    elif (( $# == 2 )); then # create cmd to mask system sleep
+    if (( $# == 2 )); then # create cmd to mask system sleep
         local system_sleep_cmd=""
 
         system_sleep_cmds=()
@@ -929,6 +914,24 @@ system_sleep() {
         done
         
         [[ "$system_sleep_cmd" ]] && system_sleep_cmds+=("$system_sleep_cmd")
+
+    # system sleep has already been masked by another clone process so just add
+    # the masked targets to rsync filters
+    elif [[ $# -eq 1 && "$1" == "filter" ]]; then
+        local slp_entry
+        local mnt_dir
+        local rsync_excludes
+        
+        slp_entry=$(tail -1 "$SLPFILE")
+        mnt_dir=$(expr "$slp_entry" : "^\(.\+\) $SEP")
+        rsync_excludes=$(expr "$slp_entry" : "^.\+ $SEP \(.\+\)$")
+
+        for target in "${TARGETS[@]}"; do
+            if [[ "$rsync_excludes" =~ "$target" ]]; then # add rsync filter
+                rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
+                rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
+            fi
+        done
     fi
 
     # add command to mask/unmask system sleep
