@@ -928,8 +928,7 @@ system_sleep() {
 
         for target in "${TARGETS[@]}"; do
             slp_entry="$SLP_CFG_DIR/$target"
-            if [[ "$rsync_excludes" =~ [[:space:]]+"$slp_entry"[[:space:]]+ ]]
-            then
+            if [[ "$rsync_excludes" =~ [[:space:]]+"$slp_entry" ]]; then
                  # add rsync filter
                 rsync_exclude="-f \"- $slp_entry\" "
                 rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
