@@ -2,6 +2,8 @@
 
 # base functions for clone script
 
+readonly LCL_CFG_DIR=".config/$SCRIPTNAME.d"
+
 print_helpmsg() {
         cat << helpmsg
 usage: $SCRIPTNAME.sh [OPTION]...
@@ -9,20 +11,22 @@ clone one drive to another using rsync(1)
 
 -d|--dst <dst_drive>       : destination drive in the form /dev/<drv>, e.g. /dev/sdb
                              must be combined with '-s|--src' option
--e|--exclude <exclude_file>: pathname of file that contains files/dirs to be
-                             excluded from cloning
--f|--fstypes <fstypes_file>: pathname of file that contains the commands to
-                             format various filesystems (don't use this unless
+-e|--exclude <exclude_file>: pathname of custom conf file that contains files/dirs
+                             to be excluded from cloning
+-f|--fstypes <fstypes_file>: pathname of custom conf file that contains the commands
+                             to format various filesystems (don't use this unless
                              you really know what you are doing)
 -h|--help                  : display this help and exit
 -r|--dry-run               : display commands but don't execute them
 -s|--src <src_drive>       : source drive in the form /dev/<drv>, e.g. /dev/sda
                              must be combined with '-d|--dst' option
 
-if '-e' or '-f' is omitted the default file is read from:
-    * ~/$LCL_CFG_DIR if it exists and the script is not run under its own
+if '-s' and '-d' are omitted the script will ask for source and destination drives
+
+if '-e' or '-f' is omitted the conf file is read from:
+    * ~/$LCL_CFG_DIR/ if it exists and the script is not run under its own
       directory (usually /usr/sbin/)
-    * $DEF_CFG_DIR and $OVR_CFG_DIR in all other cases
+    * $DEF_CFG_DIR/ and $OVR_CFG_DIR/ (if it exists) in all other cases
 
 for more info see $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5)
 helpmsg
@@ -36,18 +40,18 @@ get_cfg_fname() {
         exit_with_stack "\nOne param required: filename. Exiting."
 
     local cwd
-    local gbl_cfgdir="$DEF_CFG_DIR" # global cfg dir
-    local lcl_cfgdir
+    local gbl_cfg_file="$DEF_CFG_DIR/$1" # global cfg file
+    local lcl_cfg_file
 
     cwd=$(pwd)
-    lcl_cfgdir=$(eval echo ~$(logname))"/$LCL_CFG_DIR" # local cfg dir
+    lcl_cfg_file=$(eval echo ~$(logname))/"$LCL_CFG_DIR/$1" # local cfg file
 
-    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfgdir$1" && \
-          -r "$lcl_cfgdir$1" && -s "$lcl_cfgdir$1" ]]
+    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfg_file" && \
+          -r "$lcl_cfg_file" && -s "$lcl_cfg_file" ]]
     then
-        echo "$lcl_cfgdir$1"
+        echo "$lcl_cfg_file"
     else
-        echo "$gbl_cfgdir$1"
+        echo "$gbl_cfg_file"
     fi
 }
 

@@ -1,2 +1,2 @@
 to understand how the configuration files in this directory affect cloning read
-the man pages, i.e. cloneup(1) & cloneup-exclude.conf(5)
+the man pages, i.e. cloneup.sh(1) & cloneup.sh-exclude.conf(5)

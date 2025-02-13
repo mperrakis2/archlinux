@@ -1,50 +1,47 @@
 #!/bin/bash
 
-# This script clones one drive to another. For detailed info and usage see
-# <script_name>(1). For a quick description of the command line options
-# run '<script_name>.sh -h|--help'. Further clone options are entered by the
-# user after the script is run.
+# This script clones one drive to another. For detailed info and usage see man
+# page: <script_name>(1). For a quick description of the command line options
+# run '<script_name> -h|--help'.
 
 # legend
 # ------
 # src: drive to be cloned (source)
 # dst: drive to clone to  (destination)
 #
-# the user selects src & dst AFTER the script is run
-# 
 # limitations
 # -----------
-# see LIMITS section in <script_name>(1)
+# see LIMITS section in man page: <script_name>(1)
 #
-# conf files used by script
-# -------------------------
-# the following files are under $DEF_CFG_DIR and optionally under $LCL_CFG_DIR
-# (variables defined below)
+# conf files used by script (variables in this section are defined below)
+# -----------------------------------------------------------------------
+# the following files are under $DEF_CFG_DIR and optionally under 
+# $OVR_CFG_DIR and $LCL_CFG_DIR
 #
-# 'fstypes.conf' : maps filesystem names of 'parted' cmd to 'mkfs' cmd
-# 'exclude.conf' : files/dirs to be excluded from and/or included in cloning
+# fstypes.conf: maps filesystem names of 'parted' cmd to 'mkfs' cmd
+# exclude.conf: files/dirs to be excluded from and/or included in cloning
 #
 # log files created by script
 # ---------------------------
-# 'log'                  : the output of commands (stdout)
-# 'errors'               : errors, if any (stderr)
-# 'commands'             : the commands used during cloning
-# '<script_name>_pids'   : lock file to ensure that the script is executed only
-#                          if its src and dst are not destinations for another
-#                          script already running (multiple instances are
-#                          allowed as long as destinations are different)
-# 'slp_<script_name>_pid': lock file to ensure that only one script instance is
-#                          responsible for masking/unmasking system sleep
-#                          (suspend/hibernate)
+# log                  : the output of commands (stdout)
+# errors               : errors, if any (stderr)
+# commands             : the commands used during cloning
+# <script_name>.pids   : lock file to ensure that the script is executed only
+#                        if its src and dst are not destinations for another
+#                        script already running (multiple instances are
+#                        allowed as long as destinations are different)
+# slp_<script_name>.pid: lock file to ensure that only one script instance is
+#                        responsible for masking/unmasking system sleep
+#                        (suspend/hibernate)
 #
-# * lock files are created under /var/lock/<script-dir>/ which is deleted after
+# * lock files are created under /var/lock/<script_dir>/ which is deleted after
 #   all script instances have terminated
-# * all other files are created under /var/log/<script-dir>/X_Y/ (X, Y: numbers
-#   entered by user for src and dst respectively)
+# * all other files are created under /var/log/<script_dir>/X_Y/ (X, Y: drive
+#   numbers for src and dst respectively)
 #
 # other scripts used by this script
 # ---------------------------------
-# lib-functions.sh (under this script's directory and sourced in)
+# <script_name_no_ext>-lib.sh (under /usr/lib and sourced in)
 
 set -o pipefail
 shopt -s extglob
@@ -52,15 +49,12 @@ shopt -s extglob
 # global constants
 SCRIPTDIR="${BASH_SOURCE:-$0}"      # script pathname
 SCRIPTNAME=$(basename "$SCRIPTDIR") # script filename
-SCRIPTNAME="${SCRIPTNAME/.*}"       # remove file extention
 readonly SCRIPTNAME
 SCRIPTDIR=$(dirname "$SCRIPTDIR")   # script dir
 readonly SCRIPTDIR
 
-readonly CFG_DIR="/etc/$SCRIPTNAME"
-readonly DEF_CFG_DIR="$CFG_DIR/"
-readonly OVR_CFG_DIR="$CFG_DIR.d/"
-readonly LCL_CFG_DIR=".config/$SCRIPTNAME/"
+readonly DEF_CFG_DIR="/etc/$SCRIPTNAME.d"
+readonly OVR_CFG_DIR="$DEF_CFG_DIR/conf.d"
 
 declare -i dry_run=0
 FILTERS_FILE=""
@@ -75,16 +69,16 @@ readonly MIBIBYTE
 UNIT=B # unit supplied to 'parted' command is bytes
 readonly UNIT
 
-LCKDIR=/var/lock/"$SCRIPTNAME"
+LCKDIR=/var/lock/"$SCRIPTNAME.d"
 readonly LCKDIR
-LOGDIR=/var/log/"$SCRIPTNAME"
+LOGDIR=/var/log/"$SCRIPTNAME.d"
 DRV_SUFFIX="[0-9]+$"
 readonly DRV_SUFFIX
 CANCEL_SIGNALS="ABRT HUP INT QUIT TERM"
 readonly CANCEL_SIGNALS
-LCKFILE="$LCKDIR/${SCRIPTNAME}_pids"
+LCKFILE="$LCKDIR/${SCRIPTNAME}.pids"
 readonly LCKFILE
-SLPFILE="$LCKDIR/slp_${SCRIPTNAME}_pid"
+SLPFILE="$LCKDIR/slp_${SCRIPTNAME}.pid"
 readonly SLPFILE
 
 # bold colors foreground
@@ -285,7 +279,7 @@ init() {
 usage() {
     (( ! script )) && clear # if src & dst not specified as cmd line args
 
-    local override_file="/etc/$SCRIPTNAME.d/exclude.conf"
+    local override_file="$OVR_CFG_DIR/exclude.conf"
 
     # if there is no override for the file set it to empty str
     if [[ ! "$FILTERS_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
@@ -1518,7 +1512,7 @@ calc_drvspace() {
         buf="${buf:1}"
 
         exc_size=$(du -sB1 "$buf" 2>> "$ERRFILE" | xargs 2>> "$ERRFILE" \
-                                                | cut -f 1 -d ' ')
+                                                 | cut -f 1 -d ' ')
         ((exc_size*=-1*sign))
         if (( exc_size )); then
             ((total_exc_size+=exc_size))
@@ -2368,40 +2362,42 @@ clone() {
     cmd=""
     for ptn_pair in "${rsync_params[@]}"; do
         dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
-        mapfile -t entries < <(grep swap "$dstmnt$FSTAB_FILE" 2>> "$ERRFILE")
+        if [[ -f "$dstmnt$FSTAB_FILE" ]]; then
+            mapfile -t entries < <(grep swap "$dstmnt$FSTAB_FILE" 2>> "$ERRFILE")
 
-        for entry in "${entries[@]}"; do
-            # if swap entry is a file and not a partition
-            if [[ "${entry::1}" == "/" ]]; then
-                file="${entry%%+( *)}"  # get swap filename
-                file="$dstmnt${file:1}" # add dst dir and remove '/'
+            for entry in "${entries[@]}"; do
+                # if swap entry is a file and not a partition
+                if [[ "${entry::1}" == "/" ]]; then
+                    file="${entry%%+( *)}"  # get swap filename
+                    file="$dstmnt${file:1}" # add dst dir and remove '/'
 
-                # get swap file UUID and offset
-                UUID=$(findmnt -no UUID -T "$file")
-                ((size=$(filefrag -v "$file" | \
-                         awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
+                    # get swap file UUID and offset
+                    UUID=$(findmnt -no UUID -T "$file")
+                    ((size=$(filefrag -v "$file" | \
+                            awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
 
-                cmds+=("[[ '$UUID' =~ ^[a-fA-F0-9][a-fA-F0-9-]+$ && \
-                           '$size' =~ ^[0-9]+$ && '$size' -gt 0 ]]")
-                        
-                UUID="$PREFIX_UUID$UUID"
-                buf="$PREFIX_OFFSET$size"
-                
-                # replace UUID and offset with that of dst in grub cfg default file
-                file="$dstmnt$GRUBDEF_FILE"
-                if [[ -f "$file" && -s "$file" && -r "$file" ]]; then
-                    cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
-                    cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
+                    cmds+=("[[ '$UUID' =~ ^[a-fA-F0-9][a-fA-F0-9-]+$ && \
+                            '$size' =~ ^[0-9]+$ && '$size' -gt 0 ]]")
+                            
+                    UUID="$PREFIX_UUID$UUID"
+                    buf="$PREFIX_OFFSET$size"
+                    
+                    # replace UUID and offset with that of dst in grub cfg 
+                    # default file
+                    file="$dstmnt$GRUBDEF_FILE"
+                    if [[ -f "$file" && -s "$file" && -r "$file" ]]; then
+                        cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
+                        cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
+                    fi
+
+                    # replace UUID and offset with that of dst in grub cfg files
+                    for file in "${grubcfg_files[@]}"; do
+                        cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
+                        cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
+                    done    
                 fi
-
-                # replace UUID and offset with that of dst in grub cfg files
-                for file in "${grubcfg_files[@]}"; do
-                    cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
-                    cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
-                done    
-            fi
-        done
-
+            done
+        fi
         # if bios flag is set, get dst boot dir
         [[ $bios -ne 0 && -d "$dstmnt/grub" && -z "$dst_bootdir" ]] &&
             dst_bootdir="$dstmnt"
@@ -2633,7 +2629,7 @@ result() {
 
 declare -i err=0
 
-source "$SCRIPTDIR/$SCRIPTNAME"/lib-functions.sh && init $@
+source /usr/lib/"${SCRIPTNAME/.*}"-lib."${SCRIPTNAME/*.}" && init $@
 ((err=$?))
 readonly FILTERS_FILE FSTYPES_FILE
 

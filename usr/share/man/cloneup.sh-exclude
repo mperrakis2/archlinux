@@ -1,15 +1,15 @@
 .\" Manpage for exclude.conf used by cloneup.sh.
-.TH CLONEUP-EXCLUDE.CONF 5 "30 September 2024" "1.0" "File Formats"
+.TH CLONEUP.SH-EXCLUDE.CONF 5 "30 September 2024" "1.0" "File Formats"
 .SH NAME
-cloneup-exclude.conf \- configuration file for \fBcloneup\fR(1) that contains files/dirs to be excluded from cloning
+cloneup.sh-exclude.conf \- configuration file for \fBcloneup.sh\fR(1) that contains files/dirs to be excluded from cloning
 .SH SYNOPSIS
-/etc/cloneup/exclude.conf, /etc/cloneup.d/exclude.conf, ~/.config/cloneup/exclude.conf, <custom pathname>
+/etc/cloneup.sh.d/exclude.conf, /etc/cloneup.sh.d/conf.d/exclude.conf, ~/.config/cloneup.sh.d/exclude.conf, <custom pathname>
 .SH DESCRIPTION
-The default directory of the \fBexclude.conf\fR configuration file is \fI/etc/cloneup/\fR. The file should never be deleted and if the default entries need to be modified it is best to create a new one under \fI/etc/cloneup.d/\fR and/or \fI~/.config/cloneup/\fR but the same filename has to be used. A file under \fI/etc/cloneup.d/\fR modifies (overrides) the default one and one under \fI~/.config/cloneup/\fR replaces it.
+The default directory of the \fBexclude.conf\fR configuration file is \fI/etc/cloneup.sh.d/\fR. The file should never be deleted and if the default entries need to be modified it is best to create a new one under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR but the same filename has to be used. A file under \fI/etc/cloneup.sh.d/conf.d/\fR modifies (overrides) the default one and one under \fI~/.config/cloneup.sh.d/\fR replaces it.
 
-\fBcloneup\fR(1) uses the configuration file under \fI~/.config/cloneup/\fR if not run under its directory (usually \fI/usr/sbin/\fR).
+\fBcloneup.sh\fR(1) uses the configuration file under \fI~/.config/cloneup.sh.d/\fR if not run under its directory (usually \fI/usr/sbin/\fR).
 
-A configuration file can also be provided when executing \fBcloneup\fR(1) with the \fB-e\fR or \fB--exclude\fR command line option. It takes priority over any other file and any valid pathname can be used (not restricted to \fBexclude.conf\fR).
+A configuration file can also be provided when executing \fBcloneup.sh\fR(1) with the \fB-e\fR or \fB--exclude\fR command line option. It takes priority over any other file and any valid pathname can be used (not restricted to \fBexclude.conf\fR).
 .SH SIMPLE EXAMPLES
 .I GENERAL USE
     -/home/user/Music/* (exclude all files and directories under /home/user/Music/)
@@ -151,4 +151,4 @@ A leading sign ('-' or '+') is followed by a '/' and an optional <path> which ca
 .SH STANDARDS
 The system files excluded from cloning are based on the Filesystem Hierarchy Standard (FHS).
 .SH SEE ALSO
-\fBcloneup\fR(1)
+\fBcloneup.sh\fR(1)

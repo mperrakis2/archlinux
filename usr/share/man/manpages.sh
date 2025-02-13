@@ -10,9 +10,6 @@ readonly SCRIPTDIR
 # get entries under script dir
 mapfile -t entries < <(grep --exclude=*.sh "TH" "$SCRIPTDIR"/*)
 
-SCRIPTNAME=$(basename $(dirname "$SCRIPTDIR"))
-readonly SCRIPTNAME
-
 readonly MPDIR="/usr/share/man/"    # man pages dir
 for entry in "${entries[@]}"; do
     file="${entry%%:*}"             # get man page filename
@@ -22,8 +19,8 @@ for entry in "${entries[@]}"; do
     mkdir -p "$MPDIR"/man$n/        # make dir for man page
 
     # add correct extention to man page file name
-    if [[ "${file##/*/}" == "$SCRIPTNAME" ]]; then
-        entry="$MPDIR/man$n/${file##/*/}.$n"
+    if [[ -f /usr/sbin/"${file##/*/}".sh ]]; then
+        entry="$MPDIR/man$n/${file##/*/}.sh.$n"
     else
         entry="$MPDIR/man$n/${file##/*/}.conf.$n"
     fi
