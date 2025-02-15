@@ -9,24 +9,26 @@ print_helpmsg() {
 usage: $SCRIPTNAME.sh [OPTION]...
 clone one drive to another using rsync(1)
 
--d|--dst <dst_drive>       : destination drive in the form /dev/<drv>, e.g. /dev/sdb
-                             must be combined with '-s|--src' option
--e|--exclude <exclude_file>: pathname of custom conf file that contains files/dirs
-                             to be excluded from cloning
--f|--fstypes <fstypes_file>: pathname of custom conf file that contains the commands
-                             to format various filesystems (don't use this unless
-                             you really know what you are doing)
--h|--help                  : display this help and exit
--r|--dry-run               : display commands but don't execute them
--s|--src <src_drive>       : source drive in the form /dev/<drv>, e.g. /dev/sda
-                             must be combined with '-d|--dst' option
+-d, --dst <dst_drive>        destination drive, e.g. /dev/sdb
+                             must be combined with '-s, --src' option
+-e, --exclude <exclude_file> custom conf file that contains files/dirs to be
+                             excluded from cloning
+-f, --fstypes <fstypes_file> conf file that contains the commands to format
+                             various filesystems (don't use this unless you
+                             really know what are doing)
+-h, --help                   display this help and exit
+-r, --dry-run                display commands but don't execute them
+-s, --src <src_drive>        source drive, e.g. /dev/sda
+                             must be combined with '-d, --dst' option
 
-if '-s' and '-d' are omitted the script will ask for source and destination drives
+if '-s' and '-d' are omitted a user friendly list of drives is displayed and
+user input is by source and destination drive number
 
 if '-e' or '-f' is omitted the conf file is read from:
-    * ~/$LCL_CFG_DIR/ if it exists and the script is not run under its own
-      directory (usually /usr/sbin/)
-    * $DEF_CFG_DIR/ and $OVR_CFG_DIR/ (if it exists) in all other cases
+    * ~/$LCL_CFG_DIR/ if it exists and the script is not run under its
+      own directory (usually /usr/sbin/)
+    * $DEF_CFG_DIR/ and $OVR_CFG_DIR/ (if it exists) in all
+      other cases
 
 for more info see $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5)
 helpmsg
