@@ -6,16 +6,16 @@ readonly LCL_CFG_DIR=".config/$SCRIPTNAME.d"
 
 print_helpmsg() {
         cat << helpmsg
-usage: $SCRIPTNAME.sh [OPTION]...
+usage: $SCRIPTNAME [OPTION]...
 clone one drive to another using rsync(1)
 
 -d, --dst <dst_drive>        destination drive, e.g. /dev/sdb
                              must be combined with '-s, --src' option
--e, --exclude <exclude_file> custom conf file that contains files/dirs to be
-                             excluded from cloning
--f, --fstypes <fstypes_file> conf file that contains the commands to format
-                             various filesystems (don't use this unless you
-                             really know what are doing)
+-e, --exclude <exclude_file> pathname of custom conf file that contains
+                             files/dirs to be excluded from cloning
+-f, --fstypes <fstypes_file> pathname of custom conf file that contains the
+                             commands to format various filesystems (don't use
+                             this unless you really know what are doing)
 -h, --help                   display this help and exit
 -r, --dry-run                display commands but don't execute them
 -s, --src <src_drive>        source drive, e.g. /dev/sda
