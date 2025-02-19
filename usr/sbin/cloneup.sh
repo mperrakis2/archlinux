@@ -1037,7 +1037,12 @@ calc_drvspace() {
             if [[ ! "$fstype" =~ swap && ! "$flags" =~ bios ]]; then
                 # mount src partition
                 mount_ptn "$srcdrv" $ptn_num srcmnt
-                ((err=$?)); ((err)) && return $err
+                ((err=$?))
+                if ((err)); then
+                    # unmount src partitions that were mounted
+                    for ptn in "${mount_points[@]}"; do umount_ptn "$ptn"; done
+                    return $err
+                fi
 
                 mount_points+=("$srcmnt")
                 
@@ -1058,7 +1063,8 @@ calc_drvspace() {
     
     # get the total data size on src
     src_ptn_data=()
-    readarray -t src_ptn_data < <(df -ak --sync --output=source,used,pcent | grep "$srcdrv")
+    readarray -t src_ptn_data < <(df -ak --sync --output=source,used,pcent | \
+                                  grep "$srcdrv" | sort -u)
 
     local -i used
     local -i CONVERSION_UNIT=1024
@@ -1082,6 +1088,7 @@ calc_drvspace() {
         src_ptn_data[i]=$(echo "${src_ptn_data[i]}" | xargs)
         source=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
         (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') * CONVERSION_UNIT ))
+        (( ptn_num = 0 ))
         for ptn_num in "${!esp_ptn_nums[@]}"; do
             if [[ "$source" == "$srcdrv$SP$ptn_num" ]]; then
                 pcent=0
@@ -1632,14 +1639,14 @@ create_partitions() {
     local -a upartitions
 
     # get partitions to unmount on dst
-    mapfile -t upartitions < <(findmnt -An -o source | grep "$dstdrv")
+    mapfile -t upartitions < <(findmnt -An -o SOURCE | grep "$dstdrv")
     
-    local -a cmds # contains cmds to create partitions on dst
     local -i i
+    local -a cmds=() # contains cmds to create partitions on dst
 
     # create cmds to unmount partitions on dst
     for i in "${!upartitions[@]}"; do
-        cmds+=("umount '${upartitions[i]}'")
+        umount_cmd "${upartitions[i]}" cmds
     done
 
     local -i SRC_DRV_SIZE
@@ -1816,8 +1823,8 @@ create_partitions() {
                 cmd+="primary $start $end"
                 cmds+=("$cmd")
             fi
-            [[ "$name" && "$ptn_tbl" != "msdos" ]] && 
-                cmds+=("parted --script --fix '$dstdrv' name $ptn_cnt '$name'")
+            [[ "$name" && "$ptn_tbl" != "msdos" ]] &&
+                cmds+=("parted --script --fix '$dstdrv' name $ptn_cnt \"$name\"")
 
             # check partition alignment
             cmds+=("parted --script --fix '$dstdrv' align-check opt $ptn_cnt")
@@ -1990,8 +1997,6 @@ clone() {
     local -i bios=0
     local -i err
 
-    rsync_params=()
-    
     # get mount points for src and dst partitions
     for ptn in "${partitions[@]}"; do
         # extract drive number to find if partition is src or dst
@@ -2215,11 +2220,11 @@ clone() {
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
     files=($(dst_pathname "$FSTAB_FILE" "${rsync_params[@]}"))
+    cmds=()
     if [[ "${files[*]}" ]]; then
         echo -e "\tCreating commands to make destination drive bootable..."
         echo -e "\tCreating command to update fstab file on destination drive..."
 
-        cmds=()
         cmd="sed -i "
         
         # replace src partition data on dst fstab file for all partitions but swap
@@ -2545,8 +2550,6 @@ cleanup() {
             (( ! err )) && ((err=tmp))
         done
 
-        rsync_params=()
-        
         echo -e "\tIgnore signal to disable/enable system sleep (suspend/hibernate)..."
 
         # ignore sig USR1 in order not to mask/unmask system sleep

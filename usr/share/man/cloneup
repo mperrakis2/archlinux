@@ -68,6 +68,8 @@ If multiple clone sessions are executed in parallel a log directory per session 
 .SH LIMITS
 \fBcloneup.sh\fR must be run with root privileges.
 
+Source and destination drives need not be mounted but should not be mounted more than once and must have the right permissions, i.e. read for source and read/write for destination.
+
 \fBcloneup.sh\fR must be run on a system that uses \fBsystemd\fR(1) as init.
 
 The source drive must not use Logical Volume Management (\fBlvm\fR(8)).

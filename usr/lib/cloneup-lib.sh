@@ -973,7 +973,7 @@ mount_ptn() {
     local p
     local UUID
     local mnt_dir
-    local fstype
+    local -a cmds=()
     local -i is_mnt=0
     
     if [[ "$1" == "$srcdrv" ]]; then p="$SP"; else p="$DP"; fi
@@ -981,53 +981,38 @@ mount_ptn() {
     # get partition UUID
     UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\([^\"]*\)\"")
 
-    mnt_dir=$(lsblk -no MOUNTPOINT "$1$p$2") # get partition mount directory
-    fstype=$(lsblk -no FSTYPE "$1$p$2")      # get partition filesystem
+    mnt_dir=$(findmnt -no TARGET "$1$p$2") # get dir for mounted partition
 
-    # For reasons unknown if a ntfs filesystem is mounted already by the system
-    # errors are produced during cloning. Therefore, it has to be unmounted and
-    # then re-mounted.
-    if [[ "$mnt_dir" && "$fstype" =~ ntfs ]]; then
-        umount "$mnt_dir"
-        mnt_dir=""
-    fi
-
-    # if partition not mounted, mount it based on its partition UUID under
-    # /media/<UUID> or /mnt/<UUID>
+    # mount the partition if not mounted
     if [[ -z "$mnt_dir" ]]; then
-        local mnt_pnt
-        
-        mnt_pnt=$(lsblk -nr --nodeps --output HOTPLUG "$dstdrv" 2>> "$ERRFILE")
-        if [[ "$mnt_pnt" == 1 ]]; then mnt_pnt=/media; else mnt_pnt=/mnt; fi
+        fstype=$(lsblk -no FSTYPE "$1$p$2") # get partition filesystem
 
-        mnt_dir=$mnt_pnt/$UUID # get new mount dir
-        
-        local -a cmds=()
-
-        # create command to create directory for mounting if one does not exist
-        [[ ! -d "$mnt_dir" ]] && cmds+=("mkdir -p $mnt_dir")
-
-        # if partition has one of the following filesystems or a 'dos' partition
-        # table type, create cmd to mount with 'uid' and 'gid'
-        if [[ "ntfs udf hfsplus" =~ "$fstype" || \
-              "$(lsblk -no PTTYPE "$1$p$2")" =~ dos ]]
+        # if drive has ('dos' partition table and FAT) or UDF, create cmd to
+        # mount with 'uid' and 'gid' options
+        if [[ ("$(lsblk -no PTTYPE "$1$p$2")" =~ dos && "$fstype" =~ fat) || \
+              "$fstype" =~ udf ]]
         then
             local uid
             local gid
 
-            get_id U uid
-            get_id G gid
-            cmds+=("mount -o uid=$uid,gid=$gid '$1$p$2' $mnt_dir")        
+            get_id u uid
+            get_id g gid
+
+            mnt_dir=/run/media/$(logname)/$UUID
+            cmds+=("mkdir -p '$mnt_dir'")
+            cmds+=("mount -o uid=$uid,gid=$gid '$1$p$2' '$mnt_dir'")
         else
-            cmds+=("mount '$1$p$2' $mnt_dir")
+            cmds+=("udisksctl mount -b '$1$p$2' --no-user-interaction")        
         fi
-        
+
         local -i err
 
         # execute commands created above
         exec_cmds "${cmds[@]}"
         ((err=$?)); ((err)) && return $err
-        
+
+        [[ -z "$mnt_dir" ]] && 
+            mnt_dir=$(findmnt -no TARGET "$1$p$2") # get dir for mounted partition
         ((is_mnt=1))
     fi
 
@@ -1049,28 +1034,56 @@ umount_ptn() {
     (( $# != 1 )) &&
         exit_with_stack "\nOne param required: partition data. Exiting."
 
-    local -i is_mnt
+    local is_mnt
     local -i field_num
     local -a cmds=()
+    local ptn
 
     # iterate over the booleans described in the comment above
     for field_num in $MIS_MNT $((MIS_MNT+MDST)); do
-        (( is_mnt=$(( $(field "$1" $field_num) )) ))
+        is_mnt=$(field "$1" "$field_num")
         
         # if partition was mounted, unmount it
-        if (( is_mnt )); then
-            dirname=$(field "$1" "$((field_num-1))") # extract directory name
-
-            # create command to unmount partition
-            cmds+=("umount '$dirname'")
-
-            # create cmd to remove the directory the partition was mounted on
-            cmds+=("rm -rf '$dirname'")
+        if [[ "$is_mnt" == 1 ]]; then
+            ptn=$(field "$1" "$((field_num-2))") # extract partition name
+            umount_cmd "$ptn" cmds # get command to unmount partition
         fi
     done
 
     # execute commands created above
     exec_cmds "${cmds[@]}"
+}
+
+# add command to unmount a partition
+# $1    : str, partition, e.g. /dev/sda1
+# $2    : ref to str array, the cmds array
+# stdout: the cmd to unmount the partition
+umount_cmd() {
+    if (( $# != 2 )); then
+        local msg="\nTwo params required: partition and ref to cmds array. "
+
+        msg+="Exiting."
+        exit_with_stack "$msg"
+    fi
+
+    local -n ref="$2"
+    local mnt_dir
+    local fstype
+
+
+    fstype=$(lsblk -no FSTYPE "$1") # get partition filesystem
+
+    # add command to unmount partition
+    # if drive has 'dos' partition table and FAR, create cmd to mount with
+    # 'uid' and 'gid' options
+    if [[ "$(lsblk -no PTTYPE "$1")" =~ dos && "$fstype" =~ fat ]]; then
+        mnt_dir=$(findmnt -no TARGET "$1")
+
+        ref+=("umount '$mnt_dir'")
+        ref+=("rm -fd '$mnt_dir'")
+    else
+        ref+=("udisksctl unmount -b '$1' --no-user-interaction")
+    fi
 }
 
 # get partition size
@@ -1459,10 +1472,10 @@ gcd() {
 }
 
 # get user or group id
-# $1: str, valid values: 'U' or 'G'
+# $1: str, valid values: 'u' or 'g'
 # $2: ref to int, user or group id
 get_id() {
-    if [[ $# -ne 2 || ! "$1" =~ ^[UG]$ ]]; then
+    if [[ $# -ne 2 || ! "${1,,}" =~ ^[ug]$ ]]; then
         local msg="\nTwo params required: a string literal ('U' or 'G') "
         
         msg+="and a reference to user or group id. Exiting."
@@ -1471,8 +1484,7 @@ get_id() {
     
     local -n ref="$2"
 
-    ref=$(env | grep SUDO_"$1"ID)
-    ref=$(expr "$ref" : "^SUDO_${1}ID=\([0-9]\+\)")
+    ref=$(id -"${1,,}" $(logname))
 }
 
 # $1: str, an error message
