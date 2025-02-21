@@ -2642,9 +2642,9 @@ readonly FILTERS_FILE FSTYPES_FILE
         user_input        &&
         setup_env         &&
         populate_arrays   && # create data structures used for cloning
+        mask_system_sleep &&
         calc_drvspace     && # check if src fits on dst
         create_partitions && # create partitions on dst if different than src
-        mask_system_sleep &&
         clone
         ((err=$?))
     done
