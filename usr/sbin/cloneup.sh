@@ -2329,19 +2329,40 @@ clone() {
 
     # update grubenv on dst
     for file in "${files[@]}"; do
+        UUID=""
+        buf=""
         for ptn_pair in "${rsync_params[@]}"; do
-            UUID=$(field "$ptn_pair" "$MUUID")
-
             # get entry if it exists in grubenv file on dst
-            entry=$(grep "$UUID" "$file" 2>> "$ERRFILE")
-            if (( $? == 0 )); then
-                name="${entry%=*}" # name of entry
-                val="${entry#*=}"  # value of entry
+            if [[ -z "$UUID" ]]; then
+                UUID=$(field "$ptn_pair" "$MUUID")
+                entry=$(grep "$UUID" "$file" 2> /dev/null)
+                if (( $? == 0 )); then
+                    name="${entry%=*}" # name of entry
+                    val="${entry#*=}"  # value of entry
 
-                # replace src with dst UUID
-                val="${val/$UUID/$(field "$ptn_pair" "$((MUUID+MDST))")}"
-                cmds+=("grub-editenv '$file' set '$name'='$val'")
-                break
+                    # replace src with dst UUID
+                    UUID="${val/$UUID/$(field "$ptn_pair" "$((MUUID+MDST))")}"
+                else
+                    UUID=""
+                fi
+            fi
+
+            # get dir where grub is installed on dst
+            dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+            [[ -z "$buf" && -x "$dstmnt"/usr/bin/grub-editenv ]] &&
+                buf="$ptn_pair"
+
+            # if boot & root partition on dst belong to the same os, create cmd
+            # to update grubenv conf file
+            if [[ "$UUID" && "$buf" ]]; then
+                dstmnt=$(field "$buf" "$((MDIR+MDST))")
+                if grep "$UUID" "$dstmnt"/etc/"$FSTAB_FILE" 2> /dev/null; then
+                    cmd="$dstmnt"/usr/bin/grub-editenv
+                    cmds+=("$cmd '$file' set '$name'='$UUID'")
+                    break
+                else
+                    buf=""
+                fi
             fi
         done
     done
@@ -2403,6 +2424,7 @@ clone() {
                 fi
             done
         fi
+
         # if bios flag is set, get dst boot dir
         [[ $bios -ne 0 && -d "$dstmnt/grub" && -z "$dst_bootdir" ]] &&
             dst_bootdir="$dstmnt"
@@ -2423,7 +2445,6 @@ clone() {
                 cmds+=("010 $cmd --target=i386-pc --boot-directory='$dst_bootdir' \
                                  --recheck '$dstdrv'")
                 ((bios=0)) # install grub bootloader only once
-                break
             fi
         fi
         
