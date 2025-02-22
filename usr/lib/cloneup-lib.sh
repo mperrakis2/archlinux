@@ -1070,7 +1070,6 @@ umount_cmd() {
     local mnt_dir
     local fstype
 
-
     fstype=$(lsblk -no FSTYPE "$1") # get partition filesystem
 
     # add command to unmount partition
@@ -1082,7 +1081,7 @@ umount_cmd() {
         ref+=("umount '$mnt_dir'")
         ref+=("rm -fd '$mnt_dir'")
     else
-        ref+=("udisksctl unmount -b '$1' --no-user-interaction")
+        ref+=("udisksctl unmount -b '$1' --force --no-user-interaction")
     fi
 }
 
