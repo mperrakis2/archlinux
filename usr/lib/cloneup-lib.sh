@@ -1250,9 +1250,9 @@ rm_lba_flag() {
 # stdout: array of pathnames 
 dst_pathname() {   
     if (( $# < 2 )); then
-        local msg="\nAt least two params required: filename and rsync "
+        local msg="\nAt least two params required: filename and rsync params. "
         
-        msg+="params. Exiting."
+        msg+="Exiting."
         exit_with_stack "$msg"
     fi
     

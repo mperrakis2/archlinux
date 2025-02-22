@@ -2040,7 +2040,7 @@ clone() {
 
                 # pair src and dst mount points so that they can be used as src
                 # and dst parameters in rsync
-                rsync_params+=("$srcmnt$dstmnt")
+                rsync_params+=("$srcmnt$dstmnt$flags")
             fi
         fi
     done
@@ -2329,11 +2329,10 @@ clone() {
 
     # update grubenv on dst
     for file in "${files[@]}"; do
-        UUID=""
-        buf=""
+        val=""
         for ptn_pair in "${rsync_params[@]}"; do
             # get entry if it exists in grubenv file on dst
-            if [[ -z "$UUID" ]]; then
+            if [[ -z "$val" ]]; then
                 UUID=$(field "$ptn_pair" "$MUUID")
                 entry=$(grep "$UUID" "$file" 2> /dev/null)
                 if (( $? == 0 )); then
@@ -2341,27 +2340,14 @@ clone() {
                     val="${entry#*=}"  # value of entry
 
                     # replace src with dst UUID
-                    UUID="${val/$UUID/$(field "$ptn_pair" "$((MUUID+MDST))")}"
-                else
-                    UUID=""
-                fi
-            fi
+                    val="${val/$UUID/$(field "$ptn_pair" "$((MUUID+MDST))")}"
 
-            # get dir where grub is installed on dst
-            dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
-            [[ -z "$buf" && -x "$dstmnt"/usr/bin/grub-editenv ]] &&
-                buf="$ptn_pair"
-
-            # if boot & root partition on dst belong to the same os, create cmd
-            # to update grubenv conf file
-            if [[ "$UUID" && "$buf" ]]; then
-                dstmnt=$(field "$buf" "$((MDIR+MDST))")
-                if grep "$UUID" "$dstmnt"/etc/"$FSTAB_FILE" 2> /dev/null; then
+                    dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
                     cmd="$dstmnt"/usr/bin/grub-editenv
-                    cmds+=("$cmd '$file' set '$name'='$UUID'")
+                    cmds+=("$cmd '$file' set '$name'='$val'")
                     break
                 else
-                    buf=""
+                    val=""
                 fi
             fi
         done
@@ -2403,7 +2389,7 @@ clone() {
                             awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
 
                     cmds+=("[[ '$UUID' =~ ^[a-fA-F0-9][a-fA-F0-9-]+$ && \
-                            '$size' =~ ^[0-9]+$ && '$size' -gt 0 ]]")
+                               '$size' =~ ^[0-9]+$ && '$size' -gt 0 ]]")
                             
                     UUID="$PREFIX_UUID$UUID"
                     buf="$PREFIX_OFFSET$size"
@@ -2426,25 +2412,38 @@ clone() {
         fi
 
         # if bios flag is set, get dst boot dir
-        [[ $bios -ne 0 && -d "$dstmnt/grub" && -z "$dst_bootdir" ]] &&
-            dst_bootdir="$dstmnt"
+        flags=$(field "$ptn_pair" "$((MUUID+MDST+1))")
+        if [[ $bios -ne 0 && -z "$dst_bootdir" && \
+              ("$flags" =~ boot || "$flags" =~ esp) ]]
+        then
+            dst_bootdir="$ptn_pair"
+        fi
 
         # if bios flag is set, install grub bootloader for non-UEFI (bios) system
         if (( bios )); then
-            [[ -z "$cmd" ]] &&
-                cmd=$(find "$dstmnt" -name grub-install) # grub installer pathname
-            if [[ "$cmd" && "$dst_bootdir" ]]; then
-                echo -e "\tCreating command to install grub bootloader on bios"\
-                        "and boot partition on destination drive..."
+            if [[ -z "$cmd" && -x "$dstmnt"/usr/bin/grub-install ]]; then
+                cmd="$dstmnt"/usr/bin/grub-install # grub installer pathname
+                buf="$dstmnt"
+            fi
 
-                # the following three numbers at the beginning of the command
-                # are parsed as follows:
-                # 0: don't run in the background
-                # 1: redirect stdout
-                # 0: don't redirect stderr
-                cmds+=("010 $cmd --target=i386-pc --boot-directory='$dst_bootdir' \
-                                 --recheck '$dstdrv'")
-                ((bios=0)) # install grub bootloader only once
+            if [[ "$dst_bootdir" && "$cmd" ]]; then
+                UUID=$(field "$dst_bootdir" "$MUUID")
+                if grep -q "$UUID" "$buf/$FSTAB_FILE" 2> /dev/null; then
+                    dst_bootdir=$(field "$dst_bootdir" "$((MDIR+MDST))")
+
+                    echo -e "\tCreating command to install grub bootloader on"\
+                            "bios and boot partition on destination drive..."
+
+                    # the following three numbers at the beginning of the cmd
+                    # are parsed as follows:
+                    # 0: don't run in the background
+                    # 1: redirect stdout
+                    # 0: don't redirect stderr
+                    cmds+=("010 $cmd --target=i386-pc \
+                                     --boot-directory='$dst_bootdir' \
+                                     --recheck '$dstdrv'")
+                    ((bios=0)) # install grub bootloader only once
+                fi
             fi
         fi
         
