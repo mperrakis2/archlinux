@@ -1004,6 +1004,84 @@ populate_arrays() {
     echo
 }
 
+# mask system sleep (suspend/hibernate) if it is unmasked
+# return: 0 on success, 1 if parameter error else the error code of the command
+#         that failed
+mask_system_sleep() {
+    valid_opt_param "$1" # validate parameter
+    
+    # some other clone process has completed or was interrupted and sent signal
+    # USR1 so that this process can handle masking/unmasking system sleep 
+    if (( $# == 1 )); then
+        # sync and restore stdout and stderr to the terminal
+        sync
+        exec &> /dev/tty
+    fi  
+
+    local -i fd
+
+    exec {fd}>>"$SLPFILE" # append to the system sleep lock file
+    
+    # critical section follows
+    flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
+
+    local -i err=$?
+
+    if (( ! err )); then
+        local SEP="//"
+        readonly SEP
+        
+        # mask system sleep if no other clone process already has
+        if [[ ! -s "$SLPFILE" ]]; then
+            local -a cmds
+
+            # add cmds to mask system sleep
+            system_sleep cmds "mask"
+            if (( ${#cmds[@]} )); then
+                if (( $# == 1 )); then
+                    cecho -e "\n\nReceived signal from another $SCRIPTNAME"\
+                             "process to disable/enable system sleep"\
+                             "(suspend/hibernate)..."
+                else
+                    echo "Disabling system sleep (suspend/hibernate)..."
+                fi
+                
+                cmds+=("chmod go=+r $SLPFILE")
+                exec_cmds "${cmds[@]}"
+                ((err=$?))
+
+                # add entry to system sleep lock file
+                if (( ! err )); then
+                    echo "$$_$OPTIONS_S" >&$fd
+                    echo -n "$SLP_CFG_MNT_DIR $SEP " >&$fd
+                    echo "${rsync_filters[$SLP_CFG_MNT_DIR]}" >&$fd
+                fi
+            fi
+        else
+            # add rsync filters to exclude system sleep target files
+            system_sleep "filter"
+        fi
+
+        (( ! err )) &&
+            trap_signals "mask_system_sleep 1" USR1 # signal handler for USR1
+
+        flock -u $fd # release lock
+    fi
+    exec {fd}>&- # close sleep lock file
+    
+    (( $# == 1 )) &&
+        if (( err )); then
+            cecho -e "${RED}Disabling system sleep (suspend/hibernate) was"\
+                     "${RED}unsuccessful.\n"
+            cleanup 1
+        else
+            cecho -e "${GREEN}System sleep (suspend/hibernate) was disabled"\
+                     "${GREEN}successfully.\n"
+        fi
+
+    return $err
+}
+
 # calculate available drive space on dst and subtract any exlcuded dirs/files in
 # case dst_size < src_size
 # return: 0 on success else 1
@@ -1026,14 +1104,14 @@ calc_drvspace() {
         ((drv_num=$(field "$ptn" "$PDRV_NUM")))
         fstype=$(field "$ptn" "$PFSTYPE")           # extract filesystem type
         
-        if (( drv_num == OPTIONS[0] )); then     # if is src partition
+        if (( drv_num == OPTIONS[0] )); then        # if is src partition
             ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
             flags=$(field "$ptn" "$PFLAGS")         # extract flags
             
             # mount all src partitions other than swap and bios_grub
             if [[ ! "$fstype" =~ swap && ! "$flags" =~ bios ]]; then
                 # mount src partition
-                mount_ptn "$srcdrv" $ptn_num srcmnt
+                mount_ptn "$srcdrv$SP"$ptn_num srcmnt
                 ((err=$?))
                 if ((err)); then
                     # unmount src partitions that were mounted
@@ -1893,84 +1971,6 @@ create_partitions() {
     fi
 }
 
-# mask system sleep (suspend/hibernate) if it is unmasked
-# return: 0 on success, 1 if parameter error else the error code of the command
-#         that failed
-mask_system_sleep() {
-    valid_opt_param "$1" # validate parameter
-    
-    # some other clone process has completed or was interrupted and sent signal
-    # USR1 so that this process can handle masking/unmasking system sleep 
-    if (( $# == 1 )); then
-        # sync and restore stdout and stderr to the terminal
-        sync
-        exec &> /dev/tty
-    fi  
-
-    local -i fd
-
-    exec {fd}>>"$SLPFILE" # append to the system sleep lock file
-    
-    # critical section follows
-    flock $fd >> "$LOGFILE" 2>> "$ERRFILE"
-
-    local -i err=$?
-
-    if (( ! err )); then
-        local SEP="//"
-        readonly SEP
-        
-        # mask system sleep if no other clone process already has
-        if [[ ! -s "$SLPFILE" ]]; then
-            local -a cmds
-
-            # add cmds to mask system sleep
-            system_sleep cmds "mask"
-            if (( ${#cmds[@]} )); then
-                if (( $# == 1 )); then
-                    cecho -e "\n\nReceived signal from another $SCRIPTNAME"\
-                             "process to disable/enable system sleep"\
-                             "(suspend/hibernate)..."
-                else
-                    echo "Disabling system sleep (suspend/hibernate)..."
-                fi
-                
-                cmds+=("chmod go=+r $SLPFILE")
-                exec_cmds "${cmds[@]}"
-                ((err=$?))
-
-                # add entry to system sleep lock file
-                if (( ! err )); then
-                    echo "$$_$OPTIONS_S" >&$fd
-                    echo -n "$SLP_CFG_MNT_DIR $SEP " >&$fd
-                    echo "${rsync_filters[$SLP_CFG_MNT_DIR]}" >&$fd
-                fi
-            fi
-        else
-            # add rsync filters to exclude system sleep target files
-            system_sleep "filter"
-        fi
-
-        (( ! err )) &&
-            trap_signals "mask_system_sleep 1" USR1 # signal handler for USR1
-
-        flock -u $fd # release lock
-    fi
-    exec {fd}>&- # close sleep lock file
-    
-    (( $# == 1 )) &&
-        if (( err )); then
-            cecho -e "${RED}Disabling system sleep (suspend/hibernate) was"\
-                     "${RED}unsuccessful.\n"
-            cleanup 1
-        else
-            cecho -e "${GREEN}System sleep (suspend/hibernate) was disabled"\
-                     "${GREEN}successfully.\n"
-        fi
-
-    return $err
-}
-
 # find mount points for src and dst partitions and then clone files for each
 # dst partition
 # return: 0 on success, 1 if a function failed else the error code of the
@@ -2028,11 +2028,11 @@ clone() {
                 ((bios=1)) # set flag if bios partition
             else
                 # mount src partition
-                mount_ptn "$srcdrv" "$ptn_num" srcmnt
+                mount_ptn "$srcdrv$SP$ptn_num" srcmnt
                 ((err=$?)); ((err)) && return $err
 
                 # mount dst partition
-                mount_ptn "$dstdrv" "$ptn_cnt" dstmnt
+                mount_ptn "$dstdrv$DP$ptn_cnt" dstmnt
                 ((err=$?)); ((err)) && return $err
 
                 # pair src and dst mount points so that they can be used as src
@@ -2195,7 +2195,8 @@ clone() {
         # volume, executing a 'ls' command on the mounted volume produces the
         # following message "ls: '<mount_dir>': No data available" yet the
         # contents are displayed correctly.
-        [[ "$(findmnt -no FSTYPE "$srcmnt")" =~ hfs ]] && flags="${flags:0:-1}"
+        [[ "$(findmnt -no FSTYPE "$srcmnt" 2>> "$ERRFILE")" =~ hfs ]] &&
+            flags="${flags:0:-1}"
 
         # create rsync command; the following two numbers at the beginning of the 
         # command are parsed as follows:
@@ -2308,7 +2309,8 @@ clone() {
         # multiboot
         files=($(dst_pathname "$GRUBDEF_FILE" "${rsync_params[@]}"))
         if [[ "${files[*]}" ]]; then
-            echo -e "\tCreating commands to update grub default file on destination drive..."
+            echo -e "\tCreating commands to update grub default file on"\
+                    "destination drive..."
 
             for file in "${files[@]}"; do
                 cmds+=("sed -i $buf '$file'")
@@ -2383,7 +2385,7 @@ clone() {
                     file="$dstmnt${file:1}" # add dst dir and remove '/'
 
                     # get swap file UUID and offset
-                    UUID=$(findmnt -no UUID -T "$file")
+                    UUID=$(findmnt -no UUID -T "$file" 2>> "$ERRFILE")
                     ((size=$(filefrag -v "$file" | \
                             awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
 
@@ -2446,6 +2448,7 @@ clone() {
             fi
         fi
 
+        # if dst is not removable add shim efi boot entries if they don't exist
         if [[ "$removable" == 0 && ("$flags" =~ boot || "$flags" =~ esp)]]; then
             # get dst boot partition UUID
             UUID=$(field "$ptn_pair" "$((MUUID+MDST))")
@@ -2454,11 +2457,13 @@ clone() {
             UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
             UUID="${UUID//+(* )}" # extract partition UUID
             
-            # get boot entries (they contain 'EFI' string)
+            # get boot loader files (they contain 'EFI' string)
             mapfile -t entries < <(find "$dstmnt"/$EFI -name "*.$EFI")
 
             dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
             ptn_num=$(expr "$dstptn" : ".\+[[:alpha:]]\+\([[:digit:]]\+\)")
+
+            # iterate over boot loader files and add shim efi entry if necessary
             for entry in "${entries[@]}"; do
                 entry="${entry#"$dstmnt"}" # remove bootdir
                 
@@ -2538,7 +2543,7 @@ cleanup() {
         echo "Cleaning up..."
     fi
     
-    if grep ^$$ "$LCKFILE" &> /dev/null; then
+    if grep -q ^$$ "$LCKFILE" 2> /dev/null; then
         echo -e "\tIgnoring trapped cancel signals during cleanup..."
 
         # cleanup should not be interrupted by cancel signals in order to run

@@ -900,7 +900,7 @@ system_sleep() {
 
         for target in "${TARGETS[@]}"; do
             # check if target is masked
-            systemctl status "$target" | grep masked &> /dev/null
+            systemctl status "$target" | grep masked >> "$LOGFILE" 2>> "$ERRFILE"
             
             # if not masked get output of last pipe, i.e. grep
             if (( ${PIPESTATUS[-1]} )); then
@@ -958,15 +958,22 @@ system_sleep() {
 }
 
 # mount a src or dst partition
-# $1    : str, the device on which the partition exists
-# $2    : int, the partition number
-# $3    : ref to str, mount data
+# $1    : str, the partition
+# $2    : optional, ref to str, mount data
+# stdout: str, partition data in the format:
+#
+#         src_ptn:mnt_dir:bool:UUID:dst_ptn:mnt_dir:bool:UUID:
+#
+#         where bool: mounted or not
+#
+#         Example: /dev/sda1:/boot/efi:0:<UUID>:/dev/sdc1:/media/<UUID>:1:<UUID>:
+#
 # return: 0 on success else the error code of cmd that failed
 mount_ptn() {
-    if [[ $# -ne 3 || ! "$2" =~ ^[0-9]+$ || $2 -lt 1 ]]; then
-        local msg="\nThree params required: device, partition number and "
-        
-        msg+="ref to mount data. Exiting."
+    if (( $# < 1 || $# > 2)) || ! find "$1" >> "$LOGFILE" 2>> "$ERRFILE"; then
+        local msg="\nOne or two params required: str, valid partition and "
+
+        msg+="optional ref to str, mount data. Exiting."
         exit_with_stack "$msg"
     fi
     
@@ -976,20 +983,17 @@ mount_ptn() {
     local -a cmds=()
     local -i is_mnt=0
     
-    if [[ "$1" == "$srcdrv" ]]; then p="$SP"; else p="$DP"; fi
+    UUID=$(expr "$(blkid "$1")" : ".* UUID=\"\([^\"]*\)\"") # get partition UUID
 
-    # get partition UUID
-    UUID=$(expr "$(blkid "$1$p$2")" : ".* UUID=\"\([^\"]*\)\"")
-
-    mnt_dir=$(findmnt -no TARGET "$1$p$2") # get dir for mounted partition
+    mnt_dir=$(findmnt -no TARGET "$1") # get dir for mounted partition
 
     # mount the partition if not mounted
     if [[ -z "$mnt_dir" ]]; then
-        fstype=$(lsblk -no FSTYPE "$1$p$2") # get partition filesystem
+        fstype=$(lsblk -no FSTYPE "$1") # get partition filesystem
 
         # if drive has ('dos' partition table and FAT) or UDF, create cmd to
         # mount with 'uid' and 'gid' options
-        if [[ ("$(lsblk -no PTTYPE "$1$p$2")" =~ dos && "$fstype" =~ fat) || \
+        if [[ ("$(lsblk -no PTTYPE "$1")" =~ dos && "$fstype" =~ fat) || \
               "$fstype" =~ udf ]]
         then
             local uid
@@ -1000,9 +1004,9 @@ mount_ptn() {
 
             mnt_dir=/run/media/$(logname)/$UUID
             cmds+=("mkdir -p '$mnt_dir'")
-            cmds+=("mount -o uid=$uid,gid=$gid '$1$p$2' '$mnt_dir'")
+            cmds+=("mount -o uid=$uid,gid=$gid '$1' '$mnt_dir'")
         else
-            cmds+=("udisksctl mount -b '$1$p$2' --no-user-interaction")        
+            cmds+=("udisksctl mount -b '$1' --no-user-interaction")        
         fi
 
         local -i err
@@ -1011,25 +1015,21 @@ mount_ptn() {
         exec_cmds "${cmds[@]}"
         ((err=$?)); ((err)) && return $err
 
+        # get dir for mounted partition
         [[ -z "$mnt_dir" ]] && 
-            mnt_dir=$(findmnt -no TARGET "$1$p$2") # get dir for mounted partition
+            mnt_dir=$(findmnt -no TARGET "$1" 2>> "$ERRFILE")
         ((is_mnt=1))
     fi
 
     [[ $mnt_dir != "/" ]] && mnt_dir+="/"
 
-    local -n ref="$3"
+    local -n ref="$2"
 
-    ref="$1$p$2:$mnt_dir:$is_mnt:$UUID:"
+    ref="$1:$mnt_dir:$is_mnt:$UUID:"
 }
 
-# unmount a partition
-# $1: str, partition data in the format:
-#
-#     "src_ptn:mnt_dir:bool:UUID:dst_ptn:mnt_dir:bool:UUID:"
-#     where bool: mounted or not
-#
-#     Example: /dev/sda1:/boot/efi:0:<UUID>:/dev/sdc1:/media/<UUID>:1:<UUID>:
+# unmount partitions or create commands to unmount them
+# $1: str, partition data (see format in mount_ptn() function)
 umount_ptn() {
     (( $# != 1 )) &&
         exit_with_stack "\nOne param required: partition data. Exiting."
@@ -1055,14 +1055,13 @@ umount_ptn() {
 }
 
 # add command to unmount a partition
-# $1    : str, partition, e.g. /dev/sda1
-# $2    : ref to str array, the cmds array
-# stdout: the cmd to unmount the partition
+# $1: str, partition, e.g. /dev/sda1
+# $2: ref to str array, the cmds array
 umount_cmd() {
-    if (( $# != 2 )); then
-        local msg="\nTwo params required: partition and ref to cmds array. "
+    if (( $# != 2 )) || ! find "$1" >> "$LOGFILE" 2>> "$ERRFILE"; then
+        local msg="\nTwo params required: valid partition and ref to cmds "
 
-        msg+="Exiting."
+        msg+="array. Exiting."
         exit_with_stack "$msg"
     fi
 
@@ -1076,7 +1075,7 @@ umount_cmd() {
     # if drive has 'dos' partition table and FAR, create cmd to mount with
     # 'uid' and 'gid' options
     if [[ "$(lsblk -no PTTYPE "$1")" =~ dos && "$fstype" =~ fat ]]; then
-        mnt_dir=$(findmnt -no TARGET "$1")
+        mnt_dir=$(findmnt -no TARGET "$1" 2>> "$ERRFILE")
 
         ref+=("umount '$mnt_dir'")
         ref+=("rm -fd '$mnt_dir'")
@@ -1257,16 +1256,14 @@ dst_pathname() {
     
     local ptn_pair
     local -a rsync_params=("${@:2}") # get all params except first one
+    local file
     local -a pathnames=()
 
-    # iterate over partition data to find the file on dst
+    # iterate over partition data to add the file on dst
     for ptn_pair in "${rsync_params[@]}"; do
-        # check if dst file exists
-        if [[ -f "$(field "$ptn_pair" "$((MDIR+MDST))")/$1" && \
-              -s "$(field "$ptn_pair" "$((MDIR+MDST))")/$1" ]]; then
-            # get location of dst file
-            pathnames+=("$(field "$ptn_pair" "$((MDIR+MDST))")/$1")
-        fi
+        # add dst file if it exists
+        file=$(field "$ptn_pair" "$((MDIR+MDST))")/"$1"
+        [[ -f "$file" && -s "$file" ]] && pathnames+=("$file")
     done
 
     echo "${pathnames[@]}"
