@@ -142,11 +142,8 @@ readonly SPTN SUUID SDST
 # END
 # the variables above are field numbers used by the field() function
 
-BOOTDIR=$(bootctl -x) # get boot directory
-readonly BOOTDIR
-
 # get partition of boot directory
-BOOTPTN=$(df -ak --sync --output=source "$BOOTDIR" | tail -1)
+BOOTPTN=$(df -ak --sync --output=source "$(bootctl -x)" | tail -1)
 readonly BOOTPTN
 
 # global variable declarations
@@ -2353,23 +2350,25 @@ clone() {
         done
     done
 
-    local removable
-    removable=$(lsblk -nr --nodeps --output HOTPLUG "$dstdrv" 2>> "$ERRFILE")
-    [[ "$removable" != 0 ]] && ((removable=1))
-
-    local PREFIX_UUID="resume=UUID="
-    local RE_UUID="${PREFIX_UUID}[a-fA-F0-9-]\+"
-    local PREFIX_OFFSET="resume_offset="
-    local RE_OFFSET="${PREFIX_OFFSET}[0-9]\+"
-    readonly PREFIX_UUID RE_UUID PREFIX_OFFSET RE_OFFSET
-
-    local dst_bootdir=""
+    local all_entries
+    local removable=1
     local dstptn
     local EFI="[Ee][Ff][Ii]"
     local BOOT="[Bb][Oo][Oo][Tt]"
     local SHIM="[Ss][Hh][Ii][Mm]"
     readonly EFI BOOT SHIM
     local distro
+    local PREFIX_UUID="resume=UUID="
+    local RE_UUID="${PREFIX_UUID}[a-fA-F0-9-]\+"
+    local PREFIX_OFFSET="resume_offset="
+    local RE_OFFSET="${PREFIX_OFFSET}[0-9]\+"
+    readonly PREFIX_UUID RE_UUID PREFIX_OFFSET RE_OFFSET
+    local dst_bootdir=""
+
+    # if UEFI boot, get UEFI boot entries and check if dst is removable media
+    all_entries=$(efibootmgr 2>> "$ERRFILE")
+    (( $? == 0 )) &&
+        removable=$(lsblk -nr --nodeps --output HOTPLUG "$dstdrv" 2>> "$ERRFILE")
 
     cmd=""
     for ptn_pair in "${rsync_params[@]}"; do
@@ -2446,61 +2445,51 @@ clone() {
                 fi
             fi
         fi
-        
-        # if esp partition and UEFI boot is enabled, install UEFI boot
-        # entries if required
-        dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
-        for ptn_num in "${esp_ptn_nums[@]}"; do
-            if [[ "$dstptn" == "$dstdrv$DP$ptn_num" ]]; then
-                buf=$(efibootmgr 2>> "$ERRFILE")
-                ((err=$?))
-                if (( ! err && ! removable )); then
-                    echo
-                    # get dst boot partition UUID
-                    UUID=$(field "$ptn_pair" "$((MUUID+MDST))")
 
-                    # get dst boot partition UUID entry
-                    UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
-                    UUID="${UUID//+(* )}" # extract partition UUID
-                    
-                    # get boot entries (they contain 'EFI' string)
-                    mapfile -t entries < <(find "$BOOTDIR"/$EFI -name "*.$EFI")
+        if [[ "$removable" == 0 && ("$flags" =~ boot || "$flags" =~ esp)]]; then
+            # get dst boot partition UUID
+            UUID=$(field "$ptn_pair" "$((MUUID+MDST))")
 
-                    for entry in "${entries[@]}"; do
-                        entry="${entry#"$BOOTDIR"}" # remove bootdir
-                        
-                        # skip entries that contain '/BOOT/' (it's for removable
-                        # media) or not 'shim'
-                        [[ "$entry" =~ /[Bb][Oo]{2,2}[Tt]/ || \
-                           ! "$entry" =~ $SHIM ]] && 
-                            continue
+            # get dst boot partition UUID entry
+            UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
+            UUID="${UUID//+(* )}" # extract partition UUID
+            
+            # get boot entries (they contain 'EFI' string)
+            mapfile -t entries < <(find "$dstmnt"/$EFI -name "*.$EFI")
 
-                        # remove suffix up to and including last '/'
-                        distro="${entry%+(/*)}"
-                        
-                        # remove prefix up to and including last '/'
-                        distro="${distro##+(*/)}"
+            dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
+            ptn_num=$(expr "$dstptn" : ".\+[[:alpha:]]\+\([[:digit:]]\+\)")
+            for entry in "${entries[@]}"; do
+                entry="${entry#"$dstmnt"}" # remove bootdir
+                
+                # skip entries that contain '/BOOT/' (it's for removable media)
+                # or not 'shim'
+                [[ "$entry" =~ /$BOOT/ || ! "$entry" =~ $SHIM ]] && continue
 
-                        # if no shim boot entries for dst, add them
-                        entry="${entry//'/'/'\'}"
-                        if [[ ! "$buf" =~ .+$ptn_nums.+$UUID.+"$entry" ]]
-                        then
-                            echo -en "\tCreating command to add UEFI boot entry "
+                # remove suffix up to and including last '/'
+                distro="${entry%+(/*)}"
+                
+                # remove prefix up to and including last '/'
+                distro="${distro##+(*/)}"
 
-                            # separate line as $entry contains special characters
-                            # that echo -e above can't display
-                            echo "'$entry' ..."
+                entry="${entry//'/'/'\'}" # efi boot entries use '\'
 
-                            cmds+=("efibootmgr --create --disk '$dstdrv' \
-                                               --part $ptn_num \
-                                               --loader '$entry' \
-                                               --label 'shim-$distro' \
-                                               --unicode")
-                        fi
-                    done
+                # if no shim boot entries for dst, add them
+                if [[ ! "$all_entries" =~ .+$ptn_num.+$UUID.+"$entry" ]]; then
+                    echo -en "\tCreating command to add UEFI boot entry "
+
+                    # separate line as $entry contains special characters that
+                    # echo -e above can't display
+                    echo "'$entry' ..."
+
+                    cmds+=("efibootmgr --create --disk '$dstdrv' \
+                                       --part $ptn_num \
+                                       --loader '$entry' \
+                                       --label 'shim-$distro' \
+                                       --unicode")
                 fi
-            fi
-        done
+            done
+        fi
     done
     
     exec_cmds "${cmds[@]}" # execute commands created above
