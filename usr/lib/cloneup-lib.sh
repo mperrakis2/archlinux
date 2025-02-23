@@ -869,7 +869,7 @@ align_size() {
 }
 
 readonly SLP_CFG_DIR="/etc/systemd/system"
-SLP_CFG_PTN=$(df -ak --sync --output=source "$SLP_CFG_DIR" | tail -1)
+SLP_CFG_PTN=$(findmnt -no SOURCE -T "$SLP_CFG_DIR")
 readonly SLP_CFG_PTN
 SLP_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$SLP_CFG_PTN")
 readonly SLP_CFG_MNT_DIR

@@ -143,7 +143,7 @@ readonly SPTN SUUID SDST
 # the variables above are field numbers used by the field() function
 
 # get partition of boot directory
-BOOTPTN=$(df -ak --sync --output=source "$(bootctl -x)" | tail -1)
+BOOTPTN=$(findmnt -no SOURCE -T "$(bootctl -x)")
 readonly BOOTPTN
 
 # global variable declarations
@@ -610,7 +610,7 @@ setup_env() {
     local srcptn
 
     # if script is running on dst drive exit with error
-    srcptn=$(df -ak --sync --output=source "$SCRIPTDIR" | tail -1)
+    srcptn=$(findmnt -no SOURCE -T "$SCRIPTDIR")
     if [[ "$srcptn" =~ $dstdrv$DP ]]; then
         prompt LOOP "You can't run the $SCRIPTNAME script on the destination drive."
         return $?
@@ -1254,9 +1254,7 @@ calc_drvspace() {
         # Check if pathname is on src drive. 'paths' may include spaces so use
         # 'eval' to treat it as a single argument. Also, use 'dirname' in case
         # 'paths' includes a pattern that will expand to more than one entry.
-        srcptn=$(eval \
-                 df -ak --sync --output=source "$(dirname "${paths[0]:1}")" \
-                    2>> "$ERRFILE" | tail -1)
+        srcptn=$(eval findmnt -no SOURCE -T "$(dirname "${paths[0]:1}")")
 
         if (( $? )); then
             cechot "$CYAN'${paths[*]}'$YELLOW does not exist and will be omitted."\
@@ -1599,7 +1597,7 @@ calc_drvspace() {
         if (( exc_size )); then
             ((total_exc_size+=exc_size))
 
-            srcptn=$(df -ak --sync --output=source "$buf" 2>> "$ERRFILE" | tail -1)
+            srcptn=$(findmnt -no SOURCE -T "$buf")
 
             # remove the total size calculated above from the size of the
             # partiton the directory is on
@@ -1661,7 +1659,7 @@ calc_drvspace() {
         while true; do
             # use 'eval' to treat filter as a single argument in case it
             # includes spaces
-            srcptn=$(eval df -ak --sync --output=source "$buf" 2>> "$ERRFILE" | tail -1)
+            srcptn=$(eval findmnt -no SOURCE -T "$buf")
             if (( $? )); then
                 if [[ "$buf" == "/" ]]; then
                     cecho "No souce partition found for '$k'. Exiting."\
@@ -2049,7 +2047,7 @@ clone() {
     local srcptn
 
     # log directory created by the script is excluded from cloning 
-    srcptn=$(df -ak --sync --output=source "$(dirname "$LOGDIR")" | tail -1)
+    srcptn=$(findmnt -no SOURCE -T "$(dirname "$LOGDIR")")
     srcmnt=$(lsblk -no MOUNTPOINT "$srcptn")
     rsync_filters[$srcmnt]+="-f \"- $(dirname "${LOGDIR//\"/\\\"}")/\" "
 
@@ -2063,6 +2061,7 @@ clone() {
     local -a files=()
     local FSTAB_FILE="/etc/fstab"
     readonly FSTAB_FILE
+    local -A ptns_umount=()
 
     if [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
         # find swap files listed in fstab file
@@ -2091,7 +2090,7 @@ clone() {
                 (( found )) && continue    # swap file has been added so skip it
                 files+=("$file") # add swap file to swap file list
 
-                srcptn=$(df -ak --sync --output=source "$file" | tail -1)
+                srcptn=$(findmnt -no SOURCE -T "$file")
 
                 # add the swap file only if it exists on the src drive
                 if [[ "$srcptn" =~ $srcdrv$SP ]]; then
@@ -2108,10 +2107,12 @@ clone() {
                         ((count=size/MIBIBYTE))
 
                         # get partition swap file resides on
-                        ptn=$(df "$file" | awk '/^\/dev/ {print $1}')
+                        ptn=$(findmnt -no SOURCE -T "$file")
                         
                         for ptn_pair in "${rsync_params[@]}"; do
                             if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
+                                ptn=$(field "$ptn_pair" "$((MPTN+MDST))")
+                                ptns_umount["$ptn"]="swap"
                                 dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
 
                                 # the following three numbers at the beginning
@@ -2137,7 +2138,6 @@ clone() {
 
     local key
     local -i used
-    local -a ptns_umount=()
 
     # iterate over partitions and create cmds for cloning
     for ptn_pair in "${rsync_params[@]}"; do
@@ -2217,23 +2217,31 @@ clone() {
             if [[ "$buf" == 1 ]]; then
                 ptn=$(field "$ptn_pair" "$(($i-2))") # extract partition name
                 umount_cmd "$ptn" cmds # create cmd to unmount partition
-                ptns_umount+=("$ptn")
+                [[ -z "${ptns_umount["$ptn"]}" ]] && ptns_umount["$ptn"]=""
             fi
         done
     done
 
     echo -e "\n\tExecuting cloning commands (this may take a while)..."
 
-    exec_cmds "${cmds[@]}" # execute cmds created above
+    exec_cmds "${cmds[@]}"
+    ((err=$?)); ((err)) && return $err
+
+    # remount partitions for swap cmds
+    for ptn in "${!ptns_umount[@]}"; do
+        if [[ "${ptns_umount["$ptn"]}" ]]; then
+            mount_ptn "$ptn"
+            unset ptns_umount["$ptn"]
+        fi
+    done
+
+    exec_cmds "${swap_file_cmds[@]}"
     ((err=$?)); ((err)) && return $err
 
     # remount partitions unmounted after rsync cmds
-    for ptn in "${ptns_umount[@]}"; do
+    for ptn in "${!ptns_umount[@]}"; do
         mount_ptn "$ptn"
     done
-
-    exec_cmds "${swap_file_cmds[@]}" # execute swap file cmds created above
-    ((err=$?)); ((err)) && return $err
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
     files=($(dst_pathname "$FSTAB_FILE" "${rsync_params[@]}"))
@@ -2285,7 +2293,8 @@ clone() {
     
     buf=""
     if [[ "${grubcfg_files[*]}" ]]; then
-        echo -e "\tCreating commands to update grub cfg file on destination drive..."
+        echo -e "\tCreating commands to update grub cfg and grub default files"\
+                "on destination drive..."
 
         # replace src partition data on dst grub.cfg file
         # iterate over all src partitions and find UUID which exists in grub.cfg
@@ -2327,14 +2336,9 @@ clone() {
         # get locations of dst default grub file(s); many may exist if src is
         # multiboot
         files=($(dst_pathname "$GRUBDEF_FILE" "${rsync_params[@]}"))
-        if [[ "${files[*]}" ]]; then
-            echo -e "\tCreating commands to update grub default file on"\
-                    "destination drive..."
-
-            for file in "${files[@]}"; do
-                cmds+=("sed -i $buf '$file'")
-            done
-        fi
+        for file in "${files[@]}"; do
+            cmds+=("sed -i $buf '$file'")
+        done
     fi
 
     # iterate over partitions to find grubenv file(s)
@@ -2346,6 +2350,7 @@ clone() {
     done
 
     # update grubenv on dst
+    buf=""
     for file in "${files[@]}"; do
         val=""
         for ptn_pair in "${rsync_params[@]}"; do
@@ -2363,6 +2368,11 @@ clone() {
                     dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
                     cmd="$dstmnt"/usr/bin/grub-editenv
                     cmds+=("$cmd '$file' set '$name'='$val'")
+                    if [[ -z "$buf" ]]; then
+                        echo -e "\tCreating commands to update grubenv file on"\
+                                "destination drive..."
+                        buf="done"
+                    fi
                     break
                 else
                     val=""
@@ -2516,6 +2526,7 @@ clone() {
         fi
     done
     
+    (( ${#cmds[@]} )) && echo
     exec_cmds "${cmds[@]}" # execute cmds created above
 }
 
