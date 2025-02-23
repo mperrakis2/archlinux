@@ -59,7 +59,7 @@ get_cfg_fname() {
 
 # $1    : str, function name and its params
 # $2    : str, list of signals
-# return: 0 on success else the error code of the command that failed
+# return: 0 on success else the error code of the cmd that failed
 trap_signals() {
     if (( $# != 2 )); then
         local msg="\nTwo params required: function and its params (first param) "
@@ -173,12 +173,15 @@ stack() {
     local -a stack=("\n\nStack trace:")
     local stack_size=${#FUNCNAME[@]}
     local -i i
+    local func
+    local -i line
+    local src
     
     # to avoid noise we start with 1 to skip the stack function
     for (( i = 1; i < stack_size; i++ )); do
-	    local func="${FUNCNAME[$i]:-(top level)}"
-	    local -i line="${BASH_LINENO[i-1]}"
-	    local src="${BASH_SOURCE[$i]:-(no file)}"
+	    func="${FUNCNAME[$i]:-(top level)}"
+	    line="${BASH_LINENO[i-1]}"
+	    src="${BASH_SOURCE[$i]:-(no file)}"
 
 	    stack+=("\t($i) file: $src, function: $func, line: $line")
     done
@@ -196,7 +199,7 @@ cechot() {
 }
 
 # echo text with color
-# $@    : text to echo preceded by optional 'echo' command line options
+# $@    : text to echo preceded by optional 'echo' cmd line options
 # stdout: colored text
 cecho() {
     local param
@@ -360,8 +363,8 @@ get_entries() {
     # iterate over previous result set and pass next token of relative path to
     # 'find' cmd
     for k in "${!ref[@]}"; do
-        # The first part of the 'find' command  needs to be in single quotes as
-        # it may contain spaces that are not escaped. Also, 'PATHS' may include 
+        # The first part of the 'find' cmd  needs to be in single quotes as it
+        # may contain spaces that are not escaped. Also, 'PATHS' may include 
         # spaces that are escaped so 'eval' is used to treat 'PATHS' as a single
         # argument.
         readarray -td '' new_names < <(eval \
@@ -665,7 +668,7 @@ convert_size() {
     ref+=" $unit_str"
 }
 
-# return: 0 on success else the error code of the command that failed
+# return: 0 on success else the error code of the cmd that failed
 read_cfg() {
     ! files_exist && return 1
 
@@ -872,8 +875,8 @@ SLP_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$SLP_CFG_PTN")
 readonly SLP_CFG_MNT_DIR
 declare -a system_sleep_cmds=()
 
-# create mask/unmask system sleep commands
-# $1: ref to str array to store the commands or str with valid value "filter"
+# create mask/unmask system sleep cmd
+# $1: ref to str array to store the cmd or str with valid value "filter"
 # $2: optional, str, valid value: "mask"
 system_sleep() {
     local -i err=0
@@ -942,7 +945,7 @@ system_sleep() {
         done
     fi
 
-    # add command to mask/unmask system sleep
+    # add cmd to mask/unmask system sleep
     if (( ${#system_sleep_cmds[@]} )); then
         local -n ref="$1"
     
@@ -960,7 +963,6 @@ system_sleep() {
 # mount a src or dst partition
 # $1    : str, the partition
 # $2    : optional, ref to str, mount data
-# stdout: str, partition data in the format:
 #
 #         src_ptn:mnt_dir:bool:UUID:dst_ptn:mnt_dir:bool:UUID:
 #
@@ -985,7 +987,12 @@ mount_ptn() {
     
     UUID=$(expr "$(blkid "$1")" : ".* UUID=\"\([^\"]*\)\"") # get partition UUID
 
-    mnt_dir=$(findmnt -no TARGET "$1") # get dir for mounted partition
+    # get read/write dir for mounted partition
+    if [[ "$1" =~ "$dstdrv" ]]; then
+        mnt_dir=$(findmnt -O rw -no TARGET "$1")
+    else
+        mnt_dir=$(findmnt -no TARGET "$1")
+    fi
 
     # mount the partition if not mounted
     if [[ -z "$mnt_dir" ]]; then
@@ -1011,50 +1018,57 @@ mount_ptn() {
 
         local -i err
 
-        # execute commands created above
-        exec_cmds "${cmds[@]}"
+        exec_cmds "${cmds[@]}" # execute cmd created above
         ((err=$?)); ((err)) && return $err
 
         # get dir for mounted partition
-        [[ -z "$mnt_dir" ]] && 
-            mnt_dir=$(findmnt -no TARGET "$1" 2>> "$ERRFILE")
-        ((is_mnt=1))
+        if [[ -z "$mnt_dir" ]]; then
+            if [[ "$1" =~ "$dstdrv" ]]; then
+                mnt_dir=$(findmnt -O rw -no TARGET "$1" 2>> "$ERRFILE")
+            else
+                mnt_dir=$(findmnt -no TARGET "$1" 2>> "$ERRFILE")
+            fi
+            ((err=$?)); ((err)) && return $err
+        fi
+
+       ((is_mnt=1))
     fi
 
     [[ $mnt_dir != "/" ]] && mnt_dir+="/"
 
-    local -n ref="$2"
+    if [[ "$2" ]]; then
+        local -n ref="$2"
 
-    ref="$1:$mnt_dir:$is_mnt:$UUID:"
+        ref="$1:$mnt_dir:$is_mnt:$UUID:"
+    fi
 }
 
-# unmount partitions or create commands to unmount them
+# unmount partitions
 # $1: str, partition data (see format in mount_ptn() function)
 umount_ptn() {
     (( $# != 1 )) &&
         exit_with_stack "\nOne param required: partition data. Exiting."
 
-    local is_mnt
     local -i field_num
-    local -a cmds=()
+    local -i is_mnt
     local ptn
+    local -a cmds=()
 
-    # iterate over the booleans described in the comment above
     for field_num in $MIS_MNT $((MIS_MNT+MDST)); do
+        # if partition mounted by script, create unmount cmd
         is_mnt=$(field "$1" "$field_num")
         
         # if partition was mounted, unmount it
         if [[ "$is_mnt" == 1 ]]; then
             ptn=$(field "$1" "$((field_num-2))") # extract partition name
-            umount_cmd "$ptn" cmds # get command to unmount partition
+            umount_cmd "$ptn" cmds # create cmd to unmount partition
         fi
     done
 
-    # execute commands created above
-    exec_cmds "${cmds[@]}"
+    exec_cmds "${cmds[@]}" # execute cmds created above
 }
 
-# add command to unmount a partition
+# add cmd to unmount a partition
 # $1: str, partition, e.g. /dev/sda1
 # $2: ref to str array, the cmds array
 umount_cmd() {
@@ -1066,22 +1080,8 @@ umount_cmd() {
     fi
 
     local -n ref="$2"
-    local mnt_dir
-    local fstype
 
-    fstype=$(lsblk -no FSTYPE "$1") # get partition filesystem
-
-    # add command to unmount partition
-    # if drive has 'dos' partition table and FAR, create cmd to mount with
-    # 'uid' and 'gid' options
-    if [[ "$(lsblk -no PTTYPE "$1")" =~ dos && "$fstype" =~ fat ]]; then
-        mnt_dir=$(findmnt -no TARGET "$1" 2>> "$ERRFILE")
-
-        ref+=("umount '$mnt_dir'")
-        ref+=("rm -fd '$mnt_dir'")
-    else
-        ref+=("udisksctl unmount -b '$1' --force --no-user-interaction")
-    fi
+    ref+=("udisksctl unmount -b '$1' --force --no-user-interaction")
 }
 
 # get partition size
@@ -1101,7 +1101,7 @@ get_ptn_size() {
     (( ref = $(field "$ptn" "$PSIZE") ))
 
     # calculate percentage of src partition based on src drive size
-    pct=$(bc <<< "scale=3; $ref / $SRC_DRV_RESIZE")
+    pct=$(bc <<< "scale=3; $ref / $((SRC_DRV_SIZE-no_resize))")
 
     # calculate dst partition size based on percentage above
     cmd='{printf "%.0f", ($1 * $2 == int($1 * $2)) '
@@ -1109,18 +1109,18 @@ get_ptn_size() {
     ((ref=$(awk "$cmd" <<< "$pct $dst_space_avail")))
 }
 
-# executes an array of commands
-# $@    : array of str, commands
-# stdout: commands that are executed
-# return: 0 on success, else the error code of the command that failed
+# executes an array of cmd
+# $@    : array of str, cmd
+# stdout: cmd that are executed
+# return: 0 on success, else the error code of the cmd that failed
 exec_cmds() {
     local -a cmds=("$@")
     local -i i
 
-    for i in "${!cmds[@]}"; do # remove empty commands
+    for i in "${!cmds[@]}"; do # remove empty cmd
         [[ -z "${cmds[i]//[[:space:]]}" ]] && unset cmds[i]
     done
-    (( ! ${#cmds[@]} )) && return 0 # return if no commands
+    (( ! ${#cmds[@]} )) && return 0 # return if no cmds
 
     # file discriptor array that enables/disables stdout, stderr and execution
     # in the background
@@ -1133,7 +1133,7 @@ exec_cmds() {
 
     echo -e "\tExecuting\n\t=========" | tee -a "$CMDFILE"
     for i in "${!cmds[@]}"; do
-        # remove extra whitespace from command
+        # remove extra whitespace from cmd
         cmds[i]=$(echo "${cmds[i]}" | tr -d -s '\b\f\n\r\t\v' ' ')
 
         # sensible defaults, i.e. redirect stdout & stderr and don't run in the
@@ -1154,10 +1154,10 @@ exec_cmds() {
             fi        
         done
         
-        # echo the command for convenience
+        # echo the cmd for convenience
         printf "\t%s\n" "${cmds[i]}" | tee -a "$CMDFILE"
         
-        # commands that run in the background take a long time to complete and
+        # cmd that run in the background take a long time to complete and
         # usually have a progress indicator, e.g. percentage
         [[ "${fd[0]}" ]] && cecho -e "\tProgress..."
         
@@ -1172,14 +1172,14 @@ exec_cmds() {
             fi
         fi
 
-        # if the command currently running takes a long time to complete and the
+        # if the cmd currently running takes a long time to complete and the
         # script receives a signal, the handler wouldn't get called unless the
-        # command completed. To avoid this, long running commands are executed
-        # in the background and 'wait' is used to wait on them. If the script
-        # receives a signal, 'wait' exits with an error > 128 and the following
-        # code keeps looping until the command exits on its own. Of course, if
-        # a cancel signal is received, e.g. INT, TERM, HUP, etc., its handler
-        # would exit the script.
+        # cmd completed. To avoid this, long running cmds are executed in the
+        # background and 'wait' is used to wait on them. If the script receives
+        # a signal, 'wait' exits with an error > 128 and the following code
+        # keeps looping until the cmd exits on its own. Of course, if a cancel
+        # signal is received, e.g. INT, TERM, HUP, etc., its handler would exit
+        # the script.
         if [[ "${fd[0]}" ]]; then
             ((pid=$!))
             while true; do
@@ -1280,7 +1280,7 @@ valid_opt_param() {
     fi
 }
 
-# return: 0 on success else the error code of the command that failed
+# return: 0 on success else the error code of the cmd that failed
 unmask_system_sleep() {
     local -a cmds=()
     system_sleep cmds # add cmds to unmask system sleep

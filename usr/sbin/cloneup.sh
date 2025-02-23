@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # This script clones one drive to another. For detailed info and usage see man
-# page: <script_name>(1). For a quick description of the command line options
-# run '<script_name> -h|--help'.
+# page: <script_name>(1). For a quick description of the cmd line options run
+# '<script_name> -h|--help'.
 
 # legend
 # ------
@@ -23,9 +23,9 @@
 #
 # log files created by script
 # ---------------------------
-# log                  : the output of commands (stdout)
+# log                  : the output of cmds (stdout)
 # errors               : errors, if any (stderr)
-# commands             : the commands used during cloning
+# commands             : the cmds used during cloning
 # <script_name>.pids   : lock file to ensure that the script is executed only
 #                        if its src and dst are not destinations for another
 #                        script already running (multiple instances are
@@ -66,7 +66,7 @@ declare -a FILTERS=()
 declare -i MIBIBYTE=1024*1024
 readonly MIBIBYTE
 
-UNIT=B # unit supplied to 'parted' command is bytes
+UNIT=B # unit supplied to 'parted' cmd is bytes
 readonly UNIT
 
 LCKDIR=/var/lock/"$SCRIPTNAME.d"
@@ -181,7 +181,7 @@ OPTIONS_S="" # user input saved as string
 SP="" # src partiion prefix
 DP="" # dst partiion prefix
 declare -a rsync_params=()
-declare -a g_parted_data=() # drive data retrieved from 'parted' command
+declare -a g_parted_data=() # drive data retrieved from 'parted' cmd
 declare -i LOOP=1
 declare -i script=0 # script mode, i.e. no user input other than cmd line args
 
@@ -191,7 +191,7 @@ init() {
         
     script_name=$(basename "${BASH_SOURCE:-$0}") # get name of script
 
-    # Note the use of "$@" (quoted) to let each command line option expand to a
+    # Note the use of "$@" (quoted) to let each cmd line option expand to a
     # separate word. 'options' is needed as 'eval set --' would lose the return
     # value of getopt. A colon (:) after an option specifies a required arg.
     options=$(getopt -q -o 'hre:f:s:d:' \
@@ -382,7 +382,7 @@ usage_msg
         # iterate over drive and partition data
         ((drv_cnt=0))
         for line in "${g_parted_data[@]}"; do
-            # the output of 'parted' command is something like:
+            # the output of 'parted' cmd is something like:
             #
             # BYT;
             # /dev/nvme0n1:512GB:nvme:512:512:gpt:KBG40ZNS512G NVMe KIOXIA 512GB:;
@@ -429,7 +429,7 @@ user_input() {
 
         # iterate over drive and partition data to validate src & dst drives
         for line in "${g_parted_data[@]}"; do
-            # the output of 'parted' command is something like:
+            # the output of 'parted' cmd is something like:
             #
             # BYT;
             # /dev/nvme0n1:512GB:nvme:512:512:gpt:KBG40ZNS512G NVMe KIOXIA 512GB:;
@@ -513,7 +513,7 @@ validate_params
 }
 
 # setup variables
-# return: 0 on success else the error code of the command that failed
+# return: 0 on success else the error code of the cmd that failed
 setup_env() {
     echo "Initializing..."
 
@@ -587,7 +587,7 @@ setup_env() {
         return $fd
     fi
 
-    # set complete filename for log, error and command files
+    # set complete filename for log, error and cmd files
     LOGFILE="$LOGDIR/log"
     ERRFILE="$LOGDIR/errors"
     CMDFILE="$LOGDIR/commands"
@@ -760,7 +760,7 @@ populate_arrays() {
     boot_ptn_nums=()
     ((bios_ptn=0))
     local -i drv_num     # drive number used as index in associative array
-    local -a parted_data # drive data retrieved from 'parted' command
+    local -a parted_data # drive data retrieved from 'parted' cmd
     local -i ptn_num
     local -i ptn_cnt
     local -i startb
@@ -774,7 +774,7 @@ populate_arrays() {
     # THE ORDER OF DRIVE NUMBERS IS IMPORTANT. SOURCE DRIVE NUMBER MUST BE LAST.
     # THIS HELPS TO FACILITATE PROCESSING LATER ON.
     for drv_num in {${OPTIONS[1]},${OPTIONS[0]}}; do
-        # The output of the command below is something like
+        # The output of the cmd below is something like
         #
         # BYT;
         # /dev/sda:1000204886016B:scsi:512:4096:gpt:ATA TOSHIBA MQ01ABD1:;
@@ -803,8 +803,8 @@ populate_arrays() {
                 (( drv_num == OPTIONS[0] )) && 
                     ((src_lba=$(field "$line" $DSECTOR_SIZE)))
                     
-            # match the format of the first two fields (see above sample 
-            # command output)
+            # match the format of the first two fields (see above sample cmd
+            # output)
             elif [[ "$line" =~ ^[0-9]+:[0-9]+$UNIT ]]; then
                 # get partition data
                 ((ptn_num=$(field "$line" $PPTN_NUM)))
@@ -1005,8 +1005,8 @@ populate_arrays() {
 }
 
 # mask system sleep (suspend/hibernate) if it is unmasked
-# return: 0 on success, 1 if parameter error else the error code of the command
-#         that failed
+# return: 0 on success, 1 if parameter error else the error code of the cmd that
+#         failed
 mask_system_sleep() {
     valid_opt_param "$1" # validate parameter
     
@@ -1698,7 +1698,7 @@ calc_drvspace() {
 }
 
 # if necessary remove & create new partitions on dst
-# return: 0 on success else the error code of the command that failed
+# return: 0 on success else the error code of the cmd that failed
 create_partitions() {            
     echo "Checking partitions on destination drive..."
     echo -e "\tGetting source partition table type..."
@@ -1711,32 +1711,18 @@ create_partitions() {
     [[ "$ptn_tbl" != $(field "${drv_data[${OPTIONS[1]}]}" "$DPTN_TBL_TYPE") ]] && 
         ((create_ptn=1))
 
-    local -a upartitions
-
-    # get partitions to unmount on dst
-    mapfile -t upartitions < <(findmnt -An -o SOURCE | grep "$dstdrv")
-    
     local -i i
-    local -a cmds=() # contains cmds to create partitions on dst
-
-    # create cmds to unmount partitions on dst
-    for i in "${!upartitions[@]}"; do
-        umount_cmd "${upartitions[i]}" cmds
-    done
-
     local -i SRC_DRV_SIZE
     SRC_DRV_SIZE=$(field "${drv_data[${OPTIONS[0]}]}" "$DSIZE")
     readonly SRC_DRV_SIZE
     local ptn
     local -i ptn_num
-    local -i src_ptn_data_size=0
     local -i resize_for_data=0
     local -i drv_num
     local flags
     local fstype
     local -i bytes
-    local -i SRC_DRV_RESIZE=SRC_DRV_SIZE-no_resize
-    readonly SRC_DRV_RESIZE
+    local -i src_ptn_data_size=0
     local -i dst_space_left=0
     
     if (( dst_drv_size < SRC_DRV_SIZE )); then
@@ -1795,17 +1781,20 @@ create_partitions() {
         done
     fi
 
-    local flag
-    local -i end
+    local name
+    local -i ptn_cnt
     local pct
     local cmd
-    local -i j=0
+    local -i alloc_bytes=0
+    local -i end
+    local -i ptn_tbl_flag=0
+    local -a cmds=() # contains cmds to create partitions on dst
+    local flag
     local dst_ptn
     local -a dst_ptns=()
-    local -i alloc_bytes=0
-    local -i ptn_tbl_flag=0
+    local -i j=0
 
-    # iterate over all partitions to create commands that delete and create
+    # iterate over all partitions to create cmds that delete and create
     # partitions on dst if necessary
     for ptn in "${partitions[@]}"; do
         # extract drive number to find if partition src or dst
@@ -1813,7 +1802,7 @@ create_partitions() {
         ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
         fstype=$(field "$ptn" "$PFSTYPE")       # extract filesystem type
         
-        # if src partition, create commands that:
+        # if src partition, create cmds that:
         #     create new partition table
         #     create new partitions
         #     format new partitions
@@ -1881,14 +1870,14 @@ create_partitions() {
 
             ((end=start+bytes-1)) # set the end byte for the partition
 
-            # create 'mktable' command (executed once only)
+            # create 'mktable' cmd (executed once only)
             if (( ! ptn_tbl_flag )); then
                 cmds+=("wipefs --all --force '$dstdrv'")
                 cmds+=("parted --script --fix '$dstdrv' mktable '$ptn_tbl'")
                 ((ptn_tbl_flag=1))
             fi
 
-            # create 'mkpart' command for new partition
+            # create 'mkpart' cmd for new partition
             if [[ "$fstype" ]]; then
                 cmd="parted --script --fix -a optimal '$dstdrv' unit $UNIT mkpart "
                 cmd+="primary '$fstype' $start $end"
@@ -1904,7 +1893,7 @@ create_partitions() {
             # check partition alignment
             cmds+=("parted --script --fix '$dstdrv' align-check opt $ptn_cnt")
 
-            # create set commands to set partition flags
+            # create set cmds to set partition flags
             ((i=1))
             flag=$(field "$flags" $i ',' | xargs)
             while [[ "$flag" ]]; do
@@ -1914,10 +1903,10 @@ create_partitions() {
             done
 
             # create cmds to format the partition
-            # get filesystem command that applies to partition fstype
+            # get filesystem cmd that applies to partition fstype
             for cmd in "${FSTYPES[@]}"; do
                 if [[ "$fstype" && "$cmd" =~ $fstype ]]; then
-                    # create command to format the newly created partition
+                    # create cmd to format the newly created partition
                     cmds+=("$(field "$cmd" 2) '$dstdrv$DP$ptn_cnt'")
                     break
                 fi
@@ -1943,7 +1932,7 @@ create_partitions() {
             swapon | grep -q "$dstdrv$DP$ptn_num" 2>> "$ERRFILE" &&
             cmds+=("swapoff '$dstdrv$DP$ptn_num'")            
 
-            # this is a dst partition therefore, create commands to delete it
+            # this is a dst partition therefore, create cmds to delete it
             cmds+=("wipefs --all --force '$dstdrv$DP$ptn_num'")
             cmds+=("parted --script --fix '$dstdrv' rm $ptn_num")
 
@@ -1965,7 +1954,20 @@ create_partitions() {
     # if src and dst partitions are different create dst partitions
     if (( create_ptn )); then
         echo -e "\n\tCreating partitions on destination drive..."
-        exec_cmds "${cmds[@]}" # execute commands created above
+
+        # get partitions on dst
+        local -a ptns_umount
+        mapfile -t ptns_umount < <(findmnt -An -o SOURCE | grep "$dstdrv")
+        
+        # create cmds to unmount dst partitions
+        local -a cmds_umount=()
+        for ptn in "${ptns_umount[@]}"; do
+            umount_cmd "$ptn" cmds_umount
+        done
+
+        # add unmount cmds to cmds and execute all
+        (( "${#cmds_umount[@]}" )) && cmds=("${cmds_umount[@]}" "${cmds[@]}")
+        exec_cmds "${cmds[@]}"
     else
         echo
     fi
@@ -1973,8 +1975,8 @@ create_partitions() {
 
 # find mount points for src and dst partitions and then clone files for each
 # dst partition
-# return: 0 on success, 1 if a function failed else the error code of the
-#         command that failed
+# return: 0 on success, 1 if a function failed else the error code of the cmd
+#         that failed
 clone() {
     echo "Cloning..."
     echo -e "\tMounting partitions for source & destination drives if not mounted already..."
@@ -2075,7 +2077,7 @@ clone() {
         local -i found
         local -i count
         
-        # iterate over swap file names and add commands to create them on dst
+        # iterate over swap file names and add cmds to create them on dst
         for entry in "${entries[@]}"; do
             # if swap entry is a file and not a partition
             if [[ "${entry::1}" == "/" ]]; then
@@ -2100,7 +2102,7 @@ clone() {
                     
                     if [[ -f "$file" && -s "$file" && -r "$file" && -w "$file" ]]
                     then
-                        # add commands to create swap files on dst
+                        # add cmds to create swap files on dst
                         ((size=$(find "$file" -printf %s)))
                         
                         ((count=size/MIBIBYTE))
@@ -2112,8 +2114,8 @@ clone() {
                             if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
                                 dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
 
-                                # the following three numbers at the beginning of 
-                                # the command are parsed as follows:
+                                # the following three numbers at the beginning
+                                # of the cmd are parsed as follows:
                                 # 1: run in the background
                                 # 1: redirect stdout
                                 # 0: don't redirect stderr
@@ -2135,8 +2137,9 @@ clone() {
 
     local key
     local -i used
+    local -a ptns_umount=()
 
-    # iterate over partitions and create commands for cloning
+    # iterate over partitions and create cmds for cloning
     for ptn_pair in "${rsync_params[@]}"; do
         srcmnt=$(field "$ptn_pair" "$MDIR") # get src dir
 
@@ -2192,28 +2195,44 @@ clone() {
 
         # After tests, rsync does not support extended attributes on HFS
         # filesystems so that option is removed below. After mounting an HFS
-        # volume, executing a 'ls' command on the mounted volume produces the
+        # volume, executing a 'ls' cmd on the mounted volume produces the
         # following message "ls: '<mount_dir>': No data available" yet the
         # contents are displayed correctly.
         [[ "$(findmnt -no FSTYPE "$srcmnt" 2>> "$ERRFILE")" =~ hfs ]] &&
             flags="${flags:0:-1}"
 
-        # create rsync command; the following two numbers at the beginning of the 
-        # command are parsed as follows:
+        # create rsync cmd; the following two numbers at the beginning of the 
+        # cmd are parsed as follows:
         # 1: run in the background
         # 0: don't redirect stdout
         cmds+=("10 rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
                          -$flags --numeric-ids --inc-recursive --delete-during \
                          --delete-excluded ${rsync_filters["$key"]} \
                          '$srcmnt' '$dstmnt'")
+
+        # create cmds to unmount partitions mounted by the script
+        for i in $MIS_MNT $((MIS_MNT+MDST)); do
+            # if partition mounted by script, create unmount cmd
+            buf=$(field "$ptn_pair" "$i")
+            if [[ "$buf" == 1 ]]; then
+                ptn=$(field "$ptn_pair" "$(($i-2))") # extract partition name
+                umount_cmd "$ptn" cmds # create cmd to unmount partition
+                ptns_umount+=("$ptn")
+            fi
+        done
     done
 
-    # add commands to create swap files, if any, on dst
-    (( ${#swap_file_cmds[@]} )) && cmds+=("${swap_file_cmds[@]}")
-    
     echo -e "\n\tExecuting cloning commands (this may take a while)..."
 
-    exec_cmds "${cmds[@]}" # execute commands created above
+    exec_cmds "${cmds[@]}" # execute cmds created above
+    ((err=$?)); ((err)) && return $err
+
+    # remount partitions unmounted after rsync cmds
+    for ptn in "${ptns_umount[@]}"; do
+        mount_ptn "$ptn"
+    done
+
+    exec_cmds "${swap_file_cmds[@]}" # execute swap file cmds created above
     ((err=$?)); ((err)) && return $err
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
@@ -2227,22 +2246,22 @@ clone() {
         
         # replace src partition data on dst fstab file for all partitions but swap
         for ptn_pair in "${rsync_params[@]}"; do
-            # add sed command to replace src partition name with dst name
+            # add sed cmd to replace src partition name with dst name
             cmd+="-e \"s|'$(field "$ptn_pair" "$MPTN")'|"
             cmd+="'$(field "$ptn_pair" "$((MPTN+MDST))")'|g\" "
 
-            # add sed command to replace src UUID with dst UUID
+            # add sed cmd to replace src UUID with dst UUID
             cmd+="-e 's|$(field "$ptn_pair" "$MUUID")|"
             cmd+="$(field "$ptn_pair" "$((MUUID+MDST))")|g' "
         done
 
         for swap_ptn_UUIDs in "${swap_ptns_UUIDs[@]}"; do
             # replace src partition data on dst fstab file for swap partition
-            # add sed command to replace src partition name with dst name
+            # add sed cmd to replace src partition name with dst name
             cmd+="-e 's|$(field "$swap_ptn_UUIDs" "$SPTN")|"
             cmd+="$(field "$swap_ptn_UUIDs" "$((SPTN+SDST))")|g' "
 
-            # add sed command to replace src UUID with dst UUID
+            # add sed cmd to replace src UUID with dst UUID
             cmd+="-e 's|$(field "$swap_ptn_UUIDs" "$SUUID")|"
             cmd+="$(field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
         done
@@ -2276,7 +2295,7 @@ clone() {
             UUID=$(field "$ptn_pair" "$MUUID")
             for file in "${grubcfg_files[@]}"; do
                 if grep -q "$UUID" "$file" 2>> "$ERRFILE"; then
-                    # add sed command to replace src UUID with dst UUID
+                    # add sed cmd to replace src UUID with dst UUID
                     [[ ! "$cmd" =~ "$UUID" ]] &&
                         cmd+="-e 's|$UUID|$(field "$ptn_pair" "$((MUUID+MDST))")|g' "
                     [[ ! "${files[*]}" =~ "$file" ]] && files+=("$file")
@@ -2497,12 +2516,12 @@ clone() {
         fi
     done
     
-    exec_cmds "${cmds[@]}" # execute commands created above
+    exec_cmds "${cmds[@]}" # execute cmds created above
 }
 
 # $1:   : int, optional, valid value: 1, cancellation signal was received
-# return: 0 on success, 1 if parameter error else the error code of the command
-#         that failed
+# return: 0 on success, 1 if parameter error else the error code of the cmd that
+#         failed
 cleanup() {
     valid_opt_param "$1" # validate parameter
 
@@ -2529,8 +2548,8 @@ cleanup() {
         if (( ${#cmds[@]} )); then # kill processes running in background
             echo -e "\tKilling jobs running in the background..."
             
-            # create command to terminate any processes running in background
-            # the following three numbers at beginning of command are parsed as
+            # create cmd to terminate any processes running in background
+            # the following three numbers at beginning of cmd are parsed as
             # follows:
             # 0: don't run in the background
             # 0: don't redirect stdout
