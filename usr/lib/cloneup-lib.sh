@@ -981,17 +981,16 @@ mount_ptn() {
     
     local UUID
     local mnt_dir
+    local options
     local -a cmds=()
     local -i is_mnt=0
     
-    UUID=$(expr "$(blkid "$1")" : ".* UUID=\"\([^\"]*\)\"") # get partition UUID
+    if [[ "$1" =~ "$dstdrv" ]]; then options="--options rw"; else options=""; fi
 
     # get read/write dir for mounted partition
-    if [[ "$1" =~ "$dstdrv" ]]; then
-        mnt_dir=$(findmnt -O rw -no TARGET "$1")
-    else
-        mnt_dir=$(findmnt -no TARGET "$1")
-    fi
+    mnt_dir=$(findmnt $options -no TARGET "$1")
+
+    UUID=$(expr "$(blkid "$1")" : ".* UUID=\"\([^\"]*\)\"") # get partition UUID
 
     # mount the partition if not mounted
     if [[ -z "$mnt_dir" ]]; then
@@ -1010,9 +1009,9 @@ mount_ptn() {
 
             mnt_dir=/run/media/$(logname)/$UUID
             cmds+=("mkdir -p '$mnt_dir'")
-            cmds+=("mount -o uid=$uid,gid=$gid '$1' '$mnt_dir'")
+            cmds+=("mount $options -o uid=$uid,gid=$gid '$1' '$mnt_dir'")
         else
-            cmds+=("udisksctl mount -b '$1' --no-user-interaction")        
+            cmds+=("udisksctl mount $options -b '$1' --no-user-interaction")        
         fi
 
         local -i err
@@ -1022,11 +1021,7 @@ mount_ptn() {
 
         # get dir for mounted partition
         if [[ -z "$mnt_dir" ]]; then
-            if [[ "$1" =~ "$dstdrv" ]]; then
-                mnt_dir=$(findmnt -O rw -no TARGET "$1" 2>> "$ERRFILE")
-            else
-                mnt_dir=$(findmnt -no TARGET "$1" 2>> "$ERRFILE")
-            fi
+            mnt_dir=$(findmnt $options -no TARGET "$1" 2>> "$ERRFILE")
             ((err=$?)); ((err)) && return $err
         fi
 
