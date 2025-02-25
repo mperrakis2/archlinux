@@ -2208,12 +2208,12 @@ clone() {
                          '$srcmnt' '$dstmnt'")
     done
 
+    # add commands to create swap files, if any, on dst
+    (( ${#swap_file_cmds[@]} )) && cmds+=("${swap_file_cmds[@]}")
+
     echo -e "\n\tExecuting cloning commands (this may take a while)..."
 
     exec_cmds "${cmds[@]}"
-    ((err=$?)); ((err)) && return $err
-
-    exec_cmds "${swap_file_cmds[@]}"
     ((err=$?)); ((err)) && return $err
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
