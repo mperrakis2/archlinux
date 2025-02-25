@@ -962,7 +962,7 @@ system_sleep() {
 
 # mount a src or dst partition
 # $1    : str, the partition
-# $2    : optional, ref to str, mount data
+# $2    : ref to str, mount data
 #
 #         src_ptn:mnt_dir:bool:UUID:dst_ptn:mnt_dir:bool:UUID:
 #
@@ -972,10 +972,10 @@ system_sleep() {
 #
 # return: 0 on success else the error code of cmd that failed
 mount_ptn() {
-    if (( $# < 1 || $# > 2)) || ! find "$1" >> "$LOGFILE" 2>> "$ERRFILE"; then
-        local msg="\nOne or two params required: str, valid partition and "
+    if (( $# != 2)) || ! find "$1" >> "$LOGFILE" 2>> "$ERRFILE"; then
+        local msg="\nTwo params required: str, valid partition and ref to str, "
 
-        msg+="optional ref to str, mount data. Exiting."
+        msg+="mount data. Exiting."
         exit_with_stack "$msg"
     fi
     
@@ -1035,11 +1035,9 @@ mount_ptn() {
 
     [[ $mnt_dir != "/" ]] && mnt_dir+="/"
 
-    if [[ "$2" ]]; then
-        local -n ref="$2"
+    local -n ref="$2"
 
-        ref="$1:$mnt_dir:$is_mnt:$UUID:"
-    fi
+    ref="$1:$mnt_dir:$is_mnt:$UUID:"
 }
 
 # unmount partitions
