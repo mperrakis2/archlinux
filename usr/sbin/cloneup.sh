@@ -99,7 +99,7 @@ readonly OFF
 REDB="$BOLD$(tput setab 1)"
 readonly REDB
 
-# the variables below are field numbers used by the field() function
+# these variables are field numbers used by the field() function
 # BEGIN
 declare -i DNAME=1
 declare -i DSIZE=2
@@ -1738,9 +1738,9 @@ create_partitions() {
                 (( clone_size -= $(field "${src_ptn_data[i]}" "$USED" ' ') ))
         done
 
-        # normally, the code within the for loop below should be within the loop
-        # above but there's no guarantee that the ESP will be before any other 
-        # partitions except the bios one
+        # normally, the following code should be within the above loop but
+        # there's no guarantee that the ESP will be before any other partitions
+        # except the bios one
         for i in "${!src_ptn_data[@]}"; do
             if (( resize_for_data )); then
                 break
@@ -2008,7 +2008,7 @@ clone() {
             # of any rsync parameters and are not mounted
             if [[ "$fstype" =~ swap ]]; then
                 # save src swap UUIDs, as they'll be replaced with dst ones
-                # on dst drive after the cloning
+                # on dst drive after cloning
                 swap_ptn_UUIDs="$srcdrv$SP$ptn_num"
                 swap_ptn_UUIDs+=":"
                 
@@ -2061,7 +2061,6 @@ clone() {
     local -a files=()
     local FSTAB_FILE="/etc/fstab"
     readonly FSTAB_FILE
-    local -A ptns_umount=()
 
     if [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
         # find swap files listed in fstab file
@@ -2111,8 +2110,6 @@ clone() {
                         
                         for ptn_pair in "${rsync_params[@]}"; do
                             if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
-                                ptn=$(field "$ptn_pair" "$((MPTN+MDST))")
-                                ptns_umount["$ptn"]="swap"
                                 dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
 
                                 # the following three numbers at the beginning
@@ -2209,17 +2206,6 @@ clone() {
                          -$flags --numeric-ids --inc-recursive --delete-during \
                          --delete-excluded ${rsync_filters["$key"]} \
                          '$srcmnt' '$dstmnt'")
-
-        # create cmds to unmount partitions mounted by the script
-        for i in $MIS_MNT $((MIS_MNT+MDST)); do
-            # if partition mounted by script, create unmount cmd
-            buf=$(field "$ptn_pair" "$i")
-            if [[ "$buf" == 1 ]]; then
-                ptn=$(field "$ptn_pair" "$(($i-2))") # extract partition name
-                umount_cmd "$ptn" cmds # create cmd to unmount partition
-                [[ -z "${ptns_umount["$ptn"]}" ]] && ptns_umount["$ptn"]=""
-            fi
-        done
     done
 
     echo -e "\n\tExecuting cloning commands (this may take a while)..."
@@ -2227,21 +2213,8 @@ clone() {
     exec_cmds "${cmds[@]}"
     ((err=$?)); ((err)) && return $err
 
-    # remount partitions for swap cmds
-    for ptn in "${!ptns_umount[@]}"; do
-        if [[ "${ptns_umount["$ptn"]}" ]]; then
-            mount_ptn "$ptn"
-            unset ptns_umount["$ptn"]
-        fi
-    done
-
     exec_cmds "${swap_file_cmds[@]}"
     ((err=$?)); ((err)) && return $err
-
-    # remount partitions unmounted after rsync cmds
-    for ptn in "${!ptns_umount[@]}"; do
-        mount_ptn "$ptn"
-    done
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
     files=($(dst_pathname "$FSTAB_FILE" "${rsync_params[@]}"))

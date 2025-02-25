@@ -268,7 +268,7 @@ cprintf() {
 # get a field (substring) from a string based on a regex
 # $1    : str, the string to get the field from
 # $2    : int, the number of the field to extract
-# $3    : optional, str, a regex, default is shown below.
+# $3    : optional, str, a regex (default below).
 # stdout: the field (substring)
 field_re() {
     if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]+$ || $2 -lt 1 ]]; then
@@ -284,7 +284,7 @@ field_re() {
 # get a field (substring) from a string based on a delimeter
 # $1    : str, the string to get the field from
 # $2    : int, the number of the field to extract
-# $3    : optional, str, a delimeter, default is shown below.
+# $3    : optional, str, a delimeter (default below).
 # stdout: the field (substring)
 field() {
     if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]+$ || $2 -lt 1 ]]; then
@@ -979,7 +979,6 @@ mount_ptn() {
         exit_with_stack "$msg"
     fi
     
-    local p
     local UUID
     local mnt_dir
     local -a cmds=()
