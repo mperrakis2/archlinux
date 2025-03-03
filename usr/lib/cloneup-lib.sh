@@ -1254,7 +1254,7 @@ dst_pathname() {
     # iterate over partition data to add the file on dst
     for ptn_pair in "${rsync_params[@]}"; do
         # add dst file if it exists
-        file=$(field "$ptn_pair" "$((MDIR+MDST))")/"$1"
+        file=$(field "$ptn_pair" "$((MPNT+MDST))")/"$1"
         [[ -f "$file" && -s "$file" ]] && pathnames+=("$file")
     done
 

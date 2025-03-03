@@ -124,11 +124,11 @@ declare -i PALIGN_SIZE=11
 readonly PDRV_NUM PPTN_CNT PALIGN_START PALIGN_SIZE
 
 declare -i MPTN=1
-declare -i MDIR=2
+declare -i MPNT=2
 declare -i MIS_MNT=3
 declare -i MUUID=4
 declare -i MDST=4
-readonly MPTN MDIR MIS_MNT MUUID MDST
+readonly MPTN MPNT MIS_MNT MUUID MDST
 
 declare -i SOURCE=1
 declare -i USED=2
@@ -1126,7 +1126,7 @@ calc_drvspace() {
                 if [[ -z "$flags" ]]; then
                     cecho -e "\n${RED}The $YELLOW$srcdrv$SP$ptn_num$RED source"\
                              "${RED}partition mounted on"\
-                             "$YELLOW$(field "$srcmnt" "$MDIR")${RED} does not"\
+                             "$YELLOW$(field "$srcmnt" "$MPNT")${RED} does not"\
                              "${RED}have a UUID. Exiting." | tee -a "$ERRFILE"
                     return 1
                 fi
@@ -2023,7 +2023,7 @@ clone() {
                 cmd="blkid $dstdrv$DP$ptn_cnt"
                 swap_ptn_UUIDs+=$(expr "$($cmd)" : ".* UUID=\"\(.*\)\" TYPE")
                 swap_ptns_UUIDs+=("$swap_ptn_UUIDs")
-                cmds+=("mkswap -c -f '$dstdrv$DP$ptn_cnt'")
+                cmds+=("mkswap -f '$dstdrv$DP$ptn_cnt'")
             elif [[ "$flags" =~ bios ]]; then
                 ((bios=1)) # set flag if bios partition
             else
@@ -2051,8 +2051,7 @@ clone() {
     srcmnt=$(lsblk -no MOUNTPOINT "$srcptn")
     rsync_filters[$srcmnt]+="-f \"- $(dirname "${LOGDIR//\"/\\\"}")/\" "
 
-    local -a entries
-    local entry
+    local -a abuf=()
     local ptn_pair # src partition and its corresponding dst partition
     local file
     local buf
@@ -2064,11 +2063,11 @@ clone() {
 
     if [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
         # find swap files listed in fstab file
-        mapfile -t entries < <(grep swap "$FSTAB_FILE")
+        mapfile -t abuf < <(grep swap "$FSTAB_FILE")
 
         # find swap files that are active as some of these may not be listed in
         # fstab file
-        mapfile -t -O ${#entries[@]} entries < <(swapon --noheadings | grep file)
+        mapfile -t -O ${#abuf[@]} abuf < <(swapon --noheadings | grep file)
 
         echo -e "\tCreating list of swap files, if any, to create on destination drive..."
 
@@ -2076,10 +2075,10 @@ clone() {
         local -i count
         
         # iterate over swap file names and add cmds to create them on dst
-        for entry in "${entries[@]}"; do
+        for buf in "${abuf[@]}"; do
             # if swap entry is a file and not a partition
-            if [[ "${entry::1}" == "/" ]]; then
-                file="${entry%%+( *)}" # get swap filename
+            if [[ "${buf::1}" == "/" ]]; then
+                file="${buf%%+( *)}" # get swap filename
                 ((found=0))
 
                 # check if swap file has been added to swap file list
@@ -2110,7 +2109,7 @@ clone() {
                         
                         for ptn_pair in "${rsync_params[@]}"; do
                             if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
-                                dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+                                dstmnt=$(field "$ptn_pair" "$((MPNT+MDST))")
 
                                 # the following three numbers at the beginning
                                 # of the cmd are parsed as follows:
@@ -2133,26 +2132,25 @@ clone() {
 
     echo -e "\tCreating commands for cloning..."
 
-    local key
     local -i used
 
     # iterate over partitions and create cmds for cloning
     for ptn_pair in "${rsync_params[@]}"; do
-        srcmnt=$(field "$ptn_pair" "$MDIR") # get src dir
+        srcmnt=$(field "$ptn_pair" "$MPNT") # get src dir
 
         if [[ "$srcmnt" == "/" ]]; then
-            key="$srcmnt"
+            buf="$srcmnt"
         else
             # remove trailing '/' as it's not part of key of associative array
-            key="${srcmnt::-1}"
+            buf="${srcmnt::-1}"
 
             # remove src mount directory from filtered directories/files to
             # comply with rsync rules
-            rsync_filters[$key]="${rsync_filters["$key"]//$key}"
+            rsync_filters[$buf]="${rsync_filters["$buf"]//$buf}"
         fi
 
         # get size of dst partition
-        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+        dstmnt=$(field "$ptn_pair" "$((MPNT+MDST))")
 
         if (( create_ptn )); then
             (( size = $(df -ak --block-size=KiB --sync --output=avail "$dstmnt" \
@@ -2204,7 +2202,7 @@ clone() {
         # 0: don't redirect stdout
         cmds+=("10 rsync --log-file='$LOGFILE' --info=misc2,mount,name0,progress2,stats2 \
                          -$flags --numeric-ids --inc-recursive --delete-during \
-                         --delete-excluded ${rsync_filters["$key"]} \
+                         --delete-excluded ${rsync_filters["$buf"]} \
                          '$srcmnt' '$dstmnt'")
     done
 
@@ -2217,8 +2215,12 @@ clone() {
     ((err=$?)); ((err)) && return $err
 
     # get locations of dst fstab file(s); many may exist if src is multiboot
+    local -A sed_cmds=()
+
     files=($(dst_pathname "$FSTAB_FILE" "${rsync_params[@]}"))
+    cmd=""
     cmds=()
+    buf=""
     if [[ "${files[*]}" ]]; then
         echo -e "\tCreating commands to make destination drive bootable..."
         echo -e "\tCreating command to update fstab file on destination drive..."
@@ -2247,114 +2249,132 @@ clone() {
             cmd+="$(field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
         done
 
+        local PREFIX_OFFSET="resume_offset="
+        local RE_OFFSET="${PREFIX_OFFSET}[0-9]\+"
+        readonly PREFIX_OFFSET RE_OFFSET
+
         for file in "${files[@]}"; do # create cmd(s) for fstab file(s)
             cmds+=("$cmd'$file'")
-        done
-    fi
-    
-    local -a grubcfg_files=()
 
-    # iterate over partitions to find grub cfg file(s)
+            # create cmd(s) for grub cfg files
+            mapfile -t files < <(grep swap "$file" 2>> "$ERRFILE")
+            for file in "${files[@]}"; do
+                # if swap entry is a file and not a partition
+                if [[ "${file::1}" == "/" ]]; then
+                    file="${file%%+( *)}"   # get swap filename
+                    file="$dstmnt${file:1}" # add dst dir and remove '/'
+
+                    # get swap file offset
+                    ((size=$(filefrag -v "$file" | \
+                             awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
+
+                    # create regex to replace src offset with dst offset
+                    buf+="-e 's|$RE_OFFSET|$PREFIX_OFFSET$size|g' "
+
+                    cmds+=("[[ '$size' =~ ^[0-9]+$ && '$size' -gt 0 ]]")
+                fi
+            done
+        done
+        cmd="$buf"
+    fi
+
+    local -a grubcfg_files=() # iterate over partitions to find grub cfg file(s)
+
+    # get locations of dst default grub file(s); many may exist if src is
+    # multiboot
+    grubcfg_files=($(dst_pathname "/etc/default/grub" "${rsync_params[@]}"))
+
     for ptn_pair in "${rsync_params[@]}"; do
-        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
-        mapfile -t -O ${#grubcfg_files[@]} grubcfg_files < <(find "$dstmnt" \
-                                                                  -name "grub*.cfg" \
-                                                                  2>> "$ERRFILE")
+        dstmnt=$(field "$ptn_pair" "$((MPNT+MDST))")
+        for buf in "/grub/" "/etc/default/grub.d/" "/etc/grub.d/"; do
+            if [[ -d "$dstmnt$buf" ]]; then
+                buf="find '$dstmnt$buf' -maxdepth 1 -type f -exec file '{}' \; "
+                buf+="2>> "$ERRFILE" | grep -i ascii | cut -d : -f 1"
+                mapfile -t -O ${#grubcfg_files[@]} grubcfg_files < <(eval $buf)
+            fi
+        done
     done
 
     local UUID
     
-    buf=""
+    files=()
+    abuf=()
     if [[ "${grubcfg_files[*]}" ]]; then
-        echo -e "\tCreating commands to update grub cfg and grub default files"\
-                "on destination drive..."
+        echo -e "\tCreating commands to update grub configuration files on"\
+                "destination drive..."
 
         # replace src partition data on dst grub.cfg file
         # iterate over all src partitions and find UUID which exists in grub.cfg
-        cmd="sed -i "
-        files=()
+        cmd="sed -i $cmd"
         for ptn_pair in "${rsync_params[@]}"; do
             UUID=$(field "$ptn_pair" "$MUUID")
-            for file in "${grubcfg_files[@]}"; do
-                if grep -q "$UUID" "$file" 2>> "$ERRFILE"; then
+            for buf in "${!grubcfg_files[@]}"; do
+                if [[ "${grubcfg_files[buf]}" =~ grubenv && \
+                      ! "${files[*]}" =~ "${grubcfg_files[buf]}" ]]
+                then
+                    files+=("${grubcfg_files[buf]}")
+                    unset grubcfg_files[buf]
+                elif grep -q "$UUID" "${grubcfg_files[buf]}" 2>> "$ERRFILE"; then
                     # add sed cmd to replace src UUID with dst UUID
                     [[ ! "$cmd" =~ "$UUID" ]] &&
-                        cmd+="-e 's|$UUID|$(field "$ptn_pair" "$((MUUID+MDST))")|g' "
-                    [[ ! "${files[*]}" =~ "$file" ]] && files+=("$file")
+                    cmd+="-e 's|$UUID|$(field "$ptn_pair" "$((MUUID+MDST))")|g' "
+
+                    [[ ! "${abuf[*]}" =~ "${grubcfg_files[buf]}" ]] &&
+                    abuf+=("${grubcfg_files[buf]}")
                 fi
             done
         done
 
         # if swap partitions exist update their UUID in the grub.cfg and grub
         # default files
-        if (( ${#swap_ptns_UUIDs[@]} )); then
-            for swap_ptn_UUIDs in "${swap_ptns_UUIDs[@]}"; do
-                buf+="-e 's|$(field "$swap_ptn_UUIDs" "$SUUID")|"
-                buf+="$(field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
-            done
+        for swap_ptn_UUIDs in "${swap_ptns_UUIDs[@]}"; do
+            cmd+="-e 's|$(field "$swap_ptn_UUIDs" "$SUUID")|"
+            cmd+="$(field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
+        done
 
-            cmd+="$buf"
-        fi
-
-        grubcfg_files=("${files[@]}")
+        grubcfg_files=("${abuf[@]}")
         for file in "${grubcfg_files[@]}"; do
             cmds+=("$cmd '$file'")
-        done    
-    fi
-
-    local GRUBDEF_FILE="/etc/default/grub"
-    readonly GRUBDEF_FILE
-
-    if [[ "$buf" ]]; then
-        # get locations of dst default grub file(s); many may exist if src is
-        # multiboot
-        files=($(dst_pathname "$GRUBDEF_FILE" "${rsync_params[@]}"))
-        for file in "${files[@]}"; do
-            cmds+=("sed -i $buf '$file'")
         done
     fi
 
-    # iterate over partitions to find grubenv file(s)
-    files=()
-    for ptn_pair in "${rsync_params[@]}"; do
-        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
-        mapfile -t -O ${#files[@]} files < <(find "$dstmnt" -name grubenv \
-                                                  2>> "$ERRFILE")
-    done
-
     # update grubenv on dst
-    buf=""
+    local GRUB_EDITENV=/usr/bin/grub-editenv
+    readonly GRUB_EDITENV
+
+    ((used=0))
     for file in "${files[@]}"; do
         val=""
         for ptn_pair in "${rsync_params[@]}"; do
             # get entry if it exists in grubenv file on dst
             if [[ -z "$val" ]]; then
                 UUID=$(field "$ptn_pair" "$MUUID")
-                entry=$(grep "$UUID" "$file" 2> /dev/null)
+                buf=$(grep "$UUID" "$file" 2> /dev/null)
                 if (( $? == 0 )); then
-                    name="${entry%=*}" # name of entry
-                    val="${entry#*=}"  # value of entry
+                    name="${buf%=*}" # name of entry
+                    val="${buf#*=}"  # value of entry
 
                     # replace src with dst UUID
                     val="${val/$UUID/$(field "$ptn_pair" "$((MUUID+MDST))")}"
-
-                    dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
-                    cmd="$dstmnt"/usr/bin/grub-editenv
-                    cmds+=("$cmd '$file' set '$name'='$val'")
-                    if [[ -z "$buf" ]]; then
-                        echo -e "\tCreating commands to update grubenv file on"\
-                                "destination drive..."
-                        buf="done"
+                    dstmnt=$(field "$ptn_pair" "$((MPNT+MDST))")
+                    if [[ -x "$dstmnt${GRUB_EDITENV}" ]]; then
+                        cmd="$dstmnt${GRUB_EDITENV}"
+                        cmds+=("$cmd '$file' set '$name'='$val'")
+                        if (( ! used )); then
+                            echo -e "\tCreating commands to update grubenv file"\
+                                    "on destination drive..."
+                            ((used=1))
+                        fi
+                        break
                     fi
-                    break
                 else
                     val=""
                 fi
             fi
         done
     done
-
-    local all_entries
+    
+    local entries
     local removable=1
     local dstptn
     local EFI="[Ee][Ff][Ii]"
@@ -2362,58 +2382,16 @@ clone() {
     local SHIM="[Ss][Hh][Ii][Mm]"
     readonly EFI BOOT SHIM
     local distro
-    local PREFIX_UUID="resume=UUID="
-    local RE_UUID="${PREFIX_UUID}[a-fA-F0-9-]\+"
-    local PREFIX_OFFSET="resume_offset="
-    local RE_OFFSET="${PREFIX_OFFSET}[0-9]\+"
-    readonly PREFIX_UUID RE_UUID PREFIX_OFFSET RE_OFFSET
     local dst_bootdir=""
+    local mnt
 
     # if UEFI boot, get UEFI boot entries and check if dst is removable media
-    all_entries=$(efibootmgr 2>> "$ERRFILE")
+    entries=$(efibootmgr 2>> "$ERRFILE")
     (( $? == 0 )) &&
         removable=$(lsblk -nr --nodeps --output HOTPLUG "$dstdrv" 2>> "$ERRFILE")
 
     cmd=""
     for ptn_pair in "${rsync_params[@]}"; do
-        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
-        if [[ -f "$dstmnt$FSTAB_FILE" ]]; then
-            mapfile -t entries < <(grep swap "$dstmnt$FSTAB_FILE" 2>> "$ERRFILE")
-
-            for entry in "${entries[@]}"; do
-                # if swap entry is a file and not a partition
-                if [[ "${entry::1}" == "/" ]]; then
-                    file="${entry%%+( *)}"  # get swap filename
-                    file="$dstmnt${file:1}" # add dst dir and remove '/'
-
-                    # get swap file UUID and offset
-                    UUID=$(findmnt -no UUID -T "$file" 2>> "$ERRFILE")
-                    ((size=$(filefrag -v "$file" | \
-                            awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
-
-                    cmds+=("[[ '$UUID' =~ ^[a-fA-F0-9][a-fA-F0-9-]+$ && \
-                               '$size' =~ ^[0-9]+$ && '$size' -gt 0 ]]")
-                            
-                    UUID="$PREFIX_UUID$UUID"
-                    buf="$PREFIX_OFFSET$size"
-                    
-                    # replace UUID and offset with that of dst in grub cfg 
-                    # default file
-                    file="$dstmnt$GRUBDEF_FILE"
-                    if [[ -f "$file" && -s "$file" && -r "$file" ]]; then
-                        cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
-                        cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
-                    fi
-
-                    # replace UUID and offset with that of dst in grub cfg files
-                    for file in "${grubcfg_files[@]}"; do
-                        cmds+=("sed -i 's|$RE_UUID|$UUID|g' '$file'")
-                        cmds+=("sed -i 's|$RE_OFFSET|$buf|g' '$file'")
-                    done    
-                fi
-            done
-        fi
-
         # if bios flag is set, get dst boot dir
         flags=$(field "$ptn_pair" "$((MUUID+MDST+1))")
         if [[ $bios -ne 0 && -z "$dst_bootdir" && \
@@ -2422,20 +2400,22 @@ clone() {
             dst_bootdir="$ptn_pair"
         fi
 
+        dstmnt=$(field "$ptn_pair" "$((MPNT+MDST))")
+
         # if bios flag is set, install grub bootloader for non-UEFI (bios) system
         if (( bios )); then
             if [[ -z "$cmd" && -x "$dstmnt"/usr/bin/grub-install ]]; then
                 cmd="$dstmnt"/usr/bin/grub-install # grub installer pathname
-                buf="$dstmnt"
+                mnt="$dstmnt"
             fi
 
             if [[ "$dst_bootdir" && "$cmd" ]]; then
                 UUID=$(field "$dst_bootdir" "$MUUID")
-                if grep -q "$UUID" "$buf/$FSTAB_FILE" 2> /dev/null; then
-                    dst_bootdir=$(field "$dst_bootdir" "$((MDIR+MDST))")
+                if grep -q "$UUID" "$mnt/$FSTAB_FILE" 2> /dev/null; then
+                    dst_bootdir=$(field "$dst_bootdir" "$((MPNT+MDST))")
 
                     echo -e "\tCreating command to install grub bootloader on"\
-                            "bios and boot partition on destination drive..."
+                            "bios and boot partitions on destination drive..."
 
                     # the following three numbers at the beginning of the cmd
                     # are parsed as follows:
@@ -2460,38 +2440,38 @@ clone() {
             UUID="${UUID//+(* )}" # extract partition UUID
             
             # get boot loader files (they contain 'EFI' string)
-            mapfile -t entries < <(find "$dstmnt"/$EFI -name "*.$EFI")
+            mapfile -t abuf < <(find "$dstmnt"/$EFI -name "*.$EFI")
 
             dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
             ptn_num=$(expr "$dstptn" : ".\+[[:alpha:]]\+\([[:digit:]]\+\)")
 
             # iterate over boot loader files and add shim efi entry if necessary
-            for entry in "${entries[@]}"; do
-                entry="${entry#"$dstmnt"}" # remove bootdir
+            for buf in "${abuf[@]}"; do
+                buf="${buf#"$dstmnt"}" # remove bootdir
                 
                 # skip entries that contain '/BOOT/' (it's for removable media)
                 # or not 'shim'
-                [[ "$entry" =~ /$BOOT/ || ! "$entry" =~ $SHIM ]] && continue
+                [[ "$buf" =~ /$BOOT/ || ! "$buf" =~ $SHIM ]] && continue
 
                 # remove suffix up to and including last '/'
-                distro="${entry%+(/*)}"
+                distro="${buf%+(/*)}"
                 
                 # remove prefix up to and including last '/'
                 distro="${distro##+(*/)}"
 
-                entry="${entry//'/'/'\'}" # efi boot entries use '\'
+                buf="${buf//'/'/'\'}" # efi boot entries use '\'
 
                 # if no shim boot entries for dst, add them
-                if [[ ! "$all_entries" =~ .+$ptn_num.+$UUID.+"$entry" ]]; then
+                if [[ ! "$entries" =~ .+$ptn_num.+$UUID.+"$buf" ]]; then
                     echo -en "\tCreating command to add UEFI boot entry "
 
                     # separate line as $entry contains special characters that
                     # echo -e above can't display
-                    echo "'$entry' ..."
+                    echo "'$buf' ..."
 
                     cmds+=("efibootmgr --create --disk '$dstdrv' \
                                        --part $ptn_num \
-                                       --loader '$entry' \
+                                       --loader '$buf' \
                                        --label 'shim-$distro' \
                                        --unicode")
                 fi
