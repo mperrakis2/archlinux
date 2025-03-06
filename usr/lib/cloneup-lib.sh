@@ -1254,11 +1254,42 @@ dst_pathname() {
     # iterate over partition data to add the file on dst
     for ptn_pair in "${rsync_params[@]}"; do
         # add dst file if it exists
-        file=$(field "$ptn_pair" "$((MPNT+MDST))")/"$1"
+        file=$(field "$ptn_pair" "$((MDIR+MDST))")/"$1"
         [[ -f "$file" && -s "$file" ]] && pathnames+=("$file")
     done
 
     echo "${pathnames[@]}"
+}
+
+# build sed expressions
+# $1    : str, file (must exist)
+# $2    : ref to associative str array of sed expressions
+# stdout: sed expressions
+# return: 0 on success else 1
+build_sed_exps() {
+    if [[ $# -ne 2 || ! -f "$1" ]]; then
+        local msg="\nTwo params required: str, file that exists and associative "
+        
+        msg+="str array. Exiting."
+        exit_with_stack "$msg"
+    fi
+    
+    local cmd
+    local UUID
+    local -n ref_sed_exps="$2"
+    local -i success=1
+
+    cmd="sed -i "
+    for UUID in "${!ref_sed_exps[@]}"; do
+        if grep -q "$UUID" "$1" 2>> "$ERRFILE"; then
+            cmd+="${ref_sed_exps[$UUID]}"
+            ((success=0))
+        fi
+    done
+
+    echo "$cmd"
+
+    return $success
 }
 
 # $1: str, valid value: "" or "1" (signal was received)
