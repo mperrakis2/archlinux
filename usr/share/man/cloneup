@@ -36,7 +36,9 @@ Unless the dry run command line option is used (see \fBOPTIONS\fR), every time a
 
 If the dry run command line option is used (see \fBOPTIONS\fR), the log directory (see above) is not deleted and all files under it are appended to.
 
-Sometimes it is useful to \fBtail\fR(1) the \fIlog\fR file to see which files/dirs are being transferred by \fBrsync\fR(1).
+Sometimes it is useful to \fBtail\fR(1) the \fIlog\fR file to see which files/dirs are being transferred by \fBrsync\fR(1) and to ensure that \fBrsync\fR(1) hasn't hung.
+
+If multiple clone sessions are executed in parallel a log directory per session is created.
 
 Before cloning begins the following lock directory and files under it are created:
 
@@ -45,8 +47,6 @@ Before cloning begins the following lock directory and files under it are create
     \fIslp_cloneup.sh.pid\fR: ensures that only one \fBcloneup.sh\fR instance is responsible for disabling/enabling system sleep (suspend/hibernate)
 
 The lock directory is deleted after cloning has completed.
-
-If multiple clone sessions are executed in parallel a log directory per session is created.
 .SH OPTIONS
 \fB-d\fR, \fB--dst\fR \fIdestination_drive\fR
     destination drive in the form /dev/<drv>, e.g. /dev/sdb (must be combined with '\fB-s\fR|\fB--src\fR' option)
