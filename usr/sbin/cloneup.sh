@@ -2280,7 +2280,14 @@ clone() {
 
                     # create regex to replace src offset with dst offset and add
                     # to sed expressions
-                    UUID=$(findmnt -no UUID -T "$file")
+                    UUID=$(findmnt -no UUID -T "$file")      # get dst UUID
+                    for ptn_pair in "${rsync_params[@]}"; do # get src UUID
+                        if [[ "$(field "$ptn_pair" "$((MUUID+MDST))")" == "$UUID" ]]
+                        then
+                            UUID=$(field "$ptn_pair" "$MUUID")
+                            break
+                        fi
+                    done
                     sed_exps[$UUID]+="-e 's|$RE_OFFSET|$PREFIX_OFFSET$size|g' "
                 fi
             done
