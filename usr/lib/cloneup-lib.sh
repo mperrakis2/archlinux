@@ -1399,7 +1399,7 @@ get_pids() {
                     if (( $# == 1 )); then
                         cmds=("kill -s USR1 $pid")
                         if exec_cmds "${cmds[@]}"; then
-                            cecho -e "\tSent signal to '$SCRIPTNAME.sh' process"\
+                            cecho -e "\tSent signal to '$SCRIPTNAME' process"\
                                      "with ID $pid to disable/enable system"\
                                      "sleep (suspend/hibernate).\n"
                         fi
