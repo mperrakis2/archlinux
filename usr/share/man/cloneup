@@ -43,8 +43,8 @@ If multiple clone sessions are executed in parallel a log directory per session 
 Before cloning begins the following lock directory and files under it are created:
 
 \fI/var/lock/cloneup.sh.d/\fR
-    \fIcloneup.sh.pids\fR: ensures that \fBcloneup.sh\fR is executed only if its source and destination are not destinations of another \fBcloneup.sh\fR instance
-    \fIslp_cloneup.sh.pid\fR: ensures that only one \fBcloneup.sh\fR instance is responsible for disabling/enabling system sleep (suspend/hibernate)
+    \fIpids\fR: ensures that \fBcloneup.sh\fR is executed only if its source and destination are not destinations of another \fBcloneup.sh\fR instance
+    \fIsleep.pid\fR: ensures that only one \fBcloneup.sh\fR instance is responsible for disabling/enabling system sleep (suspend/hibernate)
 
 The lock directory is deleted after cloning has completed.
 .SH OPTIONS

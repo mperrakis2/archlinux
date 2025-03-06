@@ -26,17 +26,17 @@
 # log                  : the output of cmds (stdout)
 # errors               : errors, if any (stderr)
 # commands             : the cmds used during cloning
-# <script_name>.pids   : lock file to ensure that the script is executed only
+# pids                 : lock file to ensure that the script is executed only
 #                        if its src and dst are not destinations for another
 #                        script already running (multiple instances are
 #                        allowed as long as destinations are different)
-# slp_<script_name>.pid: lock file to ensure that only one script instance is
+# sleep_pid            : lock file to ensure that only one script instance is
 #                        responsible for masking/unmasking system sleep
 #                        (suspend/hibernate)
 #
-# * lock files are created under /var/lock/<script_dir>/ which is deleted after
-#   all script instances have terminated
-# * all other files are created under /var/log/<script_dir>/X_Y/ (X, Y: drive
+# * lock files are created under /var/lock/<script_name>.d/ which is deleted
+#   after all script instances have terminated
+# * all other files are created under /var/log/<script_name>.d/X_Y/ (X, Y: drive
 #   numbers for src and dst respectively)
 #
 # other scripts used by this script
@@ -76,9 +76,9 @@ DRV_SUFFIX="[0-9]+$"
 readonly DRV_SUFFIX
 CANCEL_SIGNALS="ABRT HUP INT QUIT TERM"
 readonly CANCEL_SIGNALS
-LCKFILE="$LCKDIR/${SCRIPTNAME}.pids"
+LCKFILE="$LCKDIR/pids"
 readonly LCKFILE
-SLPFILE="$LCKDIR/slp_${SCRIPTNAME}.pid"
+SLPFILE="$LCKDIR/sleep.pid"
 readonly SLPFILE
 
 # bold colors foreground
