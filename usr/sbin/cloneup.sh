@@ -2429,6 +2429,8 @@ clone() {
                                      --boot-directory='$dst_bootdir' \
                                      --recheck '$dstdrv'")
                     ((bios=0)) # install grub bootloader only once
+                else
+                    cmd=""
                 fi
             fi
         fi
