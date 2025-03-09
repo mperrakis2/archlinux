@@ -1,9 +1,9 @@
-#!/bin/bash
+#! /bin/bash
 
 # This script clones one drive to another. For detailed info and usage see man
 # page: <script_name>(1). For a quick description of the cmd line options run
 # '<script_name> -h|--help'.
-
+#
 # legend
 # ------
 # src: drive to be cloned (source)
@@ -30,7 +30,7 @@
 #                        if its src and dst are not destinations for another
 #                        script already running (multiple instances are
 #                        allowed as long as destinations are different)
-# sleep_pid            : lock file to ensure that only one script instance is
+# sleep.pid            : lock file to ensure that only one script instance is
 #                        responsible for masking/unmasking system sleep
 #                        (suspend/hibernate)
 #
