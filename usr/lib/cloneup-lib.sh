@@ -875,6 +875,12 @@ SLP_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$SLP_CFG_PTN")
 readonly SLP_CFG_MNT_DIR
 declare -a system_sleep_cmds=()
 
+# check if systemd is init
+# return: 0 if systemd is init else 1
+is_systemd() {
+    if [[ "$(ps -p 1 -o comm=)" == systemd ]]; then return 0; else return 1; fi
+}
+
 # create mask/unmask system sleep cmd
 # $1: ref to str array to store the cmd or str with valid value "filter"
 # $2: optional, str, valid value: "mask"
@@ -1305,6 +1311,8 @@ valid_opt_param() {
 
 # return: 0 on success else the error code of the cmd that failed
 unmask_system_sleep() {
+    ! is_systemd && return
+
     local -a cmds=()
     system_sleep cmds # add cmds to unmask system sleep
     

@@ -1008,6 +1008,8 @@ populate_arrays() {
 # return: 0 on success, 1 if parameter error else the error code of the cmd that
 #         failed
 mask_system_sleep() {
+    ! is_systemd && return
+
     valid_opt_param "$1" # validate parameter
     
     # some other clone process has completed or was interrupted and sent signal
