@@ -106,18 +106,18 @@ A leading sign ('-' or '+') is followed by a '/' and an optional <path> which ca
     -/dir1/di*r2/ {?????.sh,*st.txt}, interpreted as plain characters: { , }
 
 .I examples
-    -/dir1/dir2/ report* (exclude all files and directories beginning with 'report' that are directly under '/dir1/dir2/' or under any directory under '/dir1/dir2/')
+    -/dir1/dir2/ report* (exclude all files and directories beginning with 'report' that are directly under '/dir1/dir2/' and under any directory under '/dir1/dir2/')
 
-    -/dir1/dir2 report*/ (exclude directories beginning with 'report' that are directly under '/dir1/dir2/' or under any directory under '/dir1/dir2/')
+    -/dir1/dir2 report*/ (exclude directories beginning with 'report' that are directly under '/dir1/dir2/' and under any directory under '/dir1/dir2/')
 
-    -/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under a 'dir3' directory under '/dir1/dir2/' or under a 'dir3' directory under any directory under '/dir1/dir2/')
+    -/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under a 'dir3' directory under '/dir1/dir2/' and under a 'dir3' directory under any directory under '/dir1/dir2/')
 
-    -/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under a 'dir3' directory under '/dir1/dir2/' or under a 'dir3' directory under any directory under '/dir1/dir2/')
+    -/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under a 'dir3' directory under '/dir1/dir2/' and under a 'dir3' directory under any directory under '/dir1/dir2/')
 
 .I exclude/include tuple example
-    -/dir1/dir2 dir3/dir4/ (exclude directory 'dir4' that is under a 'dir3' directory under '/dir1/dir2/' or under a 'dir3' directory under any directory under '/dir1/dir2/')
+    -/dir1/dir2 dir3/dir4/ (exclude directory 'dir4' that is under a 'dir3' directory under '/dir1/dir2/' and under a 'dir3' directory under any directory under '/dir1/dir2/')
 
-    +/dir1/dir2 dir3/dir4/file1.txt (include 'file1.txt' that is under a '/dir3/dir4/' directory under '/dir1/dir2/' or under a '/dir3/dir4/' directory under any directory under '/dir1/dir2/')
+    +/dir1/dir2 dir3/dir4/file1.txt (include 'file1.txt' that is under a '/dir3/dir4/' directory under '/dir1/dir2/' and under a '/dir3/dir4/' directory under any directory under '/dir1/dir2/')
 
     +/dir1/dir2/ dir3/dir4/file1.txt (same as above)
 
