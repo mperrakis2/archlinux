@@ -5,21 +5,23 @@ cloneup.sh-exclude.conf \- configuration file for \fBcloneup.sh\fR(1) that conta
 .SH SYNOPSIS
 /etc/cloneup.sh.d/exclude.conf, /etc/cloneup.sh.d/conf.d/exclude.conf, ~/.config/cloneup.sh.d/exclude.conf, <custom pathname>
 .SH DESCRIPTION
-The default directory of the \fBexclude.conf\fR configuration file is \fI/etc/cloneup.sh.d/\fR. The file should never be deleted and if the default entries need to be modified it is best to create a new one under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR but the same filename has to be used. A file under \fI/etc/cloneup.sh.d/conf.d/\fR modifies (overrides) the default one and one under \fI~/.config/cloneup.sh.d/\fR replaces it.
+The default entries in \fBexclude.conf\fR are based on the Filesystem Hierarchy Standard (FHS).
+
+The default directory of the \fBexclude.conf\fR configuration file is \fI/etc/cloneup.sh.d/\fR. The file should not be deleted and if the default entries need to be modified it is best to create a new one under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR but the same filename has to be used. A file under \fI/etc/cloneup.sh.d/conf.d/\fR modifies (overrides) the default one and one under \fI~/.config/cloneup.sh.d/\fR replaces it.
 
 \fBcloneup.sh\fR(1) uses the configuration file under \fI~/.config/cloneup.sh.d/\fR if not run under its directory (usually \fI/usr/sbin/\fR).
 
-A configuration file can also be provided when executing \fBcloneup.sh\fR(1) with the \fB-e\fR or \fB--exclude\fR command line option. It takes priority over any other file and any valid pathname can be used (not restricted to \fBexclude.conf\fR).
+A configuration file can also be supplied when executing \fBcloneup.sh\fR(1) with the \fB-e\fR or \fB--exclude\fR command line option. It takes priority over any other file and any valid pathname can be used (not restricted to \fBexclude.conf\fR).
 .SH SIMPLE EXAMPLES
 .I GENERAL USE
     -/home/user/Music/* (exclude all files and directories under /home/user/Music/)
     -/home/user/Music/  (exclude directory 'Music' under /home/user/)
     -/home/user/Music   (exclude a file or directory named 'Music' under /home/user/)
 
-A leading minus (-) sign specifies an exclude entry. Do not use quotes unless they are part of the filename or dirname in which case they have to be escaped, e.g. \\', \\". A trailing '/' specifies a directory to be excluded. No trailing '/' specifies a directory or file to be excluded.
+A leading minus (-) sign specifies an exclude entry. Do not use quotes unless they are part of the filename or dirname in which case they have to be escaped, e.g. \\', \\". A trailing '/' specifies a directory to be excluded. Absense of a trailing '/' specifies a directory or file to be excluded.
 
 .I TUPLES
-    If you want to exclude everything under a specific directory except certain files or directories you can use an exclude include tuple. For example:
+    If you want to exclude everything under a specific directory except certain files or directories you can use an exclude/include tuple. For example:
 
     -/home/user/*               (exclude all files and directories under /home/user/)
     +/home/user/business/report (include a file or directory named 'report' under /home/user/business/)
@@ -29,7 +31,7 @@ A leading plus (+) sign specifies an include entry.
 
 A tuple requires at least two entries and one of them has to be an exclude. If there's no exclude entry for an include entry the include entry is ignored. The exclude entry need not preceed the include entries.
 
-If you want to exclude a pathname only if it's a file, you can create a tuple as follows:
+If you want to exclude a pathname only if it's a file you can create a tuple as follows:
     -/home/user/report  (exclude a file or directory named 'report')
     +/home/user/report/ (include directory 'report')
 
@@ -40,7 +42,7 @@ Another example of a tuple:
 
 .I SPECIAL & ESCAPED CHARACTERS
 
-If a filename or dirname includes spaces, parentheses or escaped characters, e.g. newline, they have to be escaped. For example:
+If a filename or dirname includes spaces, parentheses or escaped characters, e.g. newline, they have to be escaped. Consider the following output of the ls command:
 
     [prompt]$ ls -1
     \'/home/user/monthly\'$\'\\n\'\'reports/november\'
@@ -48,10 +50,8 @@ If a filename or dirname includes spaces, parentheses or escaped characters, e.g
 
 The above filenames contain a newline ($'\\n'), a space and parentheses. The correct exclude entries, removing unnecessary single quotes, would be:
 
-    -/home/user/monthly$'\\n'reports/november (escaped character syntax: $'\\<ec>')
+    -/home/user/monthly$'\\n'reports/november (Escaped Character syntax: $'\\<EC>')
     -/home/user/sales/november\\ \\(sorted\\)   (space and parentheses escaped)
-
-All escaped characters have to be specified as $'\\<ec>'.
 
 .SH VALID ENTRIES
 
@@ -61,13 +61,13 @@ Valid entries are:
 
 .B b)\fR comments, a line starting with '#' is a comment.
 
-.B c)\fR any line with the syntax '-|+<fspec>' where:
+.B c)\fR any line with syntax '-|+<fspec>' where:
 
 A leading sign ('-' or '+') is followed by a mandatory file specification (<fspec>). <fspec> specifies pathnames of files or directories (all metacharacters of the bash shell can be used). <fspec> must have a leading '/' and if it has a trailing '/' a directory is specified else a directory or file is specified.
   
 .I examples
-    -/dir1/dir2/report*  (exclude all files and directories beginning with 'report', under '/dir1/dir2/')
-    -/dir1/dir2/report*/ (exclude directories beginning with 'report', under '/dir1/dir2/')
+    -/dir1/dir2/report*  (exclude all files and directories beginning with 'report' under '/dir1/dir2/')
+    -/dir1/dir2/report*/ (exclude directories beginning with 'report' under '/dir1/dir2/')
 
 .I exclude/include tuple example
     -/dir1/dir2/          (exclude 'dir1/dir2' under root directory)
@@ -91,9 +91,9 @@ A leading sign ('-' or '+') is followed by a mandatory file specification (<fspe
     -/dir1/dir2/+(*.jpg|*.mp3)     (1 or more files that have 'jpg' OR 'mp3' extention)
     -/dir1/dir2/!(*.jpg|*.mp3)     (files that do NOT have 'jpg' OR 'mp3' extention)
 
-.B d)\fR any line with the syntax '-|+/[<path>] [<path>]<name>' where:
+.B d)\fR any line with syntax '-|+/[<path>] [<path>]<name>' where:
 
-A leading sign ('-' or '+') is followed by a '/' and an optional <path> which can have a trailing '/' (all metacharacters of the bash shell can be used in <path>). The next token contains an optional <path> which must not have a leading '/' and a mandatory  <name> which specifies filenames or dirnames. If both <path> and <name> are specified they must be separated by a '/'. The following metacharacters can be used in [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies a directory only (no file).
+A leading sign ('-' or '+') is followed by a '/' and an optional <path> which can have a trailing '/' (all metacharacters of the bash shell can be used in <path>). The next token contains an optional <path> which must not have a leading '/' and a mandatory  <name> which specifies filenames or dirnames. If both <path> and <name> are specified they must be separated by a '/'. The following metacharacters can be used in [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies a directory only (no files).
 
 .I invalid examples
     The following examples are invalid, as the second token contains some metacharacters that are interpreted as plain characters (valid metacharacters for the second token are *, ?, [], [^]).
@@ -106,49 +106,47 @@ A leading sign ('-' or '+') is followed by a '/' and an optional <path> which ca
     -/dir1/di*r2/ {?????.sh,*st.txt}, interpreted as plain characters: { , }
 
 .I examples
-    -/dir1/dir2/ report* (exclude all files and directories beginning with 'report' that are under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
+    -/dir1/dir2/ report* (exclude all files and directories beginning with 'report' that are directly under '/dir1/dir2/' or under any directory under '/dir1/dir2/')
 
-    -/dir1/dir2 report*/ (exclude directories beginning with 'report' that are under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
+    -/dir1/dir2 report*/ (exclude directories beginning with 'report' that are directly under '/dir1/dir2/' or under any directory under '/dir1/dir2/')
 
-    -/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
+    -/dir1/dir2/ dir3/report* (exclude all files and directories beginning with 'report' that are under a 'dir3' directory under '/dir1/dir2/' or under a 'dir3' directory under any directory under '/dir1/dir2/')
 
-    -/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under any 'dir3' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
+    -/dir1/dir2 dir3/report*/ (exclude directories beginning with 'report' that are under a 'dir3' directory under '/dir1/dir2/' or under a 'dir3' directory under any directory under '/dir1/dir2/')
 
 .I exclude/include tuple example
-    -/dir1/dir2 dir3/dir4/ (exclude directory 'dir4' that is under any 'dir3' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
+    -/dir1/dir2 dir3/dir4/ (exclude directory 'dir4' that is under a 'dir3' directory under '/dir1/dir2/' or under a 'dir3' directory under any directory under '/dir1/dir2/')
 
-    +/dir1/dir2 dir3/dir4/file1.txt (include 'file1.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
+    +/dir1/dir2 dir3/dir4/file1.txt (include 'file1.txt' that is under a '/dir3/dir4/' directory under '/dir1/dir2/' or under a '/dir3/dir4/' directory under any directory under '/dir1/dir2/')
 
-    +/dir1/dir2/ dir3/dir4/file2.txt (include 'file2.txt' that is under any '/dir3/dir4/' directory that is under '/dir1/dir2/' or any other directory that is under '/dir1/dir2/')
+    +/dir1/dir2/ dir3/dir4/file1.txt (same as above)
 
 .I other examples
-    -/dir1/dir2/  ????.txt
-    -/dir1/dir2   dir3/dir4/????.txt
-    -/dir1/di*r2/ foot????.doc
-    -/dir1/di*r2  dir3/dir4/foot????.doc
-    -/dir1/dir2/  [p-s]*
-    -/dir1/dir2/  [p-s]*/
-    -/dir1/dir2   dir3/dir4/[p-s]*
-    -/dir1/dir2   dir3/dir4/[p-s]*/
-    -/dir1/di*r2/ [^p-s]*
-    -/dir1/di*r2/ [^p-s]*/
-    -/dir1/di*r2  dir3/dir4/[^p-s]*
-    -/dir1/di*r2  dir3/dir4/[^p-s]*/
-    -/dir1/di*r2/ [^p]*
-    -/dir1/di*r2/ [^p]*/
-    -/dir1/di*r2  dir3/dir4/[^p]*
-    -/dir1/di*r2  dir3/dir4/[^p]*/
-    -/dir1/di*r2/ [1-5]*
-    -/dir1/di*r2/ [1-5]*/
-    -/dir1/di*r2  dir3/dir4/[1-5]*
-    -/dir1/di*r2  dir3/dir4/[1-5]*/
+    -/dir1/dir2/                  ????.txt
+    -/dir1/dir2                   dir3/dir4/????.txt
+    -/dir1/di*r2/                 foot????.doc
+    -/dir1/di*r2                  dir3/dir4/foot????.doc
+    -/dir1/dir2/                  [p-s]*
+    -/dir1/dir2/                  [p-s]*/
+    -/dir1/dir2                   dir3/dir4/[p-s]*
+    -/dir1/dir2                   dir3/dir4/[p-s]*/
+    -/dir1/di*r2/                 [^p-s]*
+    -/dir1/di*r2/                 [^p-s]*/
+    -/dir1/di*r2                  dir3/dir4/[^p-s]*
+    -/dir1/di*r2                  dir3/dir4/[^p-s]*/
+    -/dir1/di*r2/                 [^p]*
+    -/dir1/di*r2/                 [^p]*/
+    -/dir1/di*r2                  dir3/dir4/[^p]*
+    -/dir1/di*r2                  dir3/dir4/[^p]*/
+    -/dir1/di*r2/                 [1-5]*
+    -/dir1/di*r2/                 [1-5]*/
+    -/dir1/di*r2                  dir3/dir4/[1-5]*
+    -/dir1/di*r2                  dir3/dir4/[1-5]*/
     -/dir1/{?????sales,*reports}/ dir2/dir3/[^p-s]*
     -/dir1/*{jpg,mp3}             dir2/dir3/[^p-s]*/
     -/dir1/?(*jpg|*mp3)/          dir2/dir3/[^1-5]*
     -/dir1/*(*jpg|*mp3)           dir2/dir3/[^1-5]*/
     -/dir1/+(*jpg|*mp3)/          dir2/dir3/[^p]*
     -/dir1/!(*jpg|*mp3)           dir2/dir3/[^p]*/
-.SH STANDARDS
-The system files excluded from cloning are based on the Filesystem Hierarchy Standard (FHS).
 .SH SEE ALSO
 \fBcloneup.sh\fR(1)

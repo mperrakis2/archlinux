@@ -1,7 +1,7 @@
 .\" Manpage for cloneup.sh.
 .TH CLONEUP.SH 1 "30 September 2024" "1.0" "User Commands"
 .SH NAME
-cloneup.sh \- clone one drive to another using \fBrsync\fR(1)
+cloneup.sh \- clone a drive using \fBrsync\fR(1)
 .SH SYNOPSIS
 .B cloneup.sh \fR[\fIOPTION\fR]... 
 .SH DESCRIPTION
@@ -9,11 +9,11 @@ Source and destination drives need not be the same size as long as all source da
 
 If \fBcloneup.sh\fR is run without any command line options the default configuration files under \fI/etc/cloneup.sh.d/\fR (see \fBFILES\fR) are used. New configuration files can be created under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR (see \fBFILES\fR).
 
-After \fBcloneup.sh\fR is run a list of files/dirs that are excluded from cloning is displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. These files/dirs are read from the configuration file \fIexclude.conf\fR (see \fBFILES\fR). Also, a list of drives connected to the PC is displayed and user input is required to select source and destination drives. Alternatively, the user can supply command line options for source and destination drives (see \fBOPTIONS\fR). However, this is unintuitive but useful if \fBcloneup.sh\fR is run from a script.
+After \fBcloneup.sh\fR is run a list of files/dirs that are excluded from cloning is displayed, e.g. system files under \fI/dev/*\fR, \fI/proc/*\fR, \fI/sys/*\fR, etc. These files/dirs are read from the configuration file \fIexclude.conf\fR (see \fBFILES\fR). Also, a list of drives connected to the PC is displayed and user input is required to select source and destination drives. Alternatively, the user can supply command line options for source and destination drives (see \fBOPTIONS\fR). However, this is unintuitive but useful if \fBcloneup.sh\fR is to be run from a script.
 
-During cloning text is send to standard output to indicate which command is being executed. There's also a progress indicator which includes total bytes and percentage cloned. Log files are created under \fI/var/log/cloneup.sh.d/\fR.
+During cloning feedback is provided via standard output. For example, \fBrsync\fR(1) provides a progress indicator which includes total bytes and percentage cloned. Log files are created under \fI/var/log/cloneup.sh.d/\fR.
 
-Multiple \fBcloneup.sh\fR instances can run in parallel provided the destination drives are (obviously) different. For example, if three drives are connected to the PC one drive can be cloned to the other two at the same time.
+Multiple \fBcloneup.sh\fR instances can run in parallel provided the destination drives are (obviously) different. For example, if three drives are connected to the PC one drive can be cloned to the other two simultaneously.
 
 While \fBcloneup.sh\fR is running it can be canceled with Ctrl-C.
 .SH EXAMPLES
@@ -23,13 +23,13 @@ The default configuration files used by \fBcloneup.sh\fR are under \fI/etc/clone
     \fIexclude.conf\fR (files/dirs to exclude from cloning, see \fBcloneup.sh-exclude.conf\fR(5))
     \fIfstypes.conf\fR (contains commands to format a partition for various filesystems)
 
-The user can create new configuration files under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR but the default filenames have to be used. Files under \fI/etc/cloneup.sh.d/conf.d/\fR modify (override) the default ones and files under \fI~/.config/cloneup.sh.d/\fR replace the default ones. It is recommended not to modify the default \fIfstypes.conf\fR file or create your own unless you really know what you are doing.
+The user can create new configuration files under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR but the default filenames (see above) have to be used. Files under \fI/etc/cloneup.sh.d/conf.d/\fR modify (override) the default ones and files under \fI~/.config/cloneup.sh.d/\fR replace the default ones. It is recommended not to modify the default \fIfstypes.conf\fR file or create your own unless you really know what you are doing.
 
 If \fBcloneup.sh\fR is not run under its directory (usually \fI/usr/sbin/\fR) it uses the configuration files under \fI~/.config/cloneup.sh.d/\fR if they exist. In any other case it uses the configuration files under \fI/etc/cloneup.sh.d/\fR and \fI/etc/cloneup.sh.d/conf.d/\fR.
 
 Configuration files can also be provided when executing \fBcloneup.sh\fR with command line options (see \fBOPTIONS\fR). They take priority over any other files and any valid pathnames can be used.
 
-Unless the dry run command line option is used (see \fBOPTIONS\fR), every time a cloning session is executed the log directory \fI/var/log/cloneup.sh.d/<x>_<y>/\fR is deleted and then created. \fI<x>\fR and \fI<y>\fR are the numbers of the source and destination drives respectively. The following files are created under this directory:
+Unless the dry run command line option is used (see \fBOPTIONS\fR), every time a cloning session is executed the log directory \fI/var/log/cloneup.sh.d/<x>_<y>/\fR is deleted and then created. \fI<x>\fR and \fI<y>\fR are the numbers of the source and destination drives respectively selected by the user. The following files are created under this directory:
     \fIlog\fR      (contains files/dirs cloned)
     \fIerrors\fR   (contains any runtime errors)
     \fIcommands\fR (contains most commands executed by \fBcloneup.sh\fR)
@@ -52,10 +52,10 @@ The lock directory is deleted after cloning has completed.
     destination drive in the form /dev/<drv>, e.g. /dev/sdb (must be combined with '\fB-s\fR|\fB--src\fR' option)
 
 \fB-e\fR, \fB--exclude\fR \fIexclude_file\fR
-    takes priority over other exclude conf file (see \fBFILES\fR) and must be a valid pathname
+    takes priority over other exclude files (see \fBFILES\fR) and must be a valid pathname
 
 \fB-f\fR, \fB--fstypes\fR \fIfstypes_file\fR
-    takes priority over other filesystem types conf file (see \fBFILES\fR) and must be a valid pathname
+    takes priority over other filesystem type files (see \fBFILES\fR) and must be a valid pathname
 
 \fB-h\fR, \fB--help\fR
     prints a short help message
@@ -74,16 +74,16 @@ The source drive must not use Logical Volume Management (\fBlvm\fR(8)).
 
 The source drive must have partitions with UUIDs.
 
-If the source drive has partitions with the btrfs filesystem any subvolumes on them will not be created on the destination. To see which filesystems are fully supported check \fIfstypes.conf\fR file (see \fBFILES\fR).
+If the source drive has partitions with the btrfs filesystem any subvolumes on them will not be created on the destination. To see which filesystems are fully supported check the \fIfstypes.conf\fR file (see \fBFILES\fR).
 
 If the source drive is bootable the destination will become bootable only if the source drive is using the GRUB 2 bootloader. Regardless, the destination will contain all source data provided cloning was successful.
 
 .SH EXIT_STATUS
 Zero on success else > 1. In case of error an appropriate error message is displayed and further info might be available in the error file (see \fBFILES\fR).
 .SH NOTES
-To clone, \fBcloneup.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\fI--i-r\fR) command line option in order to use less memory. However, this option interferes with the \fBrsync\fR(1) \fI--progress\fR command line option also used in \fBcloneup.sh\fR. Hence, the percentage of files transferred that is displayed is incorrect but the data size is correct.
+To clone, \fBcloneup.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\fI--i-r\fR) command line option in order to use less memory. However, this option interferes with the \fBrsync\fR(1) \fI--progress\fR command line option also used in \fBcloneup.sh\fR. Unfortunately, the percentage of files transferred that is displayed is incorrect but the data size is not.
 .SH CAVEATS
-If many programs are running while \fBcloneup.sh\fR is running then it is possible that these programs will delete some of the files they use during the cloning process. However, the deleted files are part of \fBrsync\fR(1)'s list of files to transfer. Hence, when \fBrsync\fR(1) exits, its return code is 24 (partial transfer due to vanished source files) but \fBcloneup.sh\fR ignores it. It is recommended that prior to executing \fBcloneup.sh\fR all programs on all user accounts are closed and all user accounts are exited except the one used for cloning.
+If many programs are running while \fBcloneup.sh\fR is running then it's possible they will delete some of their files while \fBcloneup.sh\fR is running. However, the deleted files are part of \fBrsync\fR(1)'s list of files to transfer. Hence, when \fBrsync\fR(1) exits, its return code is 24 (partial transfer due to vanished source files) but \fBcloneup.sh\fR ignores it. It is recommended that prior to running \fBcloneup.sh\fR all programs on all user accounts are closed and all user accounts are exited except the one used for cloning.
 .SH BUGS
 If system sleep (suspend/hibernate) is enabled on the PC \fBcloneup.sh\fR is running on then \fBcloneup.sh\fR will disable system sleep before cloning and enable it after. If \fBcloneup.sh\fR is run from a XFCE terminal window and it disables hibernation and the hibernation period expires during cloning then after cloning has completed and hibernation is enabled XFCE can't hibernate unless the terminal window is closed. Insofar this has not been identified as a \fBcloneup.sh\fR bug.
 .SH SEE ALSO
