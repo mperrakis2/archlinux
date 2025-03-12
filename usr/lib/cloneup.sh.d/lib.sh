@@ -21,12 +21,12 @@ clone one drive to another using rsync(1)
 -s, --src <src_drive>        source drive, e.g. /dev/sda
                              must be combined with '-d, --dst' option
 
-if '-s' and '-d' are omitted a user friendly list of drives is displayed and
-user input is by source and destination drive number
+if '-s' and '-d' are omitted a list of drives is displayed and user input is
+based on source and destination drive number as per the list
 
 if '-e' or '-f' is omitted the conf file is read from:
     * ~/$LCL_CFG_DIR/ if it exists and the script is not run under its
-      own directory (usually /usr/sbin/)
+      own directory ($SCRIPTDIR/)
     * $DEF_CFG_DIR/ and $OVR_CFG_DIR/ (if it exists) in all
       other cases
 
@@ -868,104 +868,6 @@ align_size() {
     fi
 }
 
-readonly SLP_CFG_DIR="/etc/systemd/system"
-SLP_CFG_PTN=$(findmnt -no SOURCE -T "$SLP_CFG_DIR")
-readonly SLP_CFG_PTN
-SLP_CFG_MNT_DIR=$(lsblk -no MOUNTPOINT "$SLP_CFG_PTN")
-readonly SLP_CFG_MNT_DIR
-declare -a system_sleep_cmds=()
-
-# check if systemd is init
-# return: 0 if systemd is init else 1
-is_systemd() {
-    if [[ "$(ps -p 1 -o comm=)" == systemd ]]; then return 0; else return 1; fi
-}
-
-# create mask/unmask system sleep cmd
-# $1: ref to str array to store the cmd or str with valid value "filter"
-# $2: optional, str, valid value: "mask"
-system_sleep() {
-    local -i err=0
-    
-    [[ $# -eq 2 && "$2" != "mask" ]] && ((err=1))
-    if (( err || $# < 1 || $# > 2 )); then
-        local msg="\nOne or two params required: reference to cmds array or "
-        
-        msg+="str == 'filter' and optional param == 'mask'. Exiting."
-        exit_with_stack "$msg"
-    fi
-
-    local target
-    local -a TARGETS=("sleep.target" "suspend.target" "hibernate.target")
-    local rsync_exclude
-
-    TARGETS+=("hybrid-sleep.target" "suspend-then-hibernate.target")
-    readonly TARGETS
-
-    if (( $# == 2 )); then # create cmd to mask system sleep
-        local system_sleep_cmd=""
-
-        system_sleep_cmds=()
-
-        for target in "${TARGETS[@]}"; do
-            # check if target is masked
-            systemctl status "$target" | grep masked >> "$LOGFILE" 2>> "$ERRFILE"
-            
-            # if not masked get output of last pipe, i.e. grep
-            if (( ${PIPESTATUS[-1]} )); then
-                # create cmd to mask target
-                if [[ "$system_sleep_cmd" ]]; then
-                    system_sleep_cmd+="$target "
-                else
-                    system_sleep_cmd+="systemctl $2 $target "
-                fi
-                
-                if [[ ! "${rsync_filters[$SLP_CFG_MNT_DIR]}" =~ "$target" ]]
-                then
-                    rsync_exclude="-f \"- $SLP_CFG_DIR/$target\" "
-                    rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
-                fi
-            fi
-        done
-        
-        [[ "$system_sleep_cmd" ]] && system_sleep_cmds+=("$system_sleep_cmd")
-
-    # system sleep has already been masked by another clone process so just add
-    # the masked targets to rsync filters
-    elif [[ $# -eq 1 && "$1" == "filter" ]]; then
-        local slp_entry
-        local mnt_dir
-        local rsync_excludes
-        
-        slp_entry=$(tail -1 "$SLPFILE")
-        mnt_dir=$(expr "$slp_entry" : "^\(.\+\) $SEP")
-        rsync_excludes=$(expr "$slp_entry" : "^.\+ $SEP \(.\+\)$")
-
-        for target in "${TARGETS[@]}"; do
-            slp_entry="$SLP_CFG_DIR/$target"
-            if [[ "$rsync_excludes" =~ [[:space:]]+"$slp_entry" ]]; then
-                 # add rsync filter
-                rsync_exclude="-f \"- $slp_entry\" "
-                rsync_filters["$SLP_CFG_MNT_DIR"]+="$rsync_exclude"
-            fi
-        done
-    fi
-
-    # add cmd to mask/unmask system sleep
-    if (( ${#system_sleep_cmds[@]} )); then
-        local -n ref="$1"
-    
-        ref+=("${system_sleep_cmds[@]}")
-        if (( $# == 2 )); then 
-            # unmask system sleep
-            system_sleep_cmds=("${system_sleep_cmds[@]//$2/unmask}")
-            system_sleep_cmds+=("flock '$SLPFILE' truncate -s 0 '$SLPFILE'")
-        else
-            system_sleep_cmds=()
-        fi
-    fi
-}
-
 # mount a src or dst partition
 # $1    : str, the partition
 # $2    : ref to str, mount data
@@ -1309,74 +1211,43 @@ valid_opt_param() {
     fi
 }
 
-# return: 0 on success else the error code of the cmd that failed
-unmask_system_sleep() {
-    ! is_systemd && return
+# In case the desktop environment attempted system sleep (suspend/hibernate) and
+# it failed, a notification was sent and a popup appears on the desktop. The
+# popup has no timeout so the following code closes all popup notifications.
+close_notifications() {
+    if [[ "$DISPLAY" ]]; then            
+        local user
+        local -i uid
+        local -i nid
 
-    local -a cmds=()
-    system_sleep cmds # add cmds to unmask system sleep
-    
-    (( ${#cmds[@]} )) && echo -e "\tEnabling system sleep (suspend/hibernate)..."
-    exec_cmds "${cmds[@]}"
-    local -i err=$?
-
-    if (( ! err  && ${#cmds[@]} )); then
-        # if other clone processes exist, one of them must mask/unmask system
-        # sleep so send signal USR1 to all of them
-        get_pids 1
-        ((err=$?))
+        user=$(logname)
+        uid=$(id -u "$user")
         
-        # In case the desktop environment attempted system sleep
-        # (suspend/hibernate) and it failed, a notification was sent and a popup
-        # appears on the desktop. The popup has no timeout so the following code
-        # clears all popups.
-        if [[ "$DISPLAY" ]]; then            
-            local -i nid
-            local user
-            local -i uid
-
-            user=$(logname)
-            uid=$(id -u "$user")
-            
-            # send dummy notification to get the latest notification id
-            ((nid=$(sudo -u "$user" DISPLAY=:0 \
-                                    DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
-                                    notify-send -p 'get the latest notification id' )))
-            
-            # iterate over all notification ids and clear all popups
-            (( $? == 0 )) &&
-                for i in $(seq $nid); do 
-                    sudo -u "$user" DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
-                                    dbus-send --type=method_call \
-                                              --dest=org.freedesktop.Notifications \
-                                              /org/freedesktop/Notifications \
-                                              org.freedesktop.Notifications.CloseNotification \
-                                                  uint32:"$i"
-                done
-        fi
+        # send dummy notification to get the latest notification id
+        ((nid=$(sudo -u "$user" DISPLAY=:0 \
+                                DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
+                                notify-send -p 'get the latest notification id' )))
+        
+        # iterate over all notification ids and clear all popups
+        (( $? == 0 )) &&
+            for i in $(seq $nid); do 
+                sudo -u "$user" DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
+                                dbus-send --type=method_call \
+                                          --dest=org.freedesktop.Notifications \
+                                          /org/freedesktop/Notifications \
+                                          org.freedesktop.Notifications.CloseNotification \
+                                          uint32:"$i"
+            done
     fi
-    
-    return $err
 }        
 
 # get shell executable and script filenames
-SHELL_FNAME=$(expr "$(head -1 "$0")" : "^\s*#\!\s*\(.\+\)$")
-readonly SHELL_FNAME
-SCRIPT_FNAME=$(basename "$0")
-readonly SCRIPT_FNAME
+SHELLNAME=$(expr "$(head -1 "$0")" : "^\s*#\!\s*\(.\+\)$")
+readonly SHELLNAME
 
-# get the number of pids of clone processes running or send signal USR1
-# $1    : optional, int, valid value: 1, boolean to send signal USR1
-# return: 0 if signal USR1 was sent else the number of pids in the lock file
+# get the number of pids of clone processes running
+# return: the number of pids in the lock file
 get_pids() {
-    # validate param
-    if (( $# > 1 )) || (( $# == 1 )) && [[ $1 -ne 1 ]]; then
-        local msg="\nOnly one optional param allowed: boolean to send signal "
-        
-        msg+="USR1. Exiting."
-        exit_with_stack "$msg"
-    fi
-    
     local -i fd
     
     # critical section
@@ -1389,7 +1260,6 @@ get_pids() {
         
         declare pid
         declare cmd_line
-        declare -a cmds
         declare -i i=0
 
         # extract pids
@@ -1401,20 +1271,8 @@ get_pids() {
                 # get cmd line corresponding to pid
                 cmd_line=$(tr -d '\0' < /proc/"$pid"/cmdline 2>> "$ERRFILE")
                 
-                if [[ "$cmd_line" =~ $SHELL_FNAME && \
-                      "$cmd_line" =~ $SCRIPT_FNAME ]]
-                then
-                    if (( $# == 1 )); then
-                        cmds=("kill -s USR1 $pid")
-                        if exec_cmds "${cmds[@]}"; then
-                            cecho -e "\tSent signal to $SCRIPTNAME process"\
-                                     "with ID $pid to disable/enable system"\
-                                     "sleep (suspend/hibernate).\n"
-                        fi
-                    else
-                        ((++i))
-                    fi
-                fi
+                [[ "$cmd_line" =~ $SHELLNAME && "$cmd_line" =~ $SCRIPTNAME ]] &&
+                    ((++i))
             fi
         done
         

@@ -13,7 +13,7 @@ After \fBcloneup.sh\fR is run a list of files/dirs that are excluded from clonin
 
 During cloning feedback is provided via standard output. For example, \fBrsync\fR(1) provides a progress indicator which includes total bytes and percentage cloned. Log files are created under \fI/var/log/cloneup.sh.d/\fR.
 
-Multiple \fBcloneup.sh\fR instances can run in parallel provided the destination drives are (obviously) different. For example, if three drives are connected to the PC one drive can be cloned to the other two simultaneously.
+Multiple \fBcloneup.sh\fR sessions can run in parallel provided the destination drives are (obviously) different. For example, if three drives are connected to the PC one drive can be cloned to the other two simultaneously.
 
 While \fBcloneup.sh\fR is running it can be canceled with Ctrl-C.
 .SH EXAMPLES
@@ -25,7 +25,7 @@ The default configuration files used by \fBcloneup.sh\fR are under \fI/etc/clone
 
 The user can create new configuration files under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR but the default filenames (see above) have to be used. Files under \fI/etc/cloneup.sh.d/conf.d/\fR modify (override) the default ones and files under \fI~/.config/cloneup.sh.d/\fR replace the default ones. It is recommended not to modify the default \fIfstypes.conf\fR file or create your own unless you really know what you are doing.
 
-If \fBcloneup.sh\fR is not run under its directory (usually \fI/usr/sbin/\fR) it uses the configuration files under \fI~/.config/cloneup.sh.d/\fR if they exist. In any other case it uses the configuration files under \fI/etc/cloneup.sh.d/\fR and \fI/etc/cloneup.sh.d/conf.d/\fR.
+If \fBcloneup.sh\fR is not run under its directory (\fI/usr/sbin/\fR) it uses the configuration files under \fI~/.config/cloneup.sh.d/\fR if they exist. In any other case it uses the configuration files under \fI/etc/cloneup.sh.d/\fR and \fI/etc/cloneup.sh.d/conf.d/\fR.
 
 Configuration files can also be provided when executing \fBcloneup.sh\fR with command line options (see \fBOPTIONS\fR). They take priority over any other files and any valid pathnames can be used.
 
@@ -40,13 +40,9 @@ Sometimes it is useful to \fBtail\fR(1) the \fIlog\fR file to see which files/di
 
 If multiple clone sessions are executed in parallel a log directory per session is created.
 
-Before cloning begins the following lock directory and files under it are created:
+Before cloning begins the lock file \fI/var/lock/cloneup.sh.d/pids\fR is created to ensure that \fBcloneup.sh\fR is executed only if its source and destination are not destinations of another \fBcloneup.sh\fR session.
 
-\fI/var/lock/cloneup.sh.d/\fR
-    \fIpids\fR: ensures that \fBcloneup.sh\fR is executed only if its source and destination are not destinations of another \fBcloneup.sh\fR instance
-    \fIsleep.pid\fR: ensures that only one \fBcloneup.sh\fR instance is responsible for disabling/enabling system sleep (suspend/hibernate)
-
-The lock directory is deleted after cloning has completed.
+The lock file is deleted after all cloning sessions have completed.
 .SH OPTIONS
 \fB-d\fR, \fB--dst\fR \fIdestination_drive\fR
     destination drive in the form /dev/<drv>, e.g. /dev/sdb (must be combined with '\fB-s\fR|\fB--src\fR' option)
