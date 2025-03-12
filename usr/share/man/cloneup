@@ -5,7 +5,7 @@ cloneup.sh \- clone a drive using \fBrsync\fR(1)
 .SH SYNOPSIS
 .B cloneup.sh \fR[\fIOPTION\fR]... 
 .SH DESCRIPTION
-Source and destination drives need not be the same size as long as all source data fits on destination. If the source drive is bootable the destination will become bootable provided certain conditions are met (see \fBLIMITS\fR).
+Source and destination drives need not be the same size as long as all source data fits in destination. If the source drive is bootable the destination will become bootable provided certain conditions are met (see \fBLIMITS\fR).
 
 If \fBcloneup.sh\fR is run without any command line options the default configuration files under \fI/etc/cloneup.sh.d/\fR (see \fBFILES\fR) are used. New configuration files can be created under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR (see \fBFILES\fR).
 
@@ -70,7 +70,7 @@ The source drive must not use Logical Volume Management (\fBlvm\fR(8)).
 
 The source drive must have partitions with UUIDs.
 
-If the source drive has partitions with the btrfs filesystem any subvolumes on them will not be created on the destination. To see which filesystems are fully supported check the \fIfstypes.conf\fR file (see \fBFILES\fR).
+If the source drive has partitions with the btrfs filesystem any subvolumes on them will not be created in the destination. To see which filesystems are fully supported check the \fIfstypes.conf\fR file (see \fBFILES\fR).
 
 If the source drive is bootable the destination will become bootable only if the source drive is using the GRUB 2 bootloader. Regardless, the destination will contain all source data provided cloning was successful.
 
@@ -81,6 +81,6 @@ To clone, \fBcloneup.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\f
 .SH CAVEATS
 If many programs are running while \fBcloneup.sh\fR is running then it's possible they will delete some of their files while \fBcloneup.sh\fR is running. However, the deleted files are part of \fBrsync\fR(1)'s list of files to transfer. Hence, when \fBrsync\fR(1) exits, its return code is 24 (partial transfer due to vanished source files) but \fBcloneup.sh\fR ignores it. It is recommended that prior to running \fBcloneup.sh\fR all programs on all user accounts are closed and all user accounts are exited except the one used for cloning.
 .SH BUGS
-If system sleep (suspend/hibernate) is enabled on the PC \fBcloneup.sh\fR is running on then \fBcloneup.sh\fR will disable system sleep before cloning and enable it after. If \fBcloneup.sh\fR is run from a XFCE terminal window and it disables hibernation and the hibernation period expires during cloning then after cloning has completed and hibernation is enabled XFCE can't hibernate unless the terminal window is closed. Insofar this has not been identified as a \fBcloneup.sh\fR bug.
+If system sleep (suspend/hibernate) is enabled on the PC \fBcloneup.sh\fR is running then \fBcloneup.sh\fR will disable system sleep before cloning and enable it after. If \fBcloneup.sh\fR is run from a terminal window within a desktop environment, e.g. XFCE, and the terminal window is not closed after \fBcloneup.sh\fR has completed then after the hibernation period has expired a popup dialog is displayed requiring a user password in order to hibernate. The same bug occurs if the hibernation period expires during cloning. Insofar this has not been identified as a \fBcloneup.sh\fR bug.
 .SH SEE ALSO
 \fBcloneup.sh-exclude.conf\fR(5), \fBrsync\fR(1), \fBsystemd\fR(1), \fBlvm\fR(8), \fBgrub-install\fR(8), \fBgrub-mkconfig\fR(8)
