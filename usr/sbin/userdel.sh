@@ -27,4 +27,13 @@ declare -i err=$?
 
 (( ! err )) && echo -e "\nuser account '$REPLY' has been deleted successfully"
 sync
+
+for param; do
+    if [[ "$param" == -w || "$param" == --wait ]]; then
+        echo -e '\nPress any key to exit.'
+        read -rsn 1
+        break
+    fi
+done
+
 exit $err
