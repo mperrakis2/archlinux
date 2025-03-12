@@ -1245,9 +1245,9 @@ close_notifications() {
 SHELLNAME=$(expr "$(head -1 "$0")" : "^\s*#\!\s*\(.\+\)$")
 readonly SHELLNAME
 
-# get the number of pids of clone processes running
-# return: the number of pids in the lock file
-get_pids() {
+# check if other clone sessions are running
+# return: 0 if no other cloning session else 1
+no_other_session() {
     local -i fd
     
     # critical section
@@ -1271,8 +1271,11 @@ get_pids() {
                 # get cmd line corresponding to pid
                 cmd_line=$(tr -d '\0' < /proc/"$pid"/cmdline 2>> "$ERRFILE")
                 
-                [[ "$cmd_line" =~ $SHELLNAME && "$cmd_line" =~ $SCRIPTNAME ]] &&
-                    ((++i))
+                if [[ "$cmd_line" =~ $SHELLNAME && "$cmd_line" =~ $SCRIPTNAME ]]
+                then
+                    ((i=1))
+                    break
+                fi
             fi
         done
         

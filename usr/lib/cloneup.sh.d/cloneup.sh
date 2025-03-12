@@ -2495,9 +2495,9 @@ cleanup() {
 result() {
     local -i err=0
 
-    if [[ "$OPTIONS_S" ]] && get_pids; then
+    if [[ "$OPTIONS_S" ]] && no_other_session; then
         # if only one clone process then pid lock file can be safely removed
-        echo -e "\tDeleting lock files directory $LCKDIR ..."
+        echo -e "\tDeleting lock file directory $LCKDIR ..."
 
         declare -a cmds=()
 
