@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# make man pages for clone utility
+# make man pages for cloneup.sh script
 
 shopt -s extglob # use extended globbing
 
@@ -19,10 +19,11 @@ for entry in "${entries[@]}"; do
     mkdir -p "$MPDIR"/man$n/        # make dir for man page
 
     # add correct extention to man page file name
-    if [[ -f /usr/sbin/"${file##/*/}".sh ]]; then
-        entry="$MPDIR/man$n/${file##/*/}.sh.$n"
+    fname="${file##/*/}"
+    if [[ -f /usr/sbin/"$fname".sh ]]; then
+        entry="$MPDIR/man$n/$fname.sh.$n"
     else
-        entry="$MPDIR/man$n/${file##/*/}.conf.$n"
+        entry="$MPDIR/man$n/${fname//-*}.sh-${fname//*-}.conf.$n"
     fi
 
     cp "$file" "$entry" # copy man page to man dir
