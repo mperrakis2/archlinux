@@ -23,13 +23,12 @@
 #
 # log files created by script
 # ---------------------------
-# log      : the output of cmds (stdout)
-# errors   : errors, if any (stderr)
-# commands : the cmds used during cloning
-# pids     : lock file to ensure that the script is executed only if its src and
-#            dst are not destinations for another cloning session
-#            (multiple sessions are allowed as long as destinations are
-#            different)
+# log     : the output of cmds (stdout)
+# errors  : errors, if any (stderr)
+# commands: the cmds used during cloning
+# pids    : lock file to ensure that the script is executed only if its src and
+#           dst are not destinations for another cloning session (multiple 
+#           sessions are allowed as long as destinations are different)
 #
 # * lock file is created under /var/lock/<script_name>.d/ which is deleted after
 #   all cloning sessions have completed
