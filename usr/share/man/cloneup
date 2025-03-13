@@ -64,7 +64,7 @@ The lock file is deleted after all cloning sessions have completed.
 .SH LIMITS
 \fBcloneup.sh\fR must be run with root privileges.
 
-If \fBcloneup.sh\fR is not run on a PC that uses \fBsystemd\fR(1) as init, it won't disable system sleep (suspend/hibernate) if it's enabled. Thus, if system sleep is enabled and activated during cloning \fBcloneup.sh\fR will be interrupted.
+If \fBcloneup.sh\fR is run on a PC that does not use \fBsystemd\fR(1) as init, it won't inhibit system sleep (suspend/hibernate). Thus, if system sleep is enabled on that PC and activated during cloning \fBcloneup.sh\fR will be interrupted.
 
 The source drive must not use Logical Volume Management (\fBlvm\fR(8)).
 
@@ -80,7 +80,7 @@ Zero on success else > 1. In case of error an appropriate error message is displ
 To clone, \fBcloneup.sh\fR is using the \fBrsync\fR(1) \fI--inc-recursive\fR (\fI--i-r\fR) command line option in order to use less memory. However, this option interferes with the \fBrsync\fR(1) \fI--progress\fR command line option also used in \fBcloneup.sh\fR. Unfortunately, the percentage of files transferred that is displayed is incorrect but the data size is not.
 .SH CAVEATS
 If many programs are running while \fBcloneup.sh\fR is running then it's possible they will delete some of their files while \fBcloneup.sh\fR is running. However, the deleted files are part of \fBrsync\fR(1)'s list of files to transfer. Hence, when \fBrsync\fR(1) exits, its return code is 24 (partial transfer due to vanished source files) but \fBcloneup.sh\fR ignores it. It is recommended that prior to running \fBcloneup.sh\fR all programs on all user accounts are closed and all user accounts are exited except the one used for cloning.
-.SH BUGS
-If system sleep (suspend/hibernate) is enabled on the PC \fBcloneup.sh\fR is running then \fBcloneup.sh\fR will disable system sleep before cloning and enable it after. If \fBcloneup.sh\fR is run from a terminal window within a desktop environment, e.g. XFCE, and the terminal window is not closed after \fBcloneup.sh\fR has completed then after the hibernation period has expired a popup dialog is displayed requiring a user password in order to hibernate. The same bug occurs if the hibernation period expires during cloning. Insofar this has not been identified as a \fBcloneup.sh\fR bug.
+
+If \fBcloneup.sh\fR is running on a PC with system sleep (suspend/hibernate) enabled then \fBcloneup.sh\fR will inhibit system sleep before cloning and enable it after. If \fBcloneup.sh\fR is run from a terminal window within a desktop environment, e.g. XFCE, and the hibernation period expires during cloning, a popup dialog is displayed requiring user password in order to hibernate. When \fBcloneup.sh\fR has completed and its window is closed by the user the system won't hibernate unless the user enters the password to hibernate. If the dialog is canceled the PC will hibernate after the next hibernation period expires.
 .SH SEE ALSO
 \fBcloneup.sh-exclude.conf\fR(5), \fBrsync\fR(1), \fBsystemd\fR(1), \fBlvm\fR(8), \fBgrub-install\fR(8), \fBgrub-mkconfig\fR(8)
