@@ -1211,36 +1211,6 @@ valid_opt_param() {
     fi
 }
 
-# In case the desktop environment attempted system sleep (suspend/hibernate) and
-# it failed, a notification was sent and a popup appears on the desktop. The
-# popup has no timeout so the following code closes all popup notifications.
-close_notifications() {
-    if [[ "$DISPLAY" ]]; then            
-        local user
-        local -i uid
-        local -i nid
-
-        user=$(logname)
-        uid=$(id -u "$user")
-        
-        # send dummy notification to get the latest notification id
-        ((nid=$(sudo -u "$user" DISPLAY=:0 \
-                                DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
-                                notify-send -p 'get the latest notification id' )))
-        
-        # iterate over all notification ids and clear all popups
-        (( $? == 0 )) &&
-            for i in $(seq $nid); do 
-                sudo -u "$user" DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
-                                dbus-send --type=method_call \
-                                          --dest=org.freedesktop.Notifications \
-                                          /org/freedesktop/Notifications \
-                                          org.freedesktop.Notifications.CloseNotification \
-                                          uint32:"$i"
-            done
-    fi
-}        
-
 # get shell executable and script filenames
 SHELLNAME=$(expr "$(head -1 "$0")" : "^\s*#\!\s*\(.\+\)$")
 readonly SHELLNAME

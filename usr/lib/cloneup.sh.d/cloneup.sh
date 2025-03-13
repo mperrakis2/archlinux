@@ -2524,8 +2524,6 @@ result() {
         echo
     fi
 
-    close_notifications
-
     return $err
 }
 
