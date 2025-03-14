@@ -2202,9 +2202,10 @@ clone() {
 
     local -a grubcfg_files=() # iterate over partitions to find grub cfg file(s)
 
-    # get locations of dst default grub file(s); many may exist if src is
-    # multiboot
+    # get locations of dst default grub file(s) and kernel cmdline(s) (many may
+    # exist if src is multiboot
     grubcfg_files=($(dst_pathname "/etc/default/grub" "${rsync_params[@]}"))
+    grubcfg_files+=($(dst_pathname "/etc/kernel/cmdline" "${rsync_params[@]}"))
 
     for ptn_pair in "${rsync_params[@]}"; do
         dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
