@@ -6,7 +6,7 @@ kernel="$1"
 # use already installed kernel if it exists
 [[ ! -f "$KERNELDESTINATION" ]] || kernel="$KERNELDESTINATION"
 
-bootdir="$(bootctl -p)"
+bootdir="$(bootctl -x)"
 keypairs=("$bootdir"/EFI/MOK.key "$bootdir"/EFI/MOK.crt)
 
 for (( i=0; i<${#keypairs[@]}; i+=2 )); do
