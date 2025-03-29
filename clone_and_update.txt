@@ -23,13 +23,10 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    or
 
    Use command line:
-       a. $ sudo pacman -Syu
-       b. $ pacaur -Syu              # update AUR
-       c. $ pacaur --aur-cleanall    # offer to remove all built packages
-       d. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all \
+       a. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all \
                       --rebuild=tree # check if some packages are out of date or orphans
-       e. $ paru --clean             # remove unneeded dependencies
-       f. $ paru --repoctl --clean   # remove packages that are not currently installed from repos
+       b. $ paru --clean             # remove unneeded dependencies
+       c. $ paru --repoctl --clean   # remove packages that are not currently installed from repos
 
    and finally
 

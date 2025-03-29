@@ -41,7 +41,6 @@ alias sudo="sudo " # so that aliases can be used when calling sudo
 
 if groups "$(whoami)" | grep wheel &> /dev/null; then
     alias pacman='$(/usr/bin/pacman_keyring.sh pacman) $(which pacman)'
-    alias pacaur="sudo /usr/bin/pacman_keyring.sh && pacaur -y"
     alias paru="sudo /usr/bin/pacman_keyring.sh && paru"
     export SUDO_EDITOR=mousepad
 fi
