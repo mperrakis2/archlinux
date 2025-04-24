@@ -81,7 +81,7 @@ OFF=$(tput sgr0) # turn off all attributes
 REDB="$BOLD$(tput setab 1)" # bold colors background
 readonly BOLD RED GREEN YELLOW CYAN OFF REDB
 
-# these variables are field numbers used by the field() function
+# these variables are field numbers used by get_field()
 # BEGIN
 declare -i DNAME=1
 declare -i DSIZE=2
@@ -121,7 +121,7 @@ declare -i SUUID=2
 declare -i SDST=2
 readonly SPTN SUUID SDST
 # END
-# the variables above are field numbers used by the field() function
+# the variables above are field numbers used by get_field()
 
 # get partition of boot directory
 BOOTPTN=$(findmnt -no SOURCE -T "$(bootctl -x)")
@@ -235,7 +235,7 @@ init() {
 
     local -i err
 
-    files_exist # check that text files needed by script exist
+    is_files # check that text files needed by script exist
     ((err=$?)); ((err)) && return $err
 
     local signals
@@ -246,7 +246,7 @@ init() {
     signals=$(kill -l | xargs) # get all signal names
     signals="${signals//@($D|$D$D)) $L}" # remove leading numbers & letters
     trap "" $signals # ignore all signals
-    trap_signals "cleanup 1" "$CANCEL_SIGNALS" # signal handler for cancel
+    signals "cleanup 1" "$CANCEL_SIGNALS" # signal handler for cancel
 }
 
 # display list of detected drives and cloning usage
@@ -372,10 +372,12 @@ usage_msg
                 ((++drv_cnt))
 
                 # display drive model and type (see comment above)
-                echo "$drv_cnt. Model: $(field "$line" $DMODEL) ($(field "$line" $DTYPE))"
+                echo "$drv_cnt. Model: $(get_field "$line" $DMODEL)"\
+                     "($(get_field "$line" $DTYPE))"
 
                 # display drive size (see comment above)
-                echo "   Disk $(field "$line" $DNAME): $(field "$line" $DSIZE)"
+                echo "   Disk $(get_field "$line" $DNAME):"\
+                     "$(get_field "$line" $DSIZE)"
             fi
         done
 
@@ -539,7 +541,7 @@ setup_env() {
 
             # if the drive is src or dst save drive name in associative array of drives
             (( drv_num == OPTIONS[0] || drv_num == OPTIONS[1] )) && 
-                drv_data[$drv_num]=$(field "$line" $DNAME)
+                drv_data[$drv_num]=$(get_field "$line" $DNAME)
         fi
     done
 
@@ -703,7 +705,7 @@ populate_arrays() {
             then
                 msg="\nThe minimum_io_size is not a power of two: "
                 msg+="$YELLOW$start$RED. Exiting."
-                stack "$msg"
+                print_stack "$msg"
                 return $?
             else
                 # if minimum_io_size is a power of 2 set the alignment to 1MiB
@@ -712,7 +714,7 @@ populate_arrays() {
         else
             msg="\nNo alignment boundary was found for drive $YELLOW$dstdrv$RED. "
             msg+="Exiting."
-            stack "$msg"
+            print_tack "$msg"
             return $?
         fi
     fi
@@ -732,7 +734,7 @@ populate_arrays() {
 
     # if page size is 0, exit
     if (( ! page_size )); then
-        stack "\nPage size is zero. Exiting."
+        print_stack "\nPage size is zero. Exiting."
         return $?
     fi
 
@@ -777,28 +779,28 @@ populate_arrays() {
         for line in "${parted_data[@]}"; do
             if [[ "$line" =~ ^/dev/ ]]; then # if drive get its data
                 drv_data[$drv_num]+=":"
-                drv_data[$drv_num]+=$(field_re "$line" $DSIZE) # size
+                drv_data[$drv_num]+=$(get_field_re "$line" $DSIZE) # size
                 drv_data[$drv_num]+=":"
                 
                 # partition table type
-                drv_data[$drv_num]+=$(field "$line" $DPTN_TBL_TYPE)
+                drv_data[$drv_num]+=$(get_field "$line" $DPTN_TBL_TYPE)
                 
                 # sector size in bytes of src drive
                 (( drv_num == OPTIONS[0] )) && 
-                    ((src_lba=$(field "$line" $DSECTOR_SIZE)))
+                    ((src_lba=$(get_field "$line" $DSECTOR_SIZE)))
                     
             # match the format of the first two fields (see above sample cmd
             # output)
             elif [[ "$line" =~ ^[0-9]+:[0-9]+$UNIT ]]; then
                 # get partition data
-                ((ptn_num=$(field "$line" $PPTN_NUM)))
-                ((startb=$(field_re "$line" $PSTART)))
-                ((end=$(field_re "$line" $PEND)))
-                ((size=$(field_re "$line" $PSIZE)))
-                fstype=$(field "$line" $PFSTYPE)
-                name=$(field "$line" $PNAME)
+                ((ptn_num=$(get_field "$line" $PPTN_NUM)))
+                ((startb=$(get_field_re "$line" $PSTART)))
+                ((end=$(get_field_re "$line" $PEND)))
+                ((size=$(get_field_re "$line" $PSIZE)))
+                fstype=$(get_field "$line" $PFSTYPE)
+                name=$(get_field "$line" $PNAME)
                 [[ -z "$name" ]] && name=primary
-                flags=$(field_re "$line" $PFLAGS "\([^;]*\)")
+                flags=$(get_field_re "$line" $PFLAGS "\([^;]*\)")
                 
                 # add partition data to partitions array
                 partitions+=("$drv_num:$ptn_num:$startb:$end:$size:$fstype:$name:$flags:")
@@ -835,7 +837,7 @@ populate_arrays() {
         # add size of remaining space in src partition
         if (( drv_num == OPTIONS[0] )); then
             if (( ptn_cnt > 0 )); then
-                ((no_resize += $(field "${drv_data[$drv_num]}" $DSIZE) - end))
+                ((no_resize += $(get_field "${drv_data[$drv_num]}" $DSIZE) - end))
             else
                 # exit if no partitions to clone
                 cecho -e "\n${RED}Source drive $YELLOW$srcdrv$RED has no"\
@@ -853,7 +855,7 @@ populate_arrays() {
     readonly START_DATE
 
     # at this point there is no more looping so read cfg files into memory
-    read_cfg
+    conf
     readonly FILTERS FSTYPES
 
     # finalize numbers of fields
@@ -886,19 +888,19 @@ populate_arrays() {
         ptn="${partitions[i]}"
         
         # extract drive number to find if partition is src or dst
-        ((drv_num=$(field "$ptn" $PDRV_NUM)))
+        ((drv_num=$(get_field "$ptn" $PDRV_NUM)))
 
         # if src partition then add aligned fields (start offset & size)
         if (( drv_num == OPTIONS[0] )); then
-            ((ptn_cnt=$(field "$ptn" $PPTN_CNT))) # extract partition counter
+            ((ptn_cnt=$(get_field "$ptn" $PPTN_CNT))) # extract partition counter
 
             # add the aligned start offset of the partition as a last field
             if (( ptn_cnt > 1 )); then
                 # if previous partition exists the new start offset is the sum
                 # of [start offset + size] of previous partition
                 partitions[i]="$ptn"
-                partitions[i]+=$(( $(field "${partitions[i-1]}" $PALIGN_START) + 
-                                   $(field "${partitions[i-1]}" $PALIGN_SIZE) ))
+                partitions[i]+=$(( $(get_field "${partitions[i-1]}" $PALIGN_START) + 
+                                   $(get_field "${partitions[i-1]}" $PALIGN_SIZE) ))
                 partitions[i]+=":"
             else
                 # the new start offset is the alignment of first partition
@@ -908,29 +910,29 @@ populate_arrays() {
                 ((no_resize_dst+=start))
             fi
 
-            fstype=$(field "$ptn" $PFSTYPE) # extract filesystem type
-            flags=$(field "$ptn" $PFLAGS)   # extract partition flags
+            fstype=$(get_field "$ptn" $PFSTYPE) # extract filesystem type
+            flags=$(get_field "$ptn" $PFLAGS)   # extract partition flags
             
             # get sector size for partition
-            ((sector_size=$(get_sector_size)))
+            ((sector_size=$(sector_size)))
             (( sector_size == 1 )) && return $sector_size
             
             # get partition alignment
             ((alignment=$(align_ptn $DST_ALIGN "$fstype" "$flags")))
             
-            ((size=$(field "$ptn" $PSIZE)))         # extract partition size
+            ((size=$(get_field "$ptn" $PSIZE)))         # extract partition size
             ((size=$(align_size $size $alignment))) # align partition size
 
             # if next partition exists
             if (( i+1 < ${#partitions[@]} )); then
                 # extract next partition's filesystem type
-                fstype=$(field "${partitions[i+1]}" $PFSTYPE)
+                fstype=$(get_field "${partitions[i+1]}" $PFSTYPE)
                 
                 # extract next partition's flags
-                flags=$(field "${partitions[i+1]}" $PFLAGS)
+                flags=$(get_field "${partitions[i+1]}" $PFLAGS)
                 
                 # get sector size for next partition
-                ((sector_size=$(get_sector_size)))
+                ((sector_size=$(sector_size)))
                 (( sector_size == 1 )) && return $sector_size
                 
                 ((prev_alignment=alignment))
@@ -940,11 +942,11 @@ populate_arrays() {
 
                 # realign existing partition size to next partition's 
                 # filesystem alignment
-                ((size=$(realign_size $(field "${partitions[i]}" $PALIGN_START) \
+                ((size=$(realign_size $(get_field "${partitions[i]}" $PALIGN_START) \
                                       $size $prev_alignment $alignment)))
             fi
 
-            ((ptn_num=$(field "$ptn" $PPTN_NUM))) # extract partition number
+            ((ptn_num=$(get_field "$ptn" $PPTN_NUM))) # extract partition number
 
             # add partition alignment to array in case partition needs to be
             # resized
@@ -955,9 +957,9 @@ populate_arrays() {
             partitions[i]+=$size
 
             # if swap, esp or bios, update the byte counter of non-resizable bytes
-            [[ "$(field "$ptn" $PFSTYPE)" =~ swap || \
-               "$(field "$ptn" $PFLAGS)" =~ esp   || \
-               "$(field "$ptn" $PFLAGS)" =~ bios ]] && 
+            [[ "$(get_field "$ptn" $PFSTYPE)" =~ swap || \
+               "$(get_field "$ptn" $PFLAGS)" =~ esp   || \
+               "$(get_field "$ptn" $PFLAGS)" =~ bios ]] && 
                 ((no_resize_dst+=size))
         fi
     done
@@ -969,7 +971,7 @@ populate_arrays() {
                                          cut -f 1 -d "," | cut -f 5 -d " ") ))
 
     # get total size of dst drive
-    (( dst_drv_size = $(field "${drv_data[${OPTIONS[1]}]}" $DSIZE) ))
+    (( dst_drv_size = $(get_field "${drv_data[${OPTIONS[1]}]}" $DSIZE) ))
 
     # add dst postamble space to dst non-resizable space
     (( dst_space_avail = dst_drv_size - no_resize_dst ))
@@ -1007,12 +1009,12 @@ calc_drvspace() {
     # get mount points for src partitions
     for ptn in "${partitions[@]}"; do
         # extract drive number to find if partition is src or dst
-        ((drv_num=$(field "$ptn" "$PDRV_NUM")))
-        fstype=$(field "$ptn" "$PFSTYPE")           # extract filesystem type
+        ((drv_num=$(get_field "$ptn" "$PDRV_NUM")))
+        fstype=$(get_field "$ptn" "$PFSTYPE") # extract filesystem type
         
-        if (( drv_num == OPTIONS[0] )); then        # if is src partition
-            ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
-            flags=$(field "$ptn" "$PFLAGS")         # extract flags
+        if (( drv_num == OPTIONS[0] )); then            # if is src partition
+            ((ptn_num=$(get_field "$ptn" "$PPTN_NUM"))) # extract partition number
+            flags=$(get_field "$ptn" "$PFLAGS")         # extract flags
             
             # mount all src partitions other than swap and bios_grub
             if [[ ! "$fstype" =~ swap && ! "$flags" =~ bios ]]; then
@@ -1032,7 +1034,7 @@ calc_drvspace() {
                 if [[ -z "$flags" ]]; then
                     cecho -e "\n${RED}The $YELLOW$srcdrv$SP$ptn_num$RED source"\
                              "${RED}partition mounted on"\
-                             "$YELLOW$(field "$srcmnt" "$MDIR")${RED} does not"\
+                             "$YELLOW$(get_field "$srcmnt" "$MDIR")${RED} does not"\
                              "${RED}have a UUID. Exiting." | tee -a "$ERRFILE"
                     return 1
                 fi
@@ -1067,8 +1069,8 @@ calc_drvspace() {
     for i in "${!src_ptn_data[@]}"; do
         # remove whitespace
         src_ptn_data[i]=$(echo "${src_ptn_data[i]}" | xargs)
-        source=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
-        (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') * CONVERSION_UNIT ))
+        source=$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')
+        (( used = $(get_field "${src_ptn_data[i]}" "$USED" ' ') * CONVERSION_UNIT ))
         (( ptn_num = 0 ))
         for ptn_num in "${!esp_ptn_nums[@]}"; do
             if [[ "$source" == "$srcdrv$SP$ptn_num" ]]; then
@@ -1077,7 +1079,7 @@ calc_drvspace() {
             fi
         done
         if [[ ! "$source" == "$srcdrv$SP$ptn_num" ]]; then
-            pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
+            pcent=$(get_field "${src_ptn_data[i]}" "$PCENT" ' ')
             pcent="${pcent/'%'}"
         fi
         src_ptn_data[i]="$source $used $pcent"
@@ -1089,7 +1091,7 @@ calc_drvspace() {
 
     # normalize percentages
     for i in "${!src_ptn_data[@]}"; do
-        pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
+        pcent=$(get_field "${src_ptn_data[i]}" "$PCENT" ' ')
         pcent=$(bc <<< "scale=5; $pcent / $total_pcent")
         src_ptn_data[i]="${src_ptn_data[i]%' '[0-9]*} $pcent"
     done
@@ -1175,7 +1177,7 @@ calc_drvspace() {
                 cechot "$CYAN'${paths[*]}'$YELLOW is not on the source drive"\
                        "and it's an include entry which is not valid. $MSG."
             elif [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
-                add_filter filters user_filters paths
+                new_filter filters user_filters paths
             else                
                 cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source"\
                        "drive and will be omitted. $MSG."
@@ -1192,7 +1194,7 @@ calc_drvspace() {
         elif [[ "${paths[0]:1}" =~ ^(/media|/mnt) ]]; then
             for buf in -/media/* -/mnt/*; do
                 paths=("$buf")
-                add_filter filters user_filters paths
+                new_filter filters user_filters paths
             done
             continue
         fi
@@ -1205,7 +1207,7 @@ calc_drvspace() {
             for (( i = 0; i < ${#paths[1]}; ++i )); do
                 if [[ "${paths[1]:$i:1}" == "/" ]]; then # get path up to '/'
                     if (( j )); then
-                        get_entries next_entries "-type d"
+                        user_entries next_entries "-type d"
                     else
                         # 'paths' may include spaces so use 'eval' to treat
                         # each path as a single argument
@@ -1223,7 +1225,7 @@ calc_drvspace() {
             # all tokens of path delimited by '/' were processed except last
             # token which is not delimited
             if (( j && j < i && ${#next_entries[@]} )); then
-                get_entries next_entries
+                user_entries next_entries
             elif (( ! j && i == ${#paths[1]} )); then
                 # 'paths' may include spaces so use 'eval' to treat each path
                 # as a single argument
@@ -1310,7 +1312,7 @@ calc_drvspace() {
             buf=$(seq $i $((i+j-1)) | xargs)
 
             # add a space in the end so that all numbers are followed by it
-            add_filter filters user_filters paths "$buf "
+            new_filter filters user_filters paths "$buf "
 
             entries+=("${next_entries[@]}") # add next entries to existing
         fi
@@ -1343,7 +1345,7 @@ calc_drvspace() {
                   $under -eq 1 ]]
             then
                 [[ "${entries[i]:1}" == "${entries[j]:1}" ]] &&
-                    add_match "$i" "$j" matched
+                    pair "$i" "$j" matched
                 ((match=1))
 
             # match entries that are equal or under others, i.e.
@@ -1354,15 +1356,15 @@ calc_drvspace() {
                       "${entries[j]::1}" == '-' && $j -ne $i)) && \
                     $under -eq 1 ]]
             then
-                add_match "$i" "$j" matched
+                pair "$i" "$j" matched
             fi
         done
 
         # in case include entry not matched by an exclude one, remove it
         if [[ "${entries[i]::1}" == '+' && $match -eq 0 ]]; then
-            get_filter_data "$i" k j
+            filter_data "$i" k j
 
-            update_matched "$j" matched # update matched entries
+            update "$j" matched # update matched entries
 
             for j in ${filters["$k"]}; do # remove filter entries
                 unset entries[j]
@@ -1393,16 +1395,16 @@ calc_drvspace() {
         for i in "${!matched[@]}"; do
             [[ -v matched_processed[$i] ]] && continue # skip already processed
             
-            get_filter "${i/,+([0-9])}" k # get filter for 1st idx            
-            get_filter "${i/+([0-9]),}" f # get filter for 2nd idx
+            filter "${i/,+([0-9])}" k # get filter for 1st idx            
+            filter "${i/+([0-9]),}" f # get filter for 2nd idx
 
             rm_entries="entries removed_entries"
             if [[ ${k::1} != "${f::1}" ]]; then # this is a tuple
                 # set function to remove matched filter tuple entries
-                rm_entries="rm_tuple_entries $rm_entries matched_filters"
+                rm_entries="tuple_removal $rm_entries matched_filters"
             else # both filters are includes or excludes
                 # set function to remove matched filter entries
-                rm_entries="rm_filter_entries $rm_entries"
+                rm_entries="filter_removal $rm_entries"
                 buf=" is under "
             fi
 
@@ -1427,8 +1429,7 @@ calc_drvspace() {
                    ${j/+([0-9]),} == ${i/+([0-9]),} )) && 
                     continue
                                 
-                # get filter for 2nd idx
-                get_filter "${j/+([0-9]),}" f
+                filter "${j/+([0-9]),}" f # get filter for 2nd idx
 
                 # process filter with the same sign as the previous one
                 [[ ${f::1} != "$sign" ]] && continue
@@ -1509,10 +1510,11 @@ calc_drvspace() {
             # partiton the directory is on
             (( ! $? )) &&
                 for i in "${!src_ptn_data[@]}"; do
-                    source=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
+                    source=$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')
                     if [[ "$source" == "$srcptn" ]]; then
-                        (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') - exc_size ))
-                        pcent=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
+                        (( used = $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
+                        (( used -= exc_size))
+                        pcent=$(get_field "${src_ptn_data[i]}" "$PCENT" ' ')
                         src_ptn_data[i]="$source $used $pcent"
                         break
                     fi
@@ -1527,7 +1529,7 @@ calc_drvspace() {
     
     # convert sizes to appropriate units, e.g. GB, MB, etc.
     for i in "${!sizes[@]}"; do 
-        convert_size sizes[i]
+        conversion sizes[i]
     done
 
     cecho -e "\n\tData size on source drive: ${OFF}${sizes[0]}$YELLOW."
@@ -1609,15 +1611,15 @@ create_partitions() {
     
     # extract src partition table type
     local ptn_tbl
-    ptn_tbl=$(field "${drv_data[${OPTIONS[0]}]}" "$DPTN_TBL_TYPE")
+    ptn_tbl=$(get_field "${drv_data[${OPTIONS[0]}]}" "$DPTN_TBL_TYPE")
 
     # if partition table on dst != src mark dst for wipe
-    [[ "$ptn_tbl" != $(field "${drv_data[${OPTIONS[1]}]}" "$DPTN_TBL_TYPE") ]] && 
+    [[ "$ptn_tbl" != $(get_field "${drv_data[${OPTIONS[1]}]}" "$DPTN_TBL_TYPE") ]] && 
         ((create_ptn=1))
 
     local -i i
     local -i SRC_DRV_SIZE
-    SRC_DRV_SIZE=$(field "${drv_data[${OPTIONS[0]}]}" "$DSIZE")
+    SRC_DRV_SIZE=$(get_field "${drv_data[${OPTIONS[0]}]}" "$DSIZE")
     readonly SRC_DRV_SIZE
     local ptn
     local -i ptn_num
@@ -1633,15 +1635,15 @@ create_partitions() {
         # update clone size if dst partition size is based on src partition
         # data size
         for i in "${!src_ptn_data[@]}"; do
-            ptn=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
+            ptn=$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')
             for ptn_num in "${!esp_ptn_nums[@]}"; do
                 if [[ "$ptn" == "$srcdrv$SP$ptn_num" ]]; then
-                    (( clone_size -= $(field "${src_ptn_data[i]}" "$USED" ' ') ))
+                    (( clone_size -= $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
                     break
                 fi
             done
             [[ "$ptn" == "$srcdrv$SP$bios_ptn" ]] &&
-                (( clone_size -= $(field "${src_ptn_data[i]}" "$USED" ' ') ))
+                (( clone_size -= $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
         done
 
         # normally, the following code should be within the above loop but
@@ -1655,21 +1657,21 @@ create_partitions() {
                 # size
                 for ptn in "${partitions[@]}"; do
                     # extract drive number to find if partition is src or dst
-                    ((drv_num=$(field "$ptn" "$PDRV_NUM")))
+                    ((drv_num=$(get_field "$ptn" "$PDRV_NUM")))
 
                     # if src partition
                     if (( drv_num == OPTIONS[0] )); then
-                        flags=$(field "$ptn" "$PFLAGS")   # extract partition flags
-                        fstype=$(field "$ptn" "$PFSTYPE") # extract filesystem type
+                        flags=$(get_field "$ptn" "$PFLAGS")   # extract partition flags
+                        fstype=$(get_field "$ptn" "$PFSTYPE") # extract filesystem type
 
                         # all partitions except esp, bios & swap can be resized
                         if [[ ! "$flags" =~ esp && ! "$flags" =~ bios && \
                               ! "$fstype" =~ swap ]]
                         then
-                            get_ptn_size bytes # get ptn size in bytes variable
+                            ptn_size bytes # get ptn size in bytes variable
 
                             # get data size of src partition
-                            ((src_ptn_data_size=$(field "${src_ptn_data[i]}" "$USED" ' ')))
+                            ((src_ptn_data_size=$(get_field "${src_ptn_data[i]}" "$USED" ' ')))
 
                             # calculate space left on dst if dst partition size
                             # is based on src partition data size
@@ -1702,18 +1704,18 @@ create_partitions() {
     # partitions on dst if necessary
     for ptn in "${partitions[@]}"; do
         # extract drive number to find if partition src or dst
-        ((drv_num=$(field "$ptn" "$PDRV_NUM")))
-        ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
-        fstype=$(field "$ptn" "$PFSTYPE")       # extract filesystem type
+        ((drv_num=$(get_field "$ptn" "$PDRV_NUM")))
+        ((ptn_num=$(get_field "$ptn" "$PPTN_NUM"))) # extract partition number
+        fstype=$(get_field "$ptn" "$PFSTYPE")       # extract filesystem type
         
         # if src partition, create cmds that:
         #     create new partition table
         #     create new partitions
         #     format new partitions
         if (( drv_num == OPTIONS[0] )); then
-            name=$(field "$ptn" "$PNAME")           # extract partition name
-            flags=$(field "$ptn" "$PFLAGS")         # extract partition flags
-            ((ptn_cnt=$(field "$ptn" "$PPTN_CNT"))) # extract partition counter
+            name=$(get_field "$ptn" "$PNAME")           # extract partition name
+            flags=$(get_field "$ptn" "$PFLAGS")         # extract partition flags
+            ((ptn_cnt=$(get_field "$ptn" "$PPTN_CNT"))) # extract partition counter
 
             # all partitions except esp, bios & swap can be resized
             if [[ ! "$flags" =~ esp && ! "$flags" =~ bios && ! "$fstype" =~ swap ]]
@@ -1722,14 +1724,14 @@ create_partitions() {
                 if (( resize_for_data )); then
                     ((src_ptn_data_size=0))
                     for i in "${!src_ptn_data[@]}"; do
-                        if [[ "$(field "${src_ptn_data[i]}" "$SOURCE" ' ')" == \
+                        if [[ "$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')" == \
                               "$srcdrv$SP$ptn_num" ]]
                         then
                             # get data size of src partition
-                            ((src_ptn_data_size=$(field "${src_ptn_data[i]}" "$USED" ' ')))
+                            ((src_ptn_data_size=$(get_field "${src_ptn_data[i]}" "$USED" ' ')))
 
                             # get the percentage of scr drive partition data
-                            pct=$(field "${src_ptn_data[i]}" "$PCENT" ' ')
+                            pct=$(get_field "${src_ptn_data[i]}" "$PCENT" ' ')
 
                             # calculate the bytes of the percentage above for
                             # space left on dst
@@ -1746,7 +1748,7 @@ create_partitions() {
                 # dst ptn size is calculated based on percentage of src ptn size
                 # with respect to src drive size
                 else
-                    get_ptn_size bytes # get ptn size in bytes variable
+                    ptn_size bytes # get ptn size in bytes variable
                 fi
 
                 # align partition size
@@ -1760,7 +1762,7 @@ create_partitions() {
                 fi
             else
                 # extract src partition size in bytes
-                ((bytes=$(field "$ptn" "$PALIGN_SIZE")))
+                ((bytes=$(get_field "$ptn" "$PALIGN_SIZE")))
             fi
 
             # if partition is last one, check that it fits on remaining space
@@ -1799,11 +1801,11 @@ create_partitions() {
 
             # create set cmds to set partition flags
             ((i=1))
-            flag=$(field "$flags" $i ',' | xargs)
+            flag=$(get_field "$flags" $i ',' | xargs)
             while [[ "$flag" ]]; do
                 cmds+=("parted --script --fix '$dstdrv' set $ptn_cnt '$flag' on")
                 ((++i))
-                flag=$(field "$flags" $i ',' | xargs)
+                flag=$(get_field "$flags" $i ',' | xargs)
             done
 
             # create cmds to format the partition
@@ -1811,7 +1813,7 @@ create_partitions() {
             for cmd in "${FSTYPES[@]}"; do
                 if [[ "$fstype" && "$cmd" =~ $fstype ]]; then
                     # create cmd to format the newly created partition
-                    cmds+=("$(field "$cmd" 2) '$dstdrv$DP$ptn_cnt'")
+                    cmds+=("$(get_field "$cmd" 2) '$dstdrv$DP$ptn_cnt'")
                     break
                 fi
             done
@@ -1843,12 +1845,12 @@ create_partitions() {
             # add dst partition data to array to compare it with src partition
             # data (dst partitions are first in array)
             if (( ! create_ptn )); then
-                flags=$(field "$ptn" "$PFLAGS")
+                flags=$(get_field "$ptn" "$PFLAGS")
                 flags=$(rm_lba_flag "$ptn_tbl" "$flags")
 
                 # get dst partition data as "$name$fstype$start$end$flags"
-                dst_ptn=$(field "$ptn" "$PNAME")$(field "$ptn" "$PFSTYPE")
-                dst_ptn+=$(field "$ptn" "$PSTART")$(field "$ptn" "$PEND")$flags
+                dst_ptn=$(get_field "$ptn" "$PNAME")$(get_field "$ptn" "$PFSTYPE")
+                dst_ptn+=$(get_field "$ptn" "$PSTART")$(get_field "$ptn" "$PEND")$flags
                 dst_ptn=$(echo "$dst_ptn" | xargs) # remove whitespace
                 dst_ptns+=("$dst_ptn")
             fi
@@ -1866,7 +1868,7 @@ create_partitions() {
         # create cmds to unmount dst partitions
         local -a cmds_umount=()
         for ptn in "${ptns_umount[@]}"; do
-            umount_cmd "$ptn" cmds_umount
+            cmd_for_unmount "$ptn" cmds_umount
         done
 
         # add unmount cmds to cmds and execute all
@@ -1903,12 +1905,12 @@ clone() {
     # get mount points for src and dst partitions
     for ptn in "${partitions[@]}"; do
         # extract drive number to find if partition is src or dst
-        ((drv_num=$(field "$ptn" "$PDRV_NUM")))
+        ((drv_num=$(get_field "$ptn" "$PDRV_NUM")))
         if (( drv_num == OPTIONS[0] )); then # if is src partition
-            fstype=$(field "$ptn" "$PFSTYPE")       # extract filesystem type
-            flags=$(field "$ptn" "$PFLAGS")         # extract flags
-            ((ptn_num=$(field "$ptn" "$PPTN_NUM"))) # extract partition number
-            ((ptn_cnt=$(field "$ptn" "$PPTN_CNT"))) # extract partition counter
+            fstype=$(get_field "$ptn" "$PFSTYPE")       # extract filesystem type
+            flags=$(get_field "$ptn" "$PFLAGS")         # extract flags
+            ((ptn_num=$(get_field "$ptn" "$PPTN_NUM"))) # extract partition number
+            ((ptn_cnt=$(get_field "$ptn" "$PPTN_CNT"))) # extract partition counter
 
             # swap partitions are not cloned, just created, thus, are not part
             # of any rsync parameters and are not mounted
@@ -2011,8 +2013,8 @@ clone() {
                         ptn=$(findmnt -no SOURCE -T "$file")
                         
                         for ptn_pair in "${rsync_params[@]}"; do
-                            if [[ "$ptn" == "$(field "$ptn_pair" "$MPTN")" ]]; then
-                                dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+                            if [[ "$ptn" == "$(get_field "$ptn_pair" "$MPTN")" ]]; then
+                                dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
 
                                 # the following three numbers at the beginning
                                 # of the cmd are parsed as follows:
@@ -2039,7 +2041,7 @@ clone() {
 
     # iterate over partitions and create cmds for cloning
     for ptn_pair in "${rsync_params[@]}"; do
-        srcmnt=$(field "$ptn_pair" "$MDIR") # get src dir
+        srcmnt=$(get_field "$ptn_pair" "$MDIR") # get src dir
 
         if [[ "$srcmnt" == "/" ]]; then
             buf="$srcmnt"
@@ -2053,7 +2055,7 @@ clone() {
         fi
 
         # get size of dst partition
-        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+        dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
 
         if (( create_ptn )); then
             (( size = $(df -ak --block-size=KiB --sync --output=avail "$dstmnt" \
@@ -2062,7 +2064,7 @@ clone() {
 
             # get size of src partition data
             for i in "${!src_ptn_data[@]}"; do
-                srcptn=$(field "${src_ptn_data[i]}" "$SOURCE" ' ')
+                srcptn=$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')
                 for ptn_num in "${!esp_ptn_nums[@]}"; do
                     [[ "$srcptn" == "$srcdrv$SP$ptn_num" ]] && break
                 done
@@ -2070,8 +2072,8 @@ clone() {
                    "$srcptn" == "$srcdrv$SP$bios_ptn" ]] &&
                     continue
 
-                if [[ "$srcptn" == $(field "$ptn_pair" "$MPTN") ]]; then
-                    (( used = $(field "${src_ptn_data[i]}" "$USED" ' ') ))
+                if [[ "$srcptn" == $(get_field "$ptn_pair" "$MPTN") ]]; then
+                    (( used = $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
                     break
                 fi
             done
@@ -2079,11 +2081,11 @@ clone() {
             # check if src partition data fits on dst partition size
             if (( size <= used )); then
                 cecho -e "\n${RED}Destination partition"\
-                         "$(field "$ptn_pair" "$((MPTN+MDST))")$RED mounted on"\
+                         "$(get_field "$ptn_pair" "$((MPTN+MDST))")$RED mounted on"\
                          "$dstmnt$RED is too small. It is $YELLOW$size KiB"\
                          "${RED}but should be $YELLOW> $used KiB$RED. Delete"\
                          "${RED}some data in source partition"\
-                         "$(field "$ptn_pair" "$((MPTN))")$RED mounted on"\
+                         "$(get_field "$ptn_pair" "$((MPTN))")$RED mounted on"\
                          "$srcmnt$RED. Exiting.\n"
                 return 1
             fi
@@ -2121,7 +2123,7 @@ clone() {
     local -A sed_exps=()
     local UUID
     
-    files=($(dst_pathname "$FSTAB_FILE" "${rsync_params[@]}"))
+    files=($(get_pathname "$FSTAB_FILE" "${rsync_params[@]}"))
     cmd=""
     cmds=()
     buf=""
@@ -2134,12 +2136,12 @@ clone() {
             cmd=""
 
             # add sed cmd to replace src partition name with dst name
-            cmd+="-e \"s|'$(field "$ptn_pair" "$MPTN")'|"
-            cmd+="'$(field "$ptn_pair" "$((MPTN+MDST))")'|g\" "
+            cmd+="-e \"s|'$(get_field "$ptn_pair" "$MPTN")'|"
+            cmd+="'$(get_field "$ptn_pair" "$((MPTN+MDST))")'|g\" "
 
             # add sed cmd to replace src UUID with dst UUID
-            UUID=$(field "$ptn_pair" "$MUUID")
-            cmd+="-e 's|$UUID|$(field "$ptn_pair" "$((MUUID+MDST))")|g' "
+            UUID=$(get_field "$ptn_pair" "$MUUID")
+            cmd+="-e 's|$UUID|$(get_field "$ptn_pair" "$((MUUID+MDST))")|g' "
 
             sed_exps[$UUID]="$cmd" # add to sed expressions
         done
@@ -2149,12 +2151,12 @@ clone() {
 
             # replace src partition data on dst fstab file for swap partition
             # add sed cmd to replace src partition name with dst name
-            cmd+="-e 's|$(field "$swap_ptn_UUIDs" "$SPTN")|"
-            cmd+="$(field "$swap_ptn_UUIDs" "$((SPTN+SDST))")|g' "
+            cmd+="-e 's|$(get_field "$swap_ptn_UUIDs" "$SPTN")|"
+            cmd+="$(get_field "$swap_ptn_UUIDs" "$((SPTN+SDST))")|g' "
 
             # add sed cmd to replace src UUID with dst UUID
-            UUID=$(field "$swap_ptn_UUIDs" "$SUUID")
-            cmd+="-e 's|$UUID|$(field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
+            UUID=$(get_field "$swap_ptn_UUIDs" "$SUUID")
+            cmd+="-e 's|$UUID|$(get_field "$swap_ptn_UUIDs" "$((SUUID+SDST))")|g' "
 
             sed_exps[$UUID]="$cmd" # add to sed expressions
         done
@@ -2180,7 +2182,7 @@ clone() {
                              awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
 
                     if [[ ! "$size" =~ ^[0-9]+$ || "$size" -lt 1 ]]; then
-                        stack "\nSwap file:'$file' offset is < 1. Exiting."
+                        print_stack "\nSwap file:'$file' offset is < 1. Exiting."
                         return $?
                     fi
 
@@ -2188,9 +2190,9 @@ clone() {
                     # to sed expressions
                     UUID=$(findmnt -no UUID -T "$file")      # get dst UUID
                     for ptn_pair in "${rsync_params[@]}"; do # get src UUID
-                        if [[ "$(field "$ptn_pair" "$((MUUID+MDST))")" == "$UUID" ]]
+                        if [[ "$(get_field "$ptn_pair" "$((MUUID+MDST))")" == "$UUID" ]]
                         then
-                            UUID=$(field "$ptn_pair" "$MUUID")
+                            UUID=$(get_field "$ptn_pair" "$MUUID")
                             break
                         fi
                     done
@@ -2204,11 +2206,11 @@ clone() {
 
     # get locations of dst default grub file(s) and kernel cmdline(s) (many may
     # exist if src is multiboot
-    grubcfg_files=($(dst_pathname "/etc/default/grub" "${rsync_params[@]}"))
-    grubcfg_files+=($(dst_pathname "/etc/kernel/cmdline" "${rsync_params[@]}"))
+    grubcfg_files=($(get_pathname "/etc/default/grub" "${rsync_params[@]}"))
+    grubcfg_files+=($(get_pathname "/etc/kernel/cmdline" "${rsync_params[@]}"))
 
     for ptn_pair in "${rsync_params[@]}"; do
-        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+        dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
         for buf in "/grub/" "/etc/default/grub.d/" "/etc/grub.d/"; do
             if [[ -d "$dstmnt$buf" ]]; then
                 buf="find '$dstmnt$buf' -maxdepth 1 -type f -exec file '{}' \; "
@@ -2227,7 +2229,7 @@ clone() {
         # replace src partition data on dst grub.cfg file
         # iterate over all src partitions and find UUID which exists in grub.cfg
         for ptn_pair in "${rsync_params[@]}"; do
-            UUID=$(field "$ptn_pair" "$MUUID")
+            UUID=$(get_field "$ptn_pair" "$MUUID")
             for buf in "${!grubcfg_files[@]}"; do
                 if [[ "${grubcfg_files[buf]}" =~ grubenv && \
                       ! "${files[*]}" =~ "${grubcfg_files[buf]}" ]]
@@ -2258,15 +2260,15 @@ clone() {
         for ptn_pair in "${rsync_params[@]}"; do
             # get entry if it exists in grubenv file on dst
             if [[ -z "$val" ]]; then
-                UUID=$(field "$ptn_pair" "$MUUID")
+                UUID=$(get_field "$ptn_pair" "$MUUID")
                 buf=$(grep "$UUID" "$file" 2> /dev/null)
                 if (( $? == 0 )); then
                     name="${buf%=*}" # name of entry
                     val="${buf#*=}"  # value of entry
 
                     # replace src with dst UUID
-                    val="${val/$UUID/$(field "$ptn_pair" "$((MUUID+MDST))")}"
-                    dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+                    val="${val/$UUID/$(get_field "$ptn_pair" "$((MUUID+MDST))")}"
+                    dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
                     if [[ -x "$dstmnt${GRUB_EDITENV}" ]]; then
                         cmd="$dstmnt${GRUB_EDITENV}"
                         cmds+=("$cmd '$file' set '$name'='$val'")
@@ -2303,14 +2305,14 @@ clone() {
     cmd=""
     for ptn_pair in "${rsync_params[@]}"; do
         # if bios flag is set, get dst boot dir
-        flags=$(field "$ptn_pair" "$((MUUID+MDST+1))")
+        flags=$(get_field "$ptn_pair" "$((MUUID+MDST+1))")
         if [[ $bios -ne 0 && -z "$dst_bootdir" && \
               ("$flags" =~ boot || "$flags" =~ esp) ]]
         then
             dst_bootdir="$ptn_pair"
         fi
 
-        dstmnt=$(field "$ptn_pair" "$((MDIR+MDST))")
+        dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
 
         # if bios flag is set, install grub bootloader for non-UEFI (bios) system
         if (( bios )); then
@@ -2320,9 +2322,9 @@ clone() {
             fi
 
             if [[ "$dst_bootdir" && "$cmd" ]]; then
-                UUID=$(field "$dst_bootdir" "$MUUID")
+                UUID=$(get_field "$dst_bootdir" "$MUUID")
                 if grep -q "$UUID" "$mnt/$FSTAB_FILE" 2> /dev/null; then
-                    dst_bootdir=$(field "$dst_bootdir" "$((MDIR+MDST))")
+                    dst_bootdir=$(get_field "$dst_bootdir" "$((MDIR+MDST))")
 
                     echo -e "\tCreating command to install grub bootloader on"\
                             "bios and boot partitions on destination drive..."
@@ -2345,7 +2347,7 @@ clone() {
         # if dst is not removable add shim efi boot entries if they don't exist
         if [[ "$removable" == 0 && ("$flags" =~ boot || "$flags" =~ esp)]]; then
             # get dst boot partition UUID
-            UUID=$(field "$ptn_pair" "$((MUUID+MDST))")
+            UUID=$(get_field "$ptn_pair" "$((MUUID+MDST))")
 
             # get dst boot partition UUID entry
             UUID=$(lsblk -nro +UUID,PARTUUID | grep "$UUID")
@@ -2354,7 +2356,7 @@ clone() {
             # get boot loader files (they contain 'EFI' string)
             mapfile -t abuf < <(find "$dstmnt"/$EFI -name "*.$EFI")
 
-            dstptn=$(field "$ptn_pair" "$((MPTN+MDST))")
+            dstptn=$(get_field "$ptn_pair" "$((MPTN+MDST))")
             ptn_num=$(expr "$dstptn" : ".\+[[:alpha:]]\+\([[:digit:]]\+\)")
 
             # iterate over boot loader files and add shim efi entry if necessary
@@ -2399,7 +2401,7 @@ clone() {
 # return: 0 on success, 1 if parameter error else the error code of the cmd that
 #         failed
 cleanup() {
-    valid_opt_param "$1" # validate parameter
+    param_validation "$1" # validate parameter
 
     local -i err=0
     local -i tmp

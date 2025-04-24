@@ -60,7 +60,7 @@ get_cfg_fname() {
 # $1    : str, function name and its params
 # $2    : str, list of signals
 # return: 0 on success else the error code of the cmd that failed
-trap_signals() {
+signals() {
     if (( $# != 2 )); then
         local msg="\nTwo params required: function and its params (first param) "
         
@@ -83,7 +83,7 @@ declare -A CFG_FNAMES=()
 
 # check that all files exist, are readable and have size != 0
 # return: 0 on success, 1 if a file does not exist, not readable or zero size
-files_exist() {
+is_files() {
     local key
     local -i err=0
     
@@ -94,7 +94,7 @@ files_exist() {
     fi
 
     for key in "${!CFG_FNAMES[@]}"; do
-        file_exists "$key" "${CFG_FNAMES["$key"]}"
+        is_file "$key" "${CFG_FNAMES["$key"]}"
         ((err+=$?))
     done
     
@@ -105,7 +105,7 @@ files_exist() {
 # $1    : str, the filename
 # $2    : str, the msg to display
 # return: 0 on success, 1 if file not exist, not readable or zero size
-file_exists() {
+is_file() {
     if (( $# != 2 )); then
         local msg="\nTwo params required: filename and message. Exiting."
 
@@ -163,13 +163,13 @@ prompt() {
 # exit and print the stack
 # 1: str, an error message
 exit_with_stack() {
-    stack "$@"
+    print_stack "$@"
     exit $?
 }
 
 # borrowed from the web
 # https://gist.github.com/akostadinov/33bb2606afe1b334169dfbf202991d36
-stack() {
+print_stack() {
     local -a stack=("\n\nStack trace:")
     local stack_size=${#FUNCNAME[@]}
     local -i i
@@ -270,7 +270,7 @@ cprintf() {
 # $2    : int, the number of the field to extract
 # $3    : optional, str, a regex (default below).
 # stdout: the field (substring)
-field_re() {
+get_field_re() {
     if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]+$ || $2 -lt 1 ]]; then
         local msg="\nTwo or three params required: a string, the number of "
         
@@ -278,7 +278,7 @@ field_re() {
         exit_with_stack "$msg"
     fi
     
-    expr "$(field "$1" "$2")" : ${3:-"\([0-9]*\)"}
+    expr "$(get_field "$1" "$2")" : ${3:-"\([0-9]*\)"}
 }
 
 # get a field (substring) from a string based on a delimeter
@@ -286,7 +286,7 @@ field_re() {
 # $2    : int, the number of the field to extract
 # $3    : optional, str, a delimeter (default below).
 # stdout: the field (substring)
-field() {
+get_field() {
     if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]+$ || $2 -lt 1 ]]; then
         local msg="\nTwo or three params required: a string, the number of "
         
@@ -308,7 +308,7 @@ field() {
 # $2: ref to str associative array, user filters
 # $3: ref to str array, the new filter to add
 # $4: optional, str, buf of indices of filter entries
-add_filter() {
+new_filter() {
     if (( $# < 3 || $# > 4 )); then
         local msg="\nThree or four params required: ref to assoc array of rsync "
         
@@ -343,7 +343,7 @@ add_filter() {
 # get entries (files and/or dirs) for a user filter
 # $1: ref to str array, store file(s) and/or dir(s) to be filtered
 # $2: optional, str, valid value="-type d"
-get_entries() {
+user_entries() {
     local -i err=0
     
     (( $# == 2 )) && [[ "$2" != "-type d" ]] && ((err=1))
@@ -385,7 +385,7 @@ get_entries() {
 # update matched entries
 # $1: int, a filter index
 # $2: ref to associative str array, matched entries
-update_matched() {
+update() {
     if [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ ]]; then
         local msg="\nTwo params required: filter idx >= 0 and a ref to an "
         
@@ -429,7 +429,7 @@ update_matched() {
 # $1: int, index of entry within a filter
 # $2: int, index of entry within a filter
 # $3: ref to associative str array, indices of matched entries
-add_match() {
+pair() {
     if [[ $# -ne 3 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ ]]; then
         local msg="\nThree params required: idx1 >= 0, idx2 >= 0 and a ref to "
         
@@ -443,8 +443,8 @@ add_match() {
     local -n ref="$3"
     
     # get indices of filters
-    get_filter_data "$1" f i
-    get_filter_data "$2" f j
+    filter_data "$1" f i
+    filter_data "$2" f j
 
     # match include to include or exclude filter and increment their counter
     ref[$i,$j]+="$1 $2 "
@@ -454,7 +454,7 @@ add_match() {
 # $1: int, an index of a filter entry >= 0
 # $2: ref to str, store the filter
 # $3: optional, ref to int, the index of the filter in the filter array
-get_filter_data() {
+filter_data() {
     if [[ $# -lt 2 || $# -gt 3 || ! "$1" =~ ^[0-9]+$ ]]; then
         local msg="\nTwo or three params required: a filter entry idx >=0, a "
         
@@ -487,7 +487,7 @@ get_filter_data() {
 # get rsync filter given its index
 # $1: int, an index of a filter >= 0
 # $2: ref to str, store the filter
-get_filter() {
+filter() {
     if [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ ]]; then
         local msg="\nTwo three params required: a filter idx >=0 and a ref to "
         
@@ -514,7 +514,7 @@ get_filter() {
 # $2    : ref to associative str array, removed entries
 # $3    : ref to str array of matched filters
 # return: 0 if a filter tuple is to be removed else 1
-rm_tuple_entries() {
+tuple_removal() {
     if (( $# != 3 )); then
         local msg="\nThree params required: ref to array of filter entries, "
         
@@ -566,7 +566,7 @@ rm_tuple_entries() {
 # $1    : ref to str array, filter entries
 # $2    : ref to associative str array, removed entries
 # return: 0 if a filter is to be removed else 1
-rm_filter_entries() {
+filter_removal() {
     if (( $# != 2 )); then
         local msg="\nTwo params required: ref to array of filter entries and "
         
@@ -632,7 +632,7 @@ rm_filter_entries() {
 
 # convert size in bytes to GB or MB or KB
 # $1    : ref to int >=0
-convert_size() {
+conversion() {
     local -n ref="$1"
 
     [[ $# -ne 1 || ! "$ref" =~ ^[0-9]+$ || $ref -lt 0 ]] &&
@@ -669,8 +669,8 @@ convert_size() {
 }
 
 # return: 0 on success else the error code of the cmd that failed
-read_cfg() {
-    ! files_exist && return 1
+conf() {
+    ! is_files && return 1
 
     local override_file="$OVR_CFG_DIR/fstypes.conf"
 
@@ -698,7 +698,7 @@ read_cfg() {
             if [[ "$file" == "$override_file" ]]; then # override file exists
                 # iterate over existing array and update its elements
                 for (( i = 0; i < ${#FSTYPES[@]}; ++i )); do
-                    if [[ "${FSTYPES[i]}" =~ ^"$(field "$REPLY" 1)" ]]; then
+                    if [[ "${FSTYPES[i]}" =~ ^"$(get_field "$REPLY" 1)" ]]; then
                         FSTYPES[i]="$REPLY"
                         break
                     fi
@@ -747,7 +747,7 @@ read_cfg() {
 
 # get sector size based on partition type and size
 # stdout: the aligned sector size
-get_sector_size() {
+sector_size() {
     local -i size=0
 
     if [[ "$fstype" && ! "$fstype" =~ swap ]]; then
@@ -761,8 +761,8 @@ get_sector_size() {
 
             for rec in "${FSTYPES[@]}"; do
                 if [[ "$rec" =~ $fstype ]]; then
-                    ((min_size=$(field "$rec" 3)))
-                    ((max_size=$(field "$rec" 4)))
+                    ((min_size=$(get_field "$rec" 3)))
+                    ((max_size=$(get_field "$rec" 4)))
                     if (( min_size == 0 || max_size == 0 )); then # btrfs
                         ((min_size=page_size))
                         ((max_size=page_size))
@@ -771,7 +771,7 @@ get_sector_size() {
                 fi
             done
 
-            ((size=$(field "${partitions[i]}" "$PALIGN_START")))
+            ((size=$(get_field "${partitions[i]}" "$PALIGN_START")))
             ((size=$(align_sector_size $min_size $max_size $size)))
         fi
     fi
@@ -793,11 +793,11 @@ align_ptn() {
     fi
     
     if [[ "$2" =~ swap ]]; then
-        lcm "$1" "$page_size"
+        get_lcm "$1" "$page_size"
     elif [[ "$3" =~ bios ]]; then # keep existing alignment as bios_grub
         echo "$1"                 # partition has no fstype and is unformatted
     else
-        lcm "$1" "$sector_size"
+        get_lcm "$1" "$sector_size"
     fi
 }
 
@@ -870,7 +870,7 @@ align_size() {
 
 # mount a src or dst partition
 # $1    : str, the partition
-# $2    : ref to str, mount data
+# $2    : ref to str, mount data (see format below)
 #
 #         src_ptn:mnt_dir:bool:UUID:dst_ptn:mnt_dir:bool:UUID:
 #
@@ -912,8 +912,8 @@ mount_ptn() {
             local uid
             local gid
 
-            get_id u uid
-            get_id g gid
+            uid=$(get_id u)
+            gid=$(get_id g)
 
             mnt_dir=/run/media/$(logname)/$UUID
             cmds+=("mkdir -p '$mnt_dir'")
@@ -956,12 +956,12 @@ umount_ptn() {
 
     for field_num in $MIS_MNT $((MIS_MNT+MDST)); do
         # if partition mounted by script, create unmount cmd
-        is_mnt=$(field "$1" "$field_num")
+        is_mnt=$(get_field "$1" "$field_num")
         
         # if partition was mounted, unmount it
         if [[ "$is_mnt" == 1 ]]; then
-            ptn=$(field "$1" "$((field_num-2))") # extract partition name
-            umount_cmd "$ptn" cmds # create cmd to unmount partition
+            ptn=$(get_field "$1" "$((field_num-2))") # extract partition name
+            cmd_for_unmount "$ptn" cmds # create cmd to unmount partition
         fi
     done
 
@@ -971,7 +971,7 @@ umount_ptn() {
 # add cmd to unmount a partition
 # $1: str, partition, e.g. /dev/sda1
 # $2: ref to str array, the cmds array
-umount_cmd() {
+cmd_for_unmount() {
     if (( $# != 2 )) || ! find "$1" >> "$LOGFILE" 2>> "$ERRFILE"; then
         local msg="\nTwo params required: valid partition and ref to cmds "
 
@@ -986,7 +986,7 @@ umount_cmd() {
 
 # get partition size
 # $1: ref to int, size of dst partition
-get_ptn_size() {
+ptn_size() {
     if (( $# != 1 )); then
         local msg="\nOne param required: int ref to dst partition size. Exiting."
         
@@ -998,7 +998,7 @@ get_ptn_size() {
     local cmd
 
     # get size of src partition in bytes
-    (( ref = $(field "$ptn" "$PSIZE") ))
+    (( ref = $(get_field "$ptn" "$PSIZE") ))
 
     # calculate percentage of src partition based on src drive size
     pct=$(bc <<< "scale=3; $ref / $((SRC_DRV_SIZE-no_resize))")
@@ -1146,7 +1146,7 @@ rm_lba_flag() {
 # $1    : str, filename
 # $@    : array of str, rsync params
 # stdout: array of pathnames 
-dst_pathname() {   
+get_pathname() {   
     if (( $# < 2 )); then
         local msg="\nAt least two params required: filename and rsync params. "
         
@@ -1162,7 +1162,7 @@ dst_pathname() {
     # iterate over partition data to add the file on dst
     for ptn_pair in "${rsync_params[@]}"; do
         # add dst file if it exists
-        file=$(field "$ptn_pair" "$((MDIR+MDST))")/"$1"
+        file=$(get_field "$ptn_pair" "$((MDIR+MDST))")/"$1"
         [[ -f "$file" && -s "$file" ]] && pathnames+=("$file")
     done
 
@@ -1201,7 +1201,7 @@ build_sed_exps() {
 }
 
 # $1: str, valid value: "" or "1" (signal was received)
-valid_opt_param() {
+param_validation() {
     # validate param
     if [[ $# -ne 1 || ("$1" && "$1" -ne 1) ]]; then
         local msg="\nOnly one param allowed: '' or '1' to indicate a signal was "
@@ -1278,7 +1278,7 @@ align_sector_size() {
     if (( $3 - (($3 / size) * size) == 0 )); then
         echo $size
     else
-        stack "\nNo aligned sector size found for partition. Exiting."
+        print_stack "\nNo aligned sector size found for partition. Exiting."
         echo $?
     fi
 }
@@ -1287,7 +1287,7 @@ align_sector_size() {
 # $1    : int, first num
 # $2    : int, second num
 # stdout: the lcm
-lcm() {
+get_lcm() {
     [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ || $1 -lt 2 || \
        $2 -lt 2 ]] &&
         exit_with_stack "\nTwo params required both > 1: two numbers. Exiting."
@@ -1295,14 +1295,14 @@ lcm() {
     # the LCM of two numbers x,y is GCD * factorsX * factorsY
     # where x = GCD * factorsX, y = GCD * factorsY
     # thus, LCM = GCD * (x / GCD) * (y / GCD) = x * y / GCD
-    echo $(( $1 * $2 / $(gcd "$1" "$2") ))
+    echo $(( $1 * $2 / $(get_gcd "$1" "$2") ))
 }
 
 # calculate the Greatest Common Divisor (GCD) of two numbers
 # $1    : int, first num
 # $2    : int, second num
 # stdout: the GCD
-gcd() {
+get_gcd() {
     [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ || $1 -lt 1 || \
        $2 -lt 1 ]] &&
         exit_with_stack "\nTwo params required both > 0: two numbers. Exiting."
@@ -1342,7 +1342,7 @@ get_id() {
     
     local -n ref="$2"
 
-    ref=$(id -"${1,,}" $(logname))
+    echo $(id -"${1,,}" $(logname))
 }
 
 # $1: str, an error message
@@ -1356,6 +1356,6 @@ print_err_msg() {
         msg="\nThe command $YELLOW'$1'$RED failed with error code "
         msg+="$YELLOW$err$RED. See $YELLOW$LOGFILE$RED (log file) and "
         msg+="$YELLOW$ERRFILE$RED (error file) for more info. Exiting."
-        stack "$msg"
+        print_stack "$msg"
     fi
 }
