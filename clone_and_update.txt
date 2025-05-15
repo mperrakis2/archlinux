@@ -23,12 +23,11 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    or
 
    Use command line:
-       a. sudo /usr/lib/systemd/scripts/pkg_maint.sh # update mirrorlist
-       b. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
+       a. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
                  --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all \
                  --rebuild=tree    # check if some packages are out of date or orphans
-       c. $ paru --clean           # remove unneeded dependencies
-       d. $ paru --repoctl --clean # remove packages that are not currently installed from repos
+       b. $ paru --clean           # remove unneeded dependencies
+       c. $ paru --repoctl --clean # remove packages that are not currently installed from repos
 
    and finally
 
