@@ -40,11 +40,12 @@ alias diff='diff --color=auto'
 alias sudo="sudo " # so that aliases can be used when calling sudo
 
 if groups "$(whoami)" | grep wheel &> /dev/null; then
-    pm=pacman
-    pkg=archlinux-keyring
-    keyring="$pm -Qu $pkg && id -u && $pm --noconfirm -Sy $pkg; "
-    keyring+="(( \$(id -u) != 0 ))"
-    alias pacman="sh -c '$keyring'; (( \$? )) && _pm='sudo $pm' || _pm=$pm; \$_pm"
-    alias paru="paru -Qu $pkg && paru --noconfirm -Sy $pkg; paru"
-    export SUDO_EDITOR=mousepad
+    _pm=pacman
+    _pkg=archlinux-keyring
+    _keyring="$_pm -Qu $_pkg && id -u && $_pm --noconfirm -Sy $_pkg; "
+    _keyring+="(( \$(id -u) != 0 ))"
+    alias pacman="sh -c '$_keyring'; (( \$? )) && _pm='sudo $_pm' || _pm=pacman; \$_pm"
+    alias paru="paru -Qu $_pkg && paru --noconfirm -Sy $_pkg; paru"
+    unset _pm _pkg _keyring
+    SUDO_EDITOR=mousepad
 fi
