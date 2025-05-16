@@ -47,5 +47,5 @@ if groups "$(whoami)" | grep wheel &> /dev/null; then
     alias pacman="sh -c '$_keyring'; (( \$? )) && _pm='sudo $_pm' || _pm=pacman; \$_pm"
     alias paru="paru -Qu $_pkg && paru --noconfirm -Sy $_pkg; paru"
     unset _pm _pkg _keyring
-    SUDO_EDITOR=mousepad
+    export SUDO_EDITOR=mousepad
 fi
