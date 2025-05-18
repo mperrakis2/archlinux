@@ -7,7 +7,7 @@ GRUB_DEFAULT="saved"
 
 GRUB_TIMEOUT="5"
 GRUB_DISTRIBUTOR="$(uname -n)"
-GRUB_CMDLINE_LINUX_DEFAULT="loglevel=6 resume=UUID=b923f392-5744-435a-b9f8-e642eace6847 resume_offset=108587008"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=6 resume=UUID=b923f392-5744-435a-b9f8-e642eace6847 resume_offset=55851008"
 GRUB_CMDLINE_LINUX=""
 
 # Preload both GPT and MBR modules so that they are not missed
