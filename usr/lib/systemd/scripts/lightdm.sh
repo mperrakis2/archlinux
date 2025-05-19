@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# update cfg file for intel gfx driver so Xorg doesn't freeze and then launch lightdm
+# lightdm wrapper: update cfg file for intel gfx driver so Xorg doesn't freeze
+# and then launch lightdm
 
 readonly INTEL_CONF_FILE=/etc/X11/xorg.conf.d/20-intel.conf
 
