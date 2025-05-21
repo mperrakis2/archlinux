@@ -1,0 +1,15 @@
+[Unit]
+Description=Disable nvidia services if the driver is not loaded
+
+Before=nvidia-hibernate.service
+Before=nvidia-suspend.service
+Before=nvidia-suspend-then-hibernate.service
+Before=nvidia-resume.service
+Before=nvidia-persistenced.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/systemd/scripts/toggle_nvidia.sh
+
+[Install]
+WantedBy=multi-user.target
