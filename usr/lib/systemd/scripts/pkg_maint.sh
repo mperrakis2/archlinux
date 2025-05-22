@@ -60,7 +60,7 @@ declare -i tmp=0
 set +o pipefail # reset it, as 'yes' below has an exit code of 141
 # answer yes to clearing package cache for all sudo users
 for sudo_user in "${sudo_users[@]}"; do
-    su - "$sudo_user" -c "yes | LC_ALL=en_US.UTF-8 paru -Scc" 
+    su - "$sudo_user" -c "yes | LC_ALL=en_US.UTF-8 paru -Sycc" 
     tmp=$?
     ((err+=tmp))
     if (( tmp )); then
