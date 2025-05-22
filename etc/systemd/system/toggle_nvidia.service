@@ -6,6 +6,7 @@ Before=nvidia-suspend.service
 Before=nvidia-suspend-then-hibernate.service
 Before=nvidia-resume.service
 Before=nvidia-persistenced.service
+Before=lightdm.service
 
 [Service]
 Type=oneshot
