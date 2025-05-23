@@ -23,11 +23,18 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    or
 
    Use command line:
-       a. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
+       a. $ sudo pamac update --aur
+                or
+            paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
                  --cleanafter --nokeepsrc --sudoloop --nokeeprepocache --redownload=all \
                  --rebuild=tree    # check if some packages are out of date or orphans
-       b. $ paru --clean           # remove unneeded dependencies
-       c. $ paru --repoctl --clean # remove packages that are not currently installed from repos
+            
+       b. $ pamac remove --orphans
+                or
+            paru --clean           # remove unneeded dependencies
+            
+       c. $ sudo pamac clean --verbose --build-files --keep 0
+            paru --repoctl --clean # remove packages that are not currently installed from repos
 
    and finally
 
