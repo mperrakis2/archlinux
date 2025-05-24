@@ -3,15 +3,9 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
 
 THE FOLLOWING REQUIRE ROOT PRIVILEGES
 =====================================
-1. clear space
-   ===========
-   $ /usr/bin/octopi-cachecleaner &
-   $ bleachbit
-   $ sudo bleachbit
+1. run clone script (see group 'scripts & files')
 
-2. run clone script (see group 'scripts & files')
-
-3. system update
+2. system update
    =============
    Add/Remove Software with pamac (GUI):
        a. Refresh databases
@@ -39,4 +33,8 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    run kodi to update kodi add ons
    run qBitTorrent and update plug ins
 
-4. repeat the first step
+3. clear space
+   ===========
+   $ /usr/bin/octopi-cachecleaner &
+   $ bleachbit
+   $ sudo bleachbit
