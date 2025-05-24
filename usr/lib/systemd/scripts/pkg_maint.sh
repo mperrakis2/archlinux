@@ -1,11 +1,12 @@
 #! /bin/bash
 
-# remove orphan packages, clear the package cache and generate new mirrorlist file
+# remove orphan packages, clear package cache and generate new mirrorlist file
 
 # make sure only one instance of the script can run at a time
 # taken from the man page of flock
 if [[ "${FLOCKER}" != "${BASH_SOURCE:-$0}" ]]; then
-    exec env FLOCKER="${BASH_SOURCE:-$0}" flock -en "${BASH_SOURCE:-$0}" "${BASH_SOURCE:-$0}" "$@"
+    exec env FLOCKER="${BASH_SOURCE:-$0}" flock -en "${BASH_SOURCE:-$0}" \
+                                                    "${BASH_SOURCE:-$0}" "$@"
 else
     true
 fi
@@ -60,7 +61,7 @@ declare -i tmp=0
 set +o pipefail # reset it, as 'yes' below has an exit code of 141
 # answer yes to clearing package cache for all sudo users
 for sudo_user in "${sudo_users[@]}"; do
-    su - "$sudo_user" -c "yes | LC_ALL=en_US.UTF-8 paru -Sycc" 
+    su - "$sudo_user" -c "yes | LC_ALL=en_US.UTF-8 paru -Scc" 
     tmp=$?
     ((err+=tmp))
     if (( tmp )); then
