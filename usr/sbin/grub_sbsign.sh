@@ -52,7 +52,9 @@ parted /dev/"${ptn_data[0]}" print | grep -q esp
 declare -i is_esp=$(( ! $? ))
 
 if (( is_esp )); then
-    # modules to embed in grub bootloader 
+    # modules to embed in grub bootloader are taken from link below but exclude
+    #'linuxefi' mod which is for ubuntu only
+    # https://wiki.archlinux.org/title/GRUB#Shim-lock
     readonly GRUB_MODULES="all_video boot btrfs cat chain configfile echo "\
 "efifwsetup efinet ext2 fat font gettext gfxmenu gfxterm gfxterm_background "\
 "gzio halt help hfsplus iso9660 jpeg keystatus loadenv loopback linux ls lsefi "\
@@ -71,8 +73,8 @@ if (( is_esp )); then
                        --recheck --target=x86_64-efi --removable)
     exit_on_error $? "$res"
 
-    bl_dir="$bootdir/EFI/"     # bl -> bootloader
-    def_bl_dir="$bl_dir"/BOOT/ # bootloader dir for external drives
+    bl_dir="$bootdir/EFI/"          # bl -> bootloader
+    def_bl_dir="$bl_dir"/BOOT/      # bootloader dir for external drives
     arch=$(uname -m)                # get architecture
     arch="${arch//+([[:digit:]])_}" # remove chars not part of bl filename
     bl_path="$def_bl_dir"/BOOT"${arch^^}".EFI
