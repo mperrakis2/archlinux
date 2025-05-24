@@ -1,6 +1,0 @@
-[Unit]
-Description=package maintenance, i.e. remove orphans & cache and update mirrorlist
-
-[Service]
-Type=oneshot
-ExecStart=/usr/lib/systemd/scripts/pkg_maint.sh

@@ -1,5 +1,5 @@
 # enable/disable envycontrol (nvidia hybrid graphics) depending on
-# nvidia kernel module being loaded or not
+# nvidia kernel module loaded or not
 
 [Unit]
 Description=Enable/disable envycontrol (nvidia hybrid graphics)
