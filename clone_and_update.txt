@@ -29,7 +29,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
    and finally
 
-   $ fwupdmgr update                 # update firmware
+   $ fwupdmgr update     # update firmware
    run kodi to update kodi add ons
    run qBitTorrent and update plug ins
 
