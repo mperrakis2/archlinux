@@ -1,5 +1,5 @@
 [Unit]
-Description=Disable nvidia services if the driver is not loaded
+Description=Enable/Disable graphics services & update graphics driver conf file
 
 Before=nvidia-hibernate.service
 Before=nvidia-suspend.service
@@ -10,7 +10,7 @@ Before=lightdm.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/systemd/scripts/toggle_nvidia.sh
+ExecStart=/usr/lib/systemd/scripts/toggle_graphics.sh
 
 [Install]
 WantedBy=multi-user.target

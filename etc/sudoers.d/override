@@ -4,6 +4,9 @@
 # allow all users to run an virus scan/clean without password
 ALL ALL=NOPASSWD: /usr/sbin/av.sh
 
+# allow all users to run environment setup
+ALL ALL=NOPASSWD: /usr/lib/systemd/scripts/envycontrol.sh
+
 # Set default EDITOR to restricted version of nano, and do not allow visudo to
 # use EDITOR/VISUAL.
 Defaults editor=/usr/bin/rnano, !env_editor

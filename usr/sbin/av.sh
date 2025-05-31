@@ -3,7 +3,8 @@
 # make sure only one instance of the script can run at a time
 # taken from the man page of flock
 if [[ "${FLOCKER}" != "${BASH_SOURCE:-$0}" ]]; then
-    exec env FLOCKER="${BASH_SOURCE:-$0}" flock -en "${BASH_SOURCE:-$0}" "${BASH_SOURCE:-$0}" "$@"
+    exec env FLOCKER="${BASH_SOURCE:-$0}" flock -en "${BASH_SOURCE:-$0}" \
+                                                    "${BASH_SOURCE:-$0}" "$@"
 else
     true
 fi

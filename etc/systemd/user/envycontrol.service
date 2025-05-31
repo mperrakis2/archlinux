@@ -1,12 +1,11 @@
-# enable/disable envycontrol (nvidia hybrid graphics) depending on
-# nvidia kernel module loaded or not
+# see Description below for functionality
 
 [Unit]
-Description=Enable/disable envycontrol (nvidia hybrid graphics)
+Description=set up user env, nvidia hybrid graphics.
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/systemd/scripts/envycontrol.sh
+ExecStart=/usr/bin/sudo -n /usr/lib/systemd/scripts/envycontrol.sh
 
 [Install]
 WantedBy=default.target
