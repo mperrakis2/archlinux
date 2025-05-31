@@ -6,7 +6,7 @@ Description=Enable/disable envycontrol (nvidia hybrid graphics)
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/sudo /usr/lib/systemd/scripts/envycontrol.sh
+ExecStart=/usr/bin/sudo -n /usr/lib/systemd/scripts/envycontrol.sh
 
 [Install]
 WantedBy=default.target
