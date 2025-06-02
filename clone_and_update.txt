@@ -14,7 +14,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    or
 
    Use command line:
-       a. $ sudo pamac update --aur
+       a. $ pamac update --aur
                 or
             paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
                  --cleanafter --nokeepsrc --sudoloop --nokeeprepocache \
