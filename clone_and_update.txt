@@ -20,11 +20,11 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
                  --cleanafter --nokeepsrc --sudoloop --nokeeprepocache \
                  --redownload=all --rebuild=tree
             
-       b. $ pamac remove --orphans --unneeded --no-save
+       b. $ sudo pamac remove --orphans --unneeded --no-save
                 or
             paru --clean # remove unneeded dependencies
             
-       c. $ pamac clean --verbose --build-files --keep 0
+       c. $ sudo pamac clean --verbose --build-files --keep 0
             paru --Scc   # remove packages not currently installed from repos
 
    and finally
