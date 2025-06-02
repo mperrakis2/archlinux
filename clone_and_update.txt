@@ -17,14 +17,10 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
        a. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
                  --cleanafter --nokeepsrc --sudoloop --nokeeprepocache \
                  --redownload=all --rebuild=tree
-            
-       b. $ paru --clean # remove unneeded dependencies
-            
-       c. $ paru -Scc   # remove packages not currently installed from repos
+       b. $ fwupdmgr update # update firmware
 
    and finally
 
-   $ fwupdmgr update     # update firmware
    run kodi to update kodi add ons
    run qBitTorrent and update plug ins
 
