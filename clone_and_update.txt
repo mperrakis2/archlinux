@@ -14,18 +14,13 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    or
 
    Use command line:
-       a. $ pamac update --aur
-                or
-            paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
+       a. $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
                  --cleanafter --nokeepsrc --sudoloop --nokeeprepocache \
                  --redownload=all --rebuild=tree
             
-       b. $ sudo pamac remove --orphans --unneeded --no-save
-                or
-            paru --clean # remove unneeded dependencies
+       b. $ paru --clean # remove unneeded dependencies
             
-       c. $ sudo pamac clean --verbose --build-files --keep 0
-            paru --Scc   # remove packages not currently installed from repos
+       c. $ paru -Scc   # remove packages not currently installed from repos
 
    and finally
 
@@ -35,6 +30,5 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
 3. clear space
    ===========
-   $ /usr/bin/octopi-cachecleaner &
    $ bleachbit
    $ sudo bleachbit
