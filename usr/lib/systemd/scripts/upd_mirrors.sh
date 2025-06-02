@@ -1,6 +1,7 @@
 #! /bin/bash
 
-# remove orphan packages and generate new mirrorlist file
+# remove orphan packages and clear the package cache
+# also generate new mirrorlist file and update keyring package
 
 # make sure only one instance of the script can run at a time taken from the
 # man page of flock
@@ -11,28 +12,40 @@ else
     true
 fi
 
+set -o pipefail
+
 declare -i err=0
 
-# answer yes to removal of all orphan packages
-yes | LC_ALL=en_US.UTF-8 pamac remove --orphans --unneeded --no-save
-
-# if no orphans found return val is 1 so set it to 0
+# all paru commands should not run under root
+ORPHANS=$(paru -Qttdq | xargs) # get orphan packages
 ((err=$?))
-(( err == 1 )) && ((err=0))
+readonly ORPHANS
 
-set -o pipefail # set it here, as 'yes' above has an exit code of 141
+declare errmsg
+
+if (( ! err )); then
+    set +o pipefail # reset it, as 'yes' below has an exit code of 141
+    # answer yes to removal of all orphan packages
+    yes | LC_ALL=en_US.UTF-8 paru -Rns $ORPHANS
+    ((err=$?))
+    set -o pipefail
+elif (( err == 1 )); then # err == 1 => no orphans found which is not an error
+    ((err=0))
+else
+    errmsg="paru get orphans exited with error code $err while searching for "
+    errmsg+="orphan packages."
+    systemd-cat -t "${0}" -p "err" echo "$errmsg"
+fi
 
 # rename existing mirrorlist file
 readonly ML_FILE="/etc/pacman.d/mirrorlist"
 if [[ ! -s "$ML_FILE" || ! -r "$ML_FILE" || ! -w "$ML_FILE" ]]; then
-    errmsg="warning" echo "The '$ML_FILE' file does not exist or is empty or is "
+    errmsg="The '$ML_FILE' file does not exist or is empty or is "
     errmsg+="not readable."
-    systemd-cat -t "${0}" -p "$errmsg"
+    systemd-cat -t "${0}" -p "warning" echo "$errmsg"
 else
     cp -f "$ML_FILE" "$ML_FILE"~
 fi
-
-declare -i tmp=0
 
 while true; do
     # generate new mirrorlist file

@@ -14,15 +14,12 @@ fi
 
 set -o pipefail
 
-pm="pamac" # package manager (pm)
 pkg="envycontrol"
 
 # nvidia hybrid package installed
-if [[ $($pm search --installed --quiet "$pkg") ]]; then
+if paru -Qsq "$pkg" &> /dev/null; then
     if ! lsmod | grep -iwq nvidia; then # no nvidia card
-
-        # uninstall nvidia package and stop/disable its service
-        $pm remove --no-confirm "$pkg"
+        paru -Rns --noconfirm "$pkg" # uninstall nvidia hybrid package
     fi
 elif lsmod | grep -iwq nvidia; then # PC with nvidia card
     script="$pkg"
@@ -33,7 +30,7 @@ elif lsmod | grep -iwq nvidia; then # PC with nvidia card
     dm="${dm//.*}" # remove all from '.' and after
 
     # install nvidia hybrid package and set it up
-    $pm install --no-confirm "$pkg" &&
+    paru -S --noconfirm "$pkg" &&
     $script -s hybrid --dm "$dm" --rtd3 0 &&
     $script --cache-create
 fi
