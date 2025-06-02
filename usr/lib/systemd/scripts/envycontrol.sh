@@ -30,7 +30,7 @@ elif lsmod | grep -iwq nvidia; then # PC with nvidia card
     dm="${dm//.*}" # remove all from '.' and after
 
     # install nvidia hybrid package and set it up
-    paru -S --noconfirm "$pkg" &&
+    su - "$(logname)" -c "paru -S --noconfirm '$pkg'" &&
     $script -s hybrid --dm "$dm" --rtd3 0 &&
     $script --cache-create
 fi
