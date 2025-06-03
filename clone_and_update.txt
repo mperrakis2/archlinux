@@ -7,9 +7,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
 2. system update
    =============
-   Add/Remove Software with pamac (GUI):
-       a. Refresh databases
-       b. Updates -> install
+   Add/Remove Software with bauh (GUI):
 
    or
 
