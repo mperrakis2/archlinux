@@ -32,7 +32,7 @@ if find "$REV"; then
     if find "$drv"; then
         drv=$(cat "$drv")
 
-        if [[ "$drv" =~ ^(i915|xe) ]]; then # if intel driver
+        if [[ $drv =~ ^(i915|xe) ]]; then # if intel driver
             readonly INTEL_CONF=/etc/X11/xorg.conf.d/20-intel.conf
             
             if (( gen < 4 )); then # use old driver

@@ -4,7 +4,7 @@
 
 # make sure only one instance of the script can run at a time taken from the
 # man page of flock
-if [[ "${FLOCKER}" != "${BASH_SOURCE:-$0}" ]]; then
+if [[ ${FLOCKER} != ${BASH_SOURCE:-$0} ]]; then
     exec env FLOCKER="${BASH_SOURCE:-$0}" flock -en "${BASH_SOURCE:-$0}" \
                                                     "${BASH_SOURCE:-$0}" "$@"
 else
@@ -38,7 +38,7 @@ fi
 
 # rename existing mirrorlist file
 readonly ML_FILE="/etc/pacman.d/mirrorlist"
-if [[ ! -s "$ML_FILE" || ! -r "$ML_FILE" || ! -w "$ML_FILE" ]]; then
+if [[ ! -s $ML_FILE || ! -r $ML_FILE || ! -w $ML_FILE ]]; then
     errmsg="The '$ML_FILE' file does not exist or is empty or is "
     errmsg+="not readable."
     systemd-cat -t "${0}" -p "warning" echo "$errmsg"
