@@ -48,8 +48,8 @@ get_cfg_fname() {
     cwd=$(pwd)
     lcl_cfg_file=$(eval echo ~$(logname))/"$LCL_CFG_DIR/$1" # local cfg file
 
-    if [[ "$cwd" != "$SCRIPTDIR" && -f "$lcl_cfg_file" && \
-          -r "$lcl_cfg_file" && -s "$lcl_cfg_file" ]]
+    if [[ $cwd != $SCRIPTDIR && -f $lcl_cfg_file && \
+          -r $lcl_cfg_file && -s $lcl_cfg_file ]]
     then
         echo "$lcl_cfg_file"
     else
@@ -112,7 +112,7 @@ is_file() {
         exit_with_stack "$msg"
     fi
 
-    if [[ ! -f "$1" || ! -s "$1" || ! -r "$1" ]]; then
+    if [[ ! -f $1 || ! -s $1 || ! -r $1 ]]; then
         cecho -e "\n${RED}The $YELLOW$1$RED file does not exist or has zero size or"\
                  "${RED}is not readable.\n$RED$2"
 
@@ -135,7 +135,7 @@ prompt() {
     fi
     
     if (( script )); then # if src & dst specified as cmd line args
-        [[ "$2" ]] && cecho -e "$RED$2"
+        [[ $2 ]] && cecho -e "$RED$2"
         ((ref_loop=0))
     else
         local MSG="Would you like to re-enter cloning options? (y/yes/n/no) "
@@ -211,11 +211,11 @@ cecho() {
     
     # get index of first echo param that is not a cmd line option
     for param in "$@"; do
-        [[ "${param::1}" != '-' ]] && break # quit if param not cmd line option
+        [[ ${param::1} != '-' ]] && break # quit if param not cmd line option
         for (( i = 1; i < ${#param}; ++i )); do # iterate over param chars
             for (( j = 0; j < ${#options}; ++j )); do # iterate over options chars
                 # if chars are the same, increment counter
-                if [[ "${param:$i:1}" == "${options:$j:1}" ]]; then
+                if [[ ${param:$i:1} == ${options:$j:1} ]]; then
                     ((++len))
                     # don't use 'break' here as same cmd line option might be 
                     # repeated
@@ -237,8 +237,8 @@ cecho() {
     # get params that are not cmd line options and add appropriate str color
     # header and trailer
     for param in "${@:$idx:$#}"; do
-        if [[ "$param" =~ ^"$BOLD" ]]; then # param already prefixed by str color
-            params+=("$param$OFF")          # header so just turn off at the end
+        if [[ $param =~ ^"$BOLD" ]]; then # param already prefixed by str color
+            params+=("$param$OFF")        # header so just turn off at the end
         else
             # param not prefixed by str color header so add default (yellow) and
             # then turn off at the end
@@ -261,7 +261,7 @@ cprintf() {
     fi
     
     # "${@:2}": all params except the first
-    [[ "$1" =~ ^"$BOLD" ]] && printf "$1$OFF" "${@:2}" || 
+    [[ $1 =~ ^"$BOLD" ]] && printf "$1$OFF" "${@:2}" || 
                               printf "$YELLOW$1$OFF" "${@:2}"
 }
 
@@ -271,7 +271,7 @@ cprintf() {
 # $3    : optional, str, a regex (default below).
 # stdout: the field (substring)
 get_field_re() {
-    if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]+$ || $2 -lt 1 ]]; then
+    if [[ $# -lt 2 || $# -gt 3 || ! $2 =~ ^[0-9]+$ || $2 -lt 1 ]]; then
         local msg="\nTwo or three params required: a string, the number of "
         
         msg+="a field within it to extract and optional regex. Exiting."
@@ -287,7 +287,7 @@ get_field_re() {
 # $3    : optional, str, a delimeter (default below).
 # stdout: the field (substring)
 get_field() {
-    if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]+$ || $2 -lt 1 ]]; then
+    if [[ $# -lt 2 || $# -gt 3 || ! $2 =~ ^[0-9]+$ || $2 -lt 1 ]]; then
         local msg="\nTwo or three params required: a string, the number of "
         
         msg+="a field within it to extract and optional delimeter. Exiting."
@@ -298,7 +298,7 @@ get_field() {
     local d=":"
     
     (( $2 > 1 )) && od=--only-delimited
-    [[ "$3" ]] && d="$3"
+    [[ $3 ]] && d="$3"
     
     echo "$1" | cut $od -f "$2" -d "$d"
 }
@@ -328,7 +328,7 @@ new_filter() {
         ref_user_filters[${ref_paths[0]}]="${ref_paths[*]}"
     else
         # add new user filter
-        if [[ "${ref_paths[0]: -1}" != '/' ]]; then
+        if [[ ${ref_paths[0]: -1} != '/' ]]; then
             ref_user_filters[${ref_paths[0]}"/**/"${ref_paths[1]}]="${ref_paths[*]}"
             ref_paths[0]+="/"
         else
@@ -346,7 +346,7 @@ new_filter() {
 user_entries() {
     local -i err=0
     
-    (( $# == 2 )) && [[ "$2" != "-type d" ]] && ((err=1))
+    (( $# == 2 )) && [[ $2 != "-type d" ]] && ((err=1))
     if (( err || $# < 1 || $# > 2 )); then
         local msg="\nOne or two params required: reference to array of "
         
@@ -386,7 +386,7 @@ user_entries() {
 # $1: int, a filter index
 # $2: ref to associative str array, matched entries
 update() {
-    if [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ ]]; then
+    if [[ $# -ne 2 || ! $1 =~ ^[0-9]+$ ]]; then
         local msg="\nTwo params required: filter idx >= 0 and a ref to an "
         
         msg+="assoc array of matched entries. Exiting."
@@ -430,7 +430,7 @@ update() {
 # $2: int, index of entry within a filter
 # $3: ref to associative str array, indices of matched entries
 pair() {
-    if [[ $# -ne 3 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ ]]; then
+    if [[ $# -ne 3 || ! $1 =~ ^[0-9]+$ || ! $2 =~ ^[0-9]+$ ]]; then
         local msg="\nThree params required: idx1 >= 0, idx2 >= 0 and a ref to "
         
         msg+="assoc array of matched entries. Exiting."
@@ -455,7 +455,7 @@ pair() {
 # $2: ref to str, store the filter
 # $3: optional, ref to int, the index of the filter in the filter array
 filter_data() {
-    if [[ $# -lt 2 || $# -gt 3 || ! "$1" =~ ^[0-9]+$ ]]; then
+    if [[ $# -lt 2 || $# -gt 3 || ! $1 =~ ^[0-9]+$ ]]; then
         local msg="\nTwo or three params required: a filter entry idx >=0, a "
         
         msg+="ref to store the filter and an optional ref to store the filter "
@@ -469,7 +469,7 @@ filter_data() {
 
     # iterate over rsync filters to find the filter for the index of an entry
     for f in "${!filters[@]}"; do        
-        if [[ "${filters["$f"]}" =~ ^"$1 " || "${filters["$f"]}" =~ " $1 " ]]
+        if [[ ${filters["$f"]} =~ ^"$1 " || ${filters["$f"]} =~ " $1 " ]]
         then
             fref="$f" # store rsync filter
             break
@@ -488,7 +488,7 @@ filter_data() {
 # $1: int, an index of a filter >= 0
 # $2: ref to str, store the filter
 filter() {
-    if [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ ]]; then
+    if [[ $# -ne 2 || ! $1 =~ ^[0-9]+$ ]]; then
         local msg="\nTwo three params required: a filter idx >=0 and a ref to "
         
         msg+="store the filter. Exiting."
@@ -597,7 +597,7 @@ filter_removal() {
             # are equal and only one of them has to be removed in each pair.
             # Thus, the second entry of this pair is removed which is the first
             # entry of the reverse pair.
-            if [[ "${matched[$idx2,$idx1]}" =~ "$idx $prev_idx " ]]; then
+            if [[ ${matched[$idx2,$idx1]} =~ "$idx $prev_idx " ]]; then
                 if [[ -v ref_entries[prev_idx] ]]; then
                     unset ref_entries[idx]
                 else
@@ -635,7 +635,7 @@ filter_removal() {
 conversion() {
     local -n ref="$1"
 
-    [[ $# -ne 1 || ! "$ref" =~ ^[0-9]+$ || $ref -lt 0 ]] &&
+    [[ $# -ne 1 || ! $ref =~ ^[0-9]+$ || $ref -lt 0 ]] &&
         exit_with_stack "\nOne param required: size >=0. Exiting."
 
     local -i unit=1
@@ -675,8 +675,8 @@ conf() {
     local override_file="$OVR_CFG_DIR/fstypes.conf"
 
     # if there is no override for the file set it to empty str
-    if [[ ! "$FSTYPES_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
-          ! -s "$override_file" || ! -r "$override_file" ]]
+    if [[ ! $FSTYPES_FILE =~ "$DEF_CFG_DIR" || ! -f $override_file || \
+          ! -s $override_file || ! -r $override_file ]]
     then
         override_file=""
     fi
@@ -692,13 +692,13 @@ conf() {
             REPLY=$(echo "$REPLY" | xargs 2>> "$ERRFILE")
 
             # ignore empty lines & comments
-            [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
+            [[ -z $REPLY || $REPLY =~ ^#.*$ ]] && continue
 
             # read and update contents of array
-            if [[ "$file" == "$override_file" ]]; then # override file exists
+            if [[ $file == $override_file ]]; then # override file exists
                 # iterate over existing array and update its elements
                 for (( i = 0; i < ${#FSTYPES[@]}; ++i )); do
-                    if [[ "${FSTYPES[i]}" =~ ^"$(get_field "$REPLY" 1)" ]]; then
+                    if [[ ${FSTYPES[i]} =~ ^"$(get_field "$REPLY" 1)" ]]; then
                         FSTYPES[i]="$REPLY"
                         break
                     fi
@@ -714,8 +714,8 @@ conf() {
     override_file="$OVR_CFG_DIR/exclude.conf"
 
     # if there is no override for the file set it to empty str
-    if [[ ! "$FILTERS_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
-          ! -s "$override_file" || ! -r "$override_file" ]]
+    if [[ ! $FILTERS_FILE =~ "$DEF_CFG_DIR" || ! -f $override_file || \
+          ! -s $override_file || ! -r $override_file ]]
     then
         override_file=""
     fi
@@ -728,13 +728,13 @@ conf() {
                                         -e 's/[[:blank:]]*$//')
 
             # ignore empty lines & comments
-            [[ -z "$REPLY" || "$REPLY" =~ ^#.*$ ]] && continue
+            [[ -z $REPLY || $REPLY =~ ^#.*$ ]] && continue
 
             # read and update contents of array
-            if [[ "$file" == "$override_file" ]]; then # override file exists
+            if [[ $file == $override_file ]]; then # override file exists
                 # iterate over existing array and update its elements
                 for (( i = 0; i < ${#FILTERS[@]}; ++i )); do
-                    [[ "${FILTERS[i]}" == "$REPLY" ]] && break
+                    [[ ${FILTERS[i]} == $REPLY ]] && break
                 done
                 (( i == ${#FILTERS[@]} )) && FILTERS+=("$REPLY")
             else
@@ -750,7 +750,7 @@ conf() {
 sector_size() {
     local -i size=0
 
-    if [[ "$fstype" && ! "$fstype" =~ swap ]]; then
+    if [[ $fstype && ! $fstype =~ swap ]]; then
         local -i min_size=0
         local -i max_size=0
 
@@ -760,7 +760,7 @@ sector_size() {
             local rec
 
             for rec in "${FSTYPES[@]}"; do
-                if [[ "$rec" =~ $fstype ]]; then
+                if [[ $rec =~ $fstype ]]; then
                     ((min_size=$(get_field "$rec" 3)))
                     ((max_size=$(get_field "$rec" 4)))
                     if (( min_size == 0 || max_size == 0 )); then # btrfs
@@ -785,16 +785,16 @@ sector_size() {
 # $3    : str, flags (used to find bios_grub partition, if any)
 # stdout: new alignment
 align_ptn() {
-    if [[ $# -ne 3 || ! "$1" =~ ^[0-9]+$ || $1 -lt 1 ]]; then
+    if [[ $# -ne 3 || ! $1 =~ ^[0-9]+$ || $1 -lt 1 ]]; then
         local msg="\nThree params required: alignment > 0, filesystem type "
         
         msg+="and flags. Exiting."
         exit_with_stack "$msg"
     fi
     
-    if [[ "$2" =~ swap ]]; then
+    if [[ $2 =~ swap ]]; then
         get_lcm "$1" "$page_size"
-    elif [[ "$3" =~ bios ]]; then # keep existing alignment as bios_grub
+    elif [[ $3 =~ bios ]]; then # keep existing alignment as bios_grub
         echo "$1"                 # partition has no fstype and is unformatted
     else
         get_lcm "$1" "$sector_size"
@@ -808,8 +808,8 @@ align_ptn() {
 # $4    : int, next partition filesystem alignment
 # stdout: the aligned size
 realign_size() {
-    if [[ $# -ne 4 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ || \
-          ! "$3" =~ ^[0-9]+$ || ! "$4" =~ ^[0-9]+$ || $1 -lt 1 || $3 -lt 1 || \
+    if [[ $# -ne 4 || ! $1 =~ ^[0-9]+$ || ! $2 =~ ^[0-9]+$ || \
+          ! $3 =~ ^[0-9]+$ || ! $4 =~ ^[0-9]+$ || $1 -lt 1 || $3 -lt 1 || \
           $4 -lt 1 || $2 -lt 1 ]]
     then
         local msg="\nFour params required all > 0: partition offset, size, "
@@ -847,7 +847,7 @@ realign_size() {
 # $2    : int, the alignment
 # stdout: the aligned size
 align_size() {
-    if [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ || $1 -lt 1 || \
+    if [[ $# -ne 2 || ! $1 =~ ^[0-9]+$ || ! $2 =~ ^[0-9]+$ || $1 -lt 1 || \
           $2 -lt 1 ]]
     then
         local msg="\nTwo params required all > 0: size and alignment. Exiting."
@@ -893,7 +893,7 @@ mount_ptn() {
     local -a cmds=()
     local -i is_mnt=0
     
-    if [[ "$1" =~ "$dstdrv" ]]; then options="--options rw"; else options=""; fi
+    if [[ $1 =~ "$dstdrv" ]]; then options="--options rw"; else options=""; fi
 
     # get read/write dir for mounted partition
     mnt_dir=$(findmnt $options -no TARGET "$1")
@@ -901,13 +901,13 @@ mount_ptn() {
     UUID=$(expr "$(blkid "$1")" : ".* UUID=\"\([^\"]*\)\"") # get partition UUID
 
     # mount the partition if not mounted
-    if [[ -z "$mnt_dir" ]]; then
+    if [[ -z $mnt_dir ]]; then
         fstype=$(lsblk -no FSTYPE "$1") # get partition filesystem
 
         # if drive has ('dos' partition table and FAT) or UDF, create cmd to
         # mount with 'uid' and 'gid' options
-        if [[ ("$(lsblk -no PTTYPE "$1")" =~ dos && "$fstype" =~ fat) || \
-              "$fstype" =~ udf ]]
+        if [[ ($(lsblk -no PTTYPE "$1") =~ dos && $fstype =~ fat) || \
+              $fstype =~ udf ]]
         then
             local uid
             local gid
@@ -928,7 +928,7 @@ mount_ptn() {
         ((err=$?)); ((err)) && return $err
 
         # get dir for mounted partition
-        if [[ -z "$mnt_dir" ]]; then
+        if [[ -z $mnt_dir ]]; then
             mnt_dir=$(findmnt $options -no TARGET "$1" 2>> "$ERRFILE")
             ((err=$?)); ((err)) && return $err
         fi
@@ -959,7 +959,7 @@ umount_ptn() {
         is_mnt=$(get_field "$1" "$field_num")
         
         # if partition was mounted, unmount it
-        if [[ "$is_mnt" == 1 ]]; then
+        if [[ $is_mnt == 1 ]]; then
             ptn=$(get_field "$1" "$((field_num-2))") # extract partition name
             cmd_for_unmount "$ptn" cmds # create cmd to unmount partition
         fi
@@ -1018,7 +1018,7 @@ exec_cmds() {
     local -i i
 
     for i in "${!cmds[@]}"; do # remove empty cmd
-        [[ -z "${cmds[i]//[[:space:]]}" ]] && unset cmds[i]
+        [[ -z ${cmds[i]//[[:space:]]} ]] && unset cmds[i]
     done
     (( ! ${#cmds[@]} )) && return 0 # return if no cmds
 
@@ -1042,10 +1042,10 @@ exec_cmds() {
 
         # check if there are overrides for the defaults above
         for j in "${!fd[@]}"; do
-            if [[ "${cmds[i]::1}" =~ ^[01]$ ]]; then
+            if [[ ${cmds[i]::1} =~ ^[01]$ ]]; then
                 if (( ${cmds[i]::1} == 0 )); then
                     fd[j]="" # don't redirect stdout or stderr
-                elif [[ -z "${fd[j]}" ]]; then
+                elif [[ -z ${fd[j]} ]]; then
                     fd[j]="&" # run in the background
                 fi
                 cmds[i]="${cmds[i]:1}"
@@ -1059,7 +1059,7 @@ exec_cmds() {
         
         # cmd that run in the background take a long time to complete and
         # usually have a progress indicator, e.g. percentage
-        [[ "${fd[0]}" ]] && cecho -e "\tProgress..."
+        [[ ${fd[0]} ]] && cecho -e "\tProgress..."
         
         # run cmd and use 'eval' to take into account spaces between arguments
         # but not within each argument
@@ -1080,7 +1080,7 @@ exec_cmds() {
         # keeps looping until the cmd exits on its own. Of course, if a cancel
         # signal is received, e.g. INT, TERM, HUP, etc., its handler would exit
         # the script.
-        if [[ "${fd[0]}" ]]; then
+        if [[ ${fd[0]} ]]; then
             ((pid=$!))
             while true; do
                 printf "\t%s\n" "wait $pid" >> "$CMDFILE" # update cmds file
@@ -1096,7 +1096,7 @@ exec_cmds() {
                     if (( err < SIGMASK )); then
                         # ignore if 'rsync' failed and err=24, i.e. partial
                         # transfer due to vanished source files
-                        if [[ "${cmds[i]}" =~ ^[[:blank:]]*rsync && $err -eq 24 ]]
+                        if [[ ${cmds[i]} =~ ^[[:blank:]]*rsync && $err -eq 24 ]]
                         then
                             ((err=0))
                         else
@@ -1131,7 +1131,7 @@ rm_lba_flag() {
     
     local flags_no_lba="$2"
 
-    if [[ "$1" == msdos && "$2" =~ lba ]]; then
+    if [[ $1 == msdos && $2 =~ lba ]]; then
         # remove the lba flag as it may not exist on src
         flags_no_lba="${flags_no_lba//lba,/}"
 
@@ -1163,7 +1163,7 @@ get_pathname() {
     for ptn_pair in "${rsync_params[@]}"; do
         # add dst file if it exists
         file=$(get_field "$ptn_pair" "$((MDIR+MDST))")/"$1"
-        [[ -f "$file" && -s "$file" ]] && pathnames+=("$file")
+        [[ -f $file && -s $file ]] && pathnames+=("$file")
     done
 
     echo "${pathnames[@]}"
@@ -1175,7 +1175,7 @@ get_pathname() {
 # stdout: sed expressions
 # return: 0 on success else 1
 build_sed_exps() {
-    if [[ $# -ne 2 || ! -f "$1" ]]; then
+    if [[ $# -ne 2 || ! -f $1 ]]; then
         local msg="\nTwo params required: str, file that exists and associative "
         
         msg+="str array. Exiting."
@@ -1203,7 +1203,7 @@ build_sed_exps() {
 # $1: str, valid value: "" or "1" (signal was received)
 param_validation() {
     # validate param
-    if [[ $# -ne 1 || ("$1" && "$1" -ne 1) ]]; then
+    if [[ $# -ne 1 || ($1 && $1 -ne 1) ]]; then
         local msg="\nOnly one param allowed: '' or '1' to indicate a signal was "
         
         msg+="received. Exiting."
@@ -1241,7 +1241,7 @@ no_other_session() {
                 # get cmd line corresponding to pid
                 cmd_line=$(tr -d '\0' < /proc/"$pid"/cmdline 2>> "$ERRFILE")
                 
-                if [[ "$cmd_line" =~ $SHELLNAME && "$cmd_line" =~ $SCRIPTNAME ]]
+                if [[ $cmd_line =~ $SHELLNAME && $cmd_line =~ $SCRIPTNAME ]]
                 then
                     ((i=1))
                     break
@@ -1260,8 +1260,8 @@ no_other_session() {
 # $3    : int, partition size
 # stdout: the aligned sector size or 1 if none found
 align_sector_size() {
-    if [[ $# -ne 3 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ || \
-          ! "$3" =~ ^[0-9]+$ || $1 -eq 0 || $2 -eq 0 || $3 -eq 0 ]]
+    if [[ $# -ne 3 || ! $1 =~ ^[0-9]+$ || ! $2 =~ ^[0-9]+$ || \
+          ! $3 =~ ^[0-9]+$ || $1 -eq 0 || $2 -eq 0 || $3 -eq 0 ]]
     then
         local msg="\nThree params required all > 0: base & max alignment "
         
@@ -1288,7 +1288,7 @@ align_sector_size() {
 # $2    : int, second num
 # stdout: the lcm
 get_lcm() {
-    [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ || $1 -lt 2 || \
+    [[ $# -ne 2 || ! $1 =~ ^[0-9]+$ || ! $2 =~ ^[0-9]+$ || $1 -lt 2 || \
        $2 -lt 2 ]] &&
         exit_with_stack "\nTwo params required both > 1: two numbers. Exiting."
 
@@ -1303,7 +1303,7 @@ get_lcm() {
 # $2    : int, second num
 # stdout: the GCD
 get_gcd() {
-    [[ $# -ne 2 || ! "$1" =~ ^[0-9]+$ || ! "$2" =~ ^[0-9]+$ || $1 -lt 1 || \
+    [[ $# -ne 2 || ! $1 =~ ^[0-9]+$ || ! $2 =~ ^[0-9]+$ || $1 -lt 1 || \
        $2 -lt 1 ]] &&
         exit_with_stack "\nTwo params required both > 0: two numbers. Exiting."
 
@@ -1333,7 +1333,7 @@ get_gcd() {
 # $1: str, valid values: 'u' or 'g'
 # $2: ref to int, user or group id
 get_id() {
-    if [[ $# -ne 2 || ! "${1,,}" =~ ^[ug]$ ]]; then
+    if [[ $# -ne 2 || ! ${1,,} =~ ^[ug]$ ]]; then
         local msg="\nTwo params required: a string literal ('U' or 'G') "
         
         msg+="and a reference to user or group id. Exiting."
@@ -1349,7 +1349,7 @@ get_id() {
 print_err_msg() {
     local msg
     
-    if [[ $# -ne 1 || -z "$1" ]]; then
+    if [[ $# -ne 1 || -z $1 ]]; then
         msg="\nOne non-empty param required. An error message. Exiting."
         exit_with_stack "$msg"
     else

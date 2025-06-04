@@ -4,7 +4,7 @@
 
 readonly SCRIPTPATH=/usr/lib/cloneup.sh.d/cloneup.sh
 
-if [[ ! -x "$SCRIPTPATH" || ! -s "$SCRIPTPATH" ]]; then
+if [[ ! -x $SCRIPTPATH || ! -s $SCRIPTPATH ]]; then
     echo "$SCRIPTPATH is not executable or is empty"
     exit 1
 fi
@@ -20,7 +20,7 @@ for param; do
     fi
 done
 
-if [[ "$(ps -p 1 -o comm=)" == systemd ]]; then
+if [[ $(ps -p 1 -o comm=) == systemd ]]; then
     operations="shutdown:sleep:idle:handle-power-key:handle-suspend-key"
     operations+=":handle-hibernate-key:handle-lid-switch"
     systemd-inhibit --what="$operations" \

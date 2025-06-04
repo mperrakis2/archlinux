@@ -5,7 +5,7 @@
 
 # make sure only one instance of the script can run at a time
 # taken from the man page of flock
-if [[ "${FLOCKER}" != "${BASH_SOURCE:-$0}" ]]; then
+if [[ ${FLOCKER} != ${BASH_SOURCE:-$0} ]]; then
     exec env FLOCKER="${BASH_SOURCE:-$0}" flock -en "${BASH_SOURCE:-$0}" "${BASH_SOURCE:-$0}" "$@"
 else
     true
@@ -50,10 +50,10 @@ trap "echo; exit" ABRT HUP INT QUIT TERM &> /dev/null
 prompt="This script creates a new user. Enter username or Ctrl-C at any time to exit: "
 while read -er -p "$prompt" NEWUSER; do
     prompt="Enter username: "
-    if [[ "$NEWUSER" ]]; then
+    if [[ $NEWUSER ]]; then
         # check if user exists already
         user=$(compgen -u "$NEWUSER" | xargs | grep -wo "$NEWUSER")
-        if [[ "$user" == "$NEWUSER" ]]; then
+        if [[ $user == $NEWUSER ]]; then
             prompt='The new user you entered already exists. Are you sure you '
             prompt+='want to delete it? (y/yes/n/no) '
             while read -rn 3 -p "$prompt"; do
@@ -82,7 +82,7 @@ done
 # ask for wheel group
 prompt="Add new user to wheel group? (y/n): "
 while read -er -n 1 -p "$prompt" IS_WHEEL; do
-    [[ "${IS_WHEEL,,}" =~ y|n ]] && break
+    [[ ${IS_WHEEL,,} =~ y|n ]] && break
 done
 
 START=$(date +%s) # the timestamp will be used to calculate the copy run time
@@ -98,7 +98,7 @@ cmds+=("usermod -aG sys,ftp,log,http,games,rfkill,systemd-journal,uucp,adm \
                 '$NEWUSER'")
                     
 # add wheel group to new user                    
-[[ "${IS_WHEEL,,}" == y ]] && cmds+=("usermod -aG wheel '$NEWUSER'")
+[[ ${IS_WHEEL,,} == y ]] && cmds+=("usermod -aG wheel '$NEWUSER'")
 
 readonly LOGDIR="/var/log/"
 LOGFILE="$LOGDIR/$(basename "${BASH_SOURCE:-$0}")_"
@@ -145,7 +145,7 @@ echo
 
 readonly TEMPLATE_USER=admin
 
-if [[ "$NEWUSER" != "$TEMPLATE_USER" ]]; then
+if [[ $NEWUSER != $TEMPLATE_USER ]]; then
     # get files on destination that contain 'admin'
     cmd="grep -rlZ /home/admin /home/'$NEWUSER'"
     echo "$cmd" | tee -a "$CMDFILE" # echo the command for convenience
@@ -202,11 +202,11 @@ done
 sync
 echo
 
-if [[ "$NEWUSER" != "$TEMPLATE_USER" ]]; then
+if [[ $NEWUSER != $TEMPLATE_USER ]]; then
     # if keyring dir exists then generate new login keyring for new user
     readonly KEYRING_DIR="/home/$NEWUSER/.local/share/keyrings/"
 
-    if [[ -d "$KEYRING_DIR" ]]; then
+    if [[ -d $KEYRING_DIR ]]; then
         # log into new user and generate new login keyring
         cmd="su - '$NEWUSER' -c \"echo -n '$NEWUSER' | gnome-keyring-daemon --unlock\""
         echo "$cmd" | tee -a "$CMDFILE" # echo the command for convenience
@@ -275,7 +275,7 @@ fi
 finish
 
 for param; do
-    if [[ "$param" == -w || "$param" == --wait ]]; then
+    if [[ $param == -w || $param == --wait ]]; then
         echo -e '\nPress any key to exit.'
         read -rsn 1
         break

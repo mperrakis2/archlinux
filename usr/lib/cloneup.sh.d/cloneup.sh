@@ -220,17 +220,17 @@ init() {
     done
 
     # script mode, i.e. no user input other than cmd line args
-    if [[ "$srcdrv" && "$dstdrv" ]]; then
+    if [[ $srcdrv && $dstdrv ]]; then
         ((script=1))
-    elif [[ ("$srcdrv" && ! "$dstdrv") || (! "$srcdrv" && "$dstdrv") ]]; then
+    elif [[ ($srcdrv && ! $dstdrv) || (! $srcdrv && $dstdrv) ]]; then
         cecho "${RED}Source or destination drives don't exist."
         return 1
     fi
 
     # if no cmd line options provided, get default cfg file names
-    [[ -z "$FSTYPES_FILE" ]] &&
+    [[ -z $FSTYPES_FILE ]] &&
         FSTYPES_FILE=$(get_cfg_fname fstypes.conf) # get pathname of fstypes file
-    [[ -z "$FILTERS_FILE" ]] &&
+    [[ -z $FILTERS_FILE ]] &&
         FILTERS_FILE=$(get_cfg_fname exclude.conf) # get pathname of exclude file
 
     local -i err
@@ -257,8 +257,8 @@ usage() {
     local override_file="$OVR_CFG_DIR/exclude.conf"
 
     # if there is no override for the file set it to empty str
-    if [[ ! "$FILTERS_FILE" =~ "$DEF_CFG_DIR" || ! -f "$override_file" || \
-          ! -s "$override_file" || ! -r "$override_file" ]]
+    if [[ ! $FILTERS_FILE =~ "$DEF_CFG_DIR" || ! -f $override_file || \
+          ! -s $override_file || ! -r $override_file ]]
     then
         override_file=""
     fi
@@ -276,14 +276,14 @@ usage() {
             # remove leading & trailing spaces and tabs
             REPLY=$(echo "$REPLY" | sed -e 's/^[[:blank:]]*//' \
                                         -e 's/[[:blank:]]*$//')
-            [[ -z "$REPLY" ]]  && continue  # skip empty lines
+            [[ -z $REPLY ]]  && continue  # skip empty lines
 
             # get lines that are not comments
             REPLY=$(expr "$REPLY" : "\(^[^#].*$\)")
             (( $? )) && continue # skip comments
 
             # remove redundant /, * and space
-            while [[ "$REPLY" =~ ('//'|'**'|[[:blank:]][[:blank:]][[:blank:]]) ]]
+            while [[ $REPLY =~ ('//'|'**'|[[:blank:]][[:blank:]][[:blank:]]) ]]
             do 
                 REPLY="${REPLY//'//'/'/'}"
                 REPLY="${REPLY//'**'/'*'}"
@@ -292,10 +292,10 @@ usage() {
                 REPLY="${REPLY//[[:blank:]][[:blank:]][[:blank:]]/'  '}"
             done    
             
-            if [[ "$file" == "$override_file" ]]; then
+            if [[ $file == $override_file ]]; then
                 # iterate over existing array and update its elements
                 for (( i = 0; i < ${#filters[@]}; ++i )); do
-                    [[ "${filters[i]}" == "$REPLY" ]] && break
+                    [[ ${filters[i]} == $REPLY ]] && break
                 done
                 (( i == ${#filters[@]} )) && filters+=("$REPLY")
             else
@@ -317,7 +317,7 @@ file(s)
 $YELLOW'$FILTERS_FILE'$OFF
 usage_msg
 
-        [[ "$override_file" ]] && cecho "'$override_file'"
+        [[ $override_file ]] && cecho "'$override_file'"
 
         cat << usage_msg
 will ${YELLOW}NOT$OFF be cloned. Here they are:
@@ -367,7 +367,7 @@ usage_msg
             # 1:1049kB:11.5MB:10.5MB::BIOS:bios_grub;
             # 2:11.5MB:536MB:524MB:fat32:UEFI:boot, esp;
             # 3:536MB:512GB:512GB:ext4:ROOT:;
-            if [[ "$line" =~ ^/dev/ ]]; then
+            if [[ $line =~ ^/dev/ ]]; then
                 (( drv_cnt > 0 )) && echo # seperate one drive output from another
                 ((++drv_cnt))
 
@@ -422,10 +422,10 @@ user_input() {
             # 1:1049kB:11.5MB:10.5MB::BIOS:bios_grub;
             # 2:11.5MB:536MB:524MB:fat32:UEFI:boot, esp;
             # 3:536MB:512GB:512GB:ext4:ROOT:;
-            if [[ "$line" =~ ^/dev/ ]]; then
+            if [[ $line =~ ^/dev/ ]]; then
                 ((++drv_cnt))
 
-                if [[ "$line" =~ "$srcdrv:" ]]; then # ':' is the field delimeter
+                if [[ $line =~ "$srcdrv:" ]]; then # ':' is the field delimeter
                     if (( ${#OPTIONS[@]} )); then # dst drive already validated
                         # prepend valid src drive
                         OPTIONS=("$drv_cnt" "${OPTIONS[@]}")
@@ -435,7 +435,7 @@ user_input() {
                     fi
                 fi
 
-                if [[ "$line" =~ "$dstdrv:" ]]; then # ':' is the field delimeter
+                if [[ $line =~ "$dstdrv:" ]]; then # ':' is the field delimeter
                     OPTIONS+=("$drv_cnt") # add valid dst drive
                     (( ${#OPTIONS[@]} == 2 )) && break
                 fi
@@ -456,7 +456,7 @@ user_input() {
     readarray -t parted_data < <(parted --machine --script --list 2> /dev/null)
 
     # compare current parted data with original
-    if [[ "${parted_data[*]}" != "${g_parted_data[*]}" ]]; then
+    if [[ ${parted_data[*]} != ${g_parted_data[*]} ]]; then
         prompt LOOP "The drive configuration has changed."
         return $?
     fi
@@ -467,10 +467,10 @@ user_input() {
     for i in "${!OPTIONS[@]}"; do
         OPTIONS[i]="${OPTIONS[i],,}"
         OPTIONS[i]="${OPTIONS[i]//[[:blank:]]/}"
-        [[ ! "${OPTIONS[i]}" =~ ^[0-9]+$ ]] && break # break if not a number
+        [[ ! ${OPTIONS[i]} =~ ^[0-9]+$ ]] && break # break if not a number
     done
 
-    if [[ ! "${OPTIONS[i]}" =~ ^[0-9]+$ ]]; then # if not num display usage again
+    if [[ ! ${OPTIONS[i]} =~ ^[0-9]+$ ]]; then # if not num display usage again
         prompt LOOP "Source & destination drives have to numbers."
         return $?
     fi
@@ -524,7 +524,7 @@ setup_env() {
     OPTIONS_S="${OPTIONS[0]}_${OPTIONS[1]}"
 
     # complete the filename of log dir
-    if [[ "${LOGDIR: -1}" == "/" ]]; then
+    if [[ ${LOGDIR: -1} == "/" ]]; then
         LOGDIR+="$OPTIONS_S"
     else
         LOGDIR+="/$OPTIONS_S"
@@ -536,7 +536,7 @@ setup_env() {
     # iterate over drive data to get drive names
     drv_data=()
     for line in "${g_parted_data[@]}"; do
-        if [[ "$line" =~ ^/dev/ ]]; then
+        if [[ $line =~ ^/dev/ ]]; then
             ((++drv_num))
 
             # if the drive is src or dst save drive name in associative array of drives
@@ -552,8 +552,8 @@ setup_env() {
     # following literal 
     local ptn_prefix="p"
 
-    if [[ "$srcdrv" =~ $DRV_SUFFIX ]]; then SP="$ptn_prefix"; else SP=""; fi
-    if [[ "$dstdrv" =~ $DRV_SUFFIX ]]; then DP="$ptn_prefix"; else DP=""; fi
+    if [[ $srcdrv =~ $DRV_SUFFIX ]]; then SP="$ptn_prefix"; else SP=""; fi
+    if [[ $dstdrv =~ $DRV_SUFFIX ]]; then DP="$ptn_prefix"; else DP=""; fi
     
     # critical section
     (
@@ -597,7 +597,7 @@ setup_env() {
 
     # if script is running on dst drive exit with error
     srcptn=$(findmnt -no SOURCE -T "$SCRIPTDIR")
-    if [[ "$srcptn" =~ $dstdrv$DP ]]; then
+    if [[ $srcptn =~ $dstdrv$DP ]]; then
         prompt LOOP "You can't run the $SCRIPTNAME script on the destination drive."
         return $?
     fi
@@ -610,7 +610,7 @@ setup_env() {
     #    system
     # 2. the script is executed on that drive and the drive that is selected
     #    as destination is the drive that was used to boot the system 
-    if [[ "$BOOTPTN" =~ $dstdrv$DP ]]; then
+    if [[ $BOOTPTN =~ $dstdrv$DP ]]; then
         msg="The destination drive can't be the drive that was used to boot the"
         msg+=" system."
         prompt LOOP "$msg"
@@ -777,7 +777,7 @@ populate_arrays() {
         
         # iterate over drive data
         for line in "${parted_data[@]}"; do
-            if [[ "$line" =~ ^/dev/ ]]; then # if drive get its data
+            if [[ $line =~ ^/dev/ ]]; then # if drive get its data
                 drv_data[$drv_num]+=":"
                 drv_data[$drv_num]+=$(get_field_re "$line" $DSIZE) # size
                 drv_data[$drv_num]+=":"
@@ -791,7 +791,7 @@ populate_arrays() {
                     
             # match the format of the first two fields (see above sample cmd
             # output)
-            elif [[ "$line" =~ ^[0-9]+:[0-9]+$UNIT ]]; then
+            elif [[ $line =~ ^[0-9]+:[0-9]+$UNIT ]]; then
                 # get partition data
                 ((ptn_num=$(get_field "$line" $PPTN_NUM)))
                 ((startb=$(get_field_re "$line" $PSTART)))
@@ -799,7 +799,7 @@ populate_arrays() {
                 ((size=$(get_field_re "$line" $PSIZE)))
                 fstype=$(get_field "$line" $PFSTYPE)
                 name=$(get_field "$line" $PNAME)
-                [[ -z "$name" ]] && name=primary
+                [[ -z $name ]] && name=primary
                 flags=$(get_field_re "$line" $PFLAGS "\([^;]*\)")
                 
                 # add partition data to partitions array
@@ -814,22 +814,22 @@ populate_arrays() {
                     (( ptn_cnt == 1 )) && ((no_resize+=startb))
 
                     # add size of swap partitions
-                    [[ "$fstype" =~ swap ]] && ((no_resize+=size))
+                    [[ $fstype =~ swap ]] && ((no_resize+=size))
                     
                     # save partition number of ESP partition and add its size
-                    if [[ "$flags" =~ esp ]]; then
+                    if [[ $flags =~ esp ]]; then
                         ((no_resize+=size))
                         ((esp_ptn_nums[$ptn_num]=ptn_cnt))
                     fi
 
                     # save partition number of bios grub partition and add its size
-                    if [[ "$flags" =~ bios ]]; then
+                    if [[ $flags =~ bios ]]; then
                         ((no_resize+=size))
                         ((bios_ptn=ptn_num))
                     fi
 
                     # save partition number of boot partition
-                    [[ "$flags" =~ boot ]] && ((boot_ptn_nums[$ptn_num]=ptn_cnt))
+                    [[ $flags =~ boot ]] && ((boot_ptn_nums[$ptn_num]=ptn_cnt))
                 fi
             fi
         done
@@ -957,9 +957,9 @@ populate_arrays() {
             partitions[i]+=$size
 
             # if swap, esp or bios, update the byte counter of non-resizable bytes
-            [[ "$(get_field "$ptn" $PFSTYPE)" =~ swap || \
-               "$(get_field "$ptn" $PFLAGS)" =~ esp   || \
-               "$(get_field "$ptn" $PFLAGS)" =~ bios ]] && 
+            [[ $(get_field "$ptn" $PFSTYPE) =~ swap || \
+               $(get_field "$ptn" $PFLAGS) =~ esp   || \
+               $(get_field "$ptn" $PFLAGS) =~ bios ]] && 
                 ((no_resize_dst+=size))
         fi
     done
@@ -1017,7 +1017,7 @@ calc_drvspace() {
             flags=$(get_field "$ptn" "$PFLAGS")         # extract flags
             
             # mount all src partitions other than swap and bios_grub
-            if [[ ! "$fstype" =~ swap && ! "$flags" =~ bios ]]; then
+            if [[ ! $fstype =~ swap && ! $flags =~ bios ]]; then
                 # mount src partition
                 mount_ptn "$srcdrv$SP"$ptn_num srcmnt
                 ((err=$?))
@@ -1031,7 +1031,7 @@ calc_drvspace() {
                 
                 # return if any src partition does not have UUID
                 flags=$(lsblk -no UUID "$srcdrv$SP$ptn_num" 2>> "$ERRFILE")
-                if [[ -z "$flags" ]]; then
+                if [[ -z $flags ]]; then
                     cecho -e "\n${RED}The $YELLOW$srcdrv$SP$ptn_num$RED source"\
                              "${RED}partition mounted on"\
                              "$YELLOW$(get_field "$srcmnt" "$MDIR")${RED} does not"\
@@ -1073,12 +1073,12 @@ calc_drvspace() {
         (( used = $(get_field "${src_ptn_data[i]}" "$USED" ' ') * CONVERSION_UNIT ))
         (( ptn_num = 0 ))
         for ptn_num in "${!esp_ptn_nums[@]}"; do
-            if [[ "$source" == "$srcdrv$SP$ptn_num" ]]; then
+            if [[ $source == $srcdrv$SP$ptn_num ]]; then
                 pcent=0
                 break
             fi
         done
-        if [[ ! "$source" == "$srcdrv$SP$ptn_num" ]]; then
+        if [[ ! $source == $srcdrv$SP$ptn_num ]]; then
             pcent=$(get_field "${src_ptn_data[i]}" "$PCENT" ' ')
             pcent="${pcent/'%'}"
         fi
@@ -1127,19 +1127,19 @@ calc_drvspace() {
         ((j=0))
         paths=()
         for (( i = 0; i < ${#buf}; ++i )); do
-            if [[ "${buf:i:1}" != [[:blank:]] ]]; then
+            if [[ ${buf:i:1} != [[:blank:]] ]]; then
                 # remove redundant '/' and '*'
-                if [[ ("${buf:i:1}" != "*" && "${buf:i:1}" != "/") || \
-                      "${buf:i:1}" != "${buf:i-1:1}" ]]
+                if [[ (${buf:i:1} != "*" && ${buf:i:1} != "/") || \
+                      ${buf:i:1} != ${buf:i-1:1} ]]
                 then
                     paths[j]+="${buf:i:1}"
                 fi
             else
-                if [[ "${paths[j]:${#paths[j]}-1:1}" == '\' ]]; then
+                if [[ ${paths[j]:${#paths[j]}-1:1} == '\' ]]; then
                     paths[j]+="${buf:i:1}"
                 else
                     ((++j))
-                    while [[ "${buf:i:1}" == [[:blank:]] ]]; do ((++i)); done
+                    while [[ ${buf:i:1} == [[:blank:]] ]]; do ((++i)); done
                     ((--i))
                 fi
             fi
@@ -1150,10 +1150,10 @@ calc_drvspace() {
 
         # For valid entries see '$FILTERS_FILE' file.
         case ${#paths[@]} in
-            1) [[ ! "${paths[*]}" =~ ^[-+]/.+$ ]] && 
+            1) [[ ! ${paths[*]} =~ ^[-+]/.+$ ]] && 
                    { cechot "$buf"; continue; }
             ;;            
-            2) [[ ! "${paths[*]}" =~ ^[-+]/.*\ [^/].*$ ]] && 
+            2) [[ ! ${paths[*]} =~ ^[-+]/.*\ [^/].*$ ]] && 
                    { cechot "$buf"; continue; }
             ;;
             *) cechot "$buf"; continue ;;
@@ -1172,11 +1172,11 @@ calc_drvspace() {
 
         # skip files/dirs not on source drive. e.g. virtual file systems like
         # /sys, /proc, etc
-        if [[ "${srcptn::1}" != "/" ]]; then
+        if [[ ${srcptn::1} != "/" ]]; then
             if [[ ${paths[0]::1} == "+" ]]; then
                 cechot "$CYAN'${paths[*]}'$YELLOW is not on the source drive"\
                        "and it's an include entry which is not valid. $MSG."
-            elif [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
+            elif [[ $BOOTPTN =~ $srcdrv$SP ]]; then
                 new_filter filters user_filters paths
             else                
                 cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source"\
@@ -1185,13 +1185,13 @@ calc_drvspace() {
             continue
 
         # if paths are not on src drive, skip them
-        elif [[ ! "$srcptn" =~ $srcdrv$SP ]]; then
+        elif [[ ! $srcptn =~ $srcdrv$SP ]]; then
             cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source drive"\
                    "and will be omitted. $MSG."
             continue
 
         # any paths that start with the following must be excluded
-        elif [[ "${paths[0]:1}" =~ ^(/media|/mnt) ]]; then
+        elif [[ ${paths[0]:1} =~ ^(/media|/mnt) ]]; then
             for buf in -/media/* -/mnt/*; do
                 paths=("$buf")
                 new_filter filters user_filters paths
@@ -1205,7 +1205,7 @@ calc_drvspace() {
             # passed as a parameter to 'find' cmd
             ((j=0))
             for (( i = 0; i < ${#paths[1]}; ++i )); do
-                if [[ "${paths[1]:$i:1}" == "/" ]]; then # get path up to '/'
+                if [[ ${paths[1]:$i:1} == "/" ]]; then # get path up to '/'
                     if (( j )); then
                         user_entries next_entries "-type d"
                     else
@@ -1253,7 +1253,7 @@ calc_drvspace() {
         ((match=0))
         for k in "${!user_filters[@]}"; do
             # if new path is an existing filter, skip it
-            if [[ "${paths[*]}" == "${user_filters["$k"]}" ]]; then
+            if [[ ${paths[*]} == ${user_filters["$k"]} ]]; then
                 cechot "$CYAN'${paths[*]}'$YELLOW is listed more than once"\
                         "and will be omitted. $MSG."
                 ((match=1))
@@ -1261,11 +1261,9 @@ calc_drvspace() {
             fi
             
             # compare exclude filters
-            if [[ "${paths[0]::1}" == "-" && \
-                    "${paths[0]::1}" == "${k::1}" ]]
-            then
+            if [[ ${paths[0]::1} == "-" && ${paths[0]::1} == "${k::1}" ]]; then
                 # if existing filter "fits" into new filter, skip new
-                if [[ "${user_filters["$k"]: -1}" == "/" && \
+                if [[ ${user_filters["$k"]: -1} == "/" && \
                         "${paths[*]}" =~ "${user_filters["$k"]}" ]]; then
                     cechot "$CYAN'${paths[*]}'$YELLOW is under"\
                            "$CYAN'${user_filters["$k"]}'$YELLOW and will be"\
@@ -1277,8 +1275,9 @@ calc_drvspace() {
                 # if new filter is dir and "fits" into existing
                 # filter, remove existing
                 ((i=${#paths[@]}))
-                if [[ "${paths[i-1]: -1}" == "/" && \
-                        "${user_filters["$k"]}" =~ "${paths[*]}" ]]; then
+                if [[ ${paths[i-1]: -1} == "/" && \
+                      ${user_filters["$k"]} =~ "${paths[*]}" ]]
+                then
                     cechot "$CYAN'${user_filters["$k"]}'$YELLOW is under"\
                            "$CYAN'${paths[*]}'$YELLOW and will be omitted. $MSG."
                     for i in ${filters["$k"]}; do # remove filter entries
@@ -1294,7 +1293,7 @@ calc_drvspace() {
 
         for i in "${!next_entries[@]}"; do    
             # add a backslash to each directory
-            [[ "${next_entries[i]: -1}" != "/" && -d "${next_entries[i]}" ]] &&
+            [[ ${next_entries[i]: -1} != "/" && -d ${next_entries[i]} ]] &&
                 next_entries[i]+="/"
 
             next_entries[i]="${paths[0]::1}${next_entries[i]}" # add the sign
@@ -1330,9 +1329,9 @@ calc_drvspace() {
         ((match=0))
         for j in "${!entries[@]}"; do
             # check if an entry is under another
-            if [[ "${entries[i]:1}" == "${entries[j]:1}" || \
-                  ("${entries[j]: -1}" == "/" && \
-                   "${entries[i]:1}" =~ "${entries[j]:1}") ]]
+            if [[ ${entries[i]:1} == ${entries[j]:1} || \
+                  (${entries[j]: -1} == "/" && \
+                   ${entries[i]:1} =~ "${entries[j]:1}") ]]
             then
                 ((under=1))
             else
@@ -1341,19 +1340,19 @@ calc_drvspace() {
             
             # match entries that cancel out each other, i.e. include/exclude
             # entries
-            if [[ "${entries[i]::1}" == '+' && "${entries[j]::1}" == '-' && \
+            if [[ ${entries[i]::1} == '+' && ${entries[j]::1} == '-' && \
                   $under -eq 1 ]]
             then
-                [[ "${entries[i]:1}" == "${entries[j]:1}" ]] &&
+                [[ ${entries[i]:1} == ${entries[j]:1} ]] &&
                     pair "$i" "$j" matched
                 ((match=1))
 
             # match entries that are equal or under others, i.e.
             # include/include or exclude/exclude entries
-            elif [[ (("${entries[i]::1}" == '+' && \
-                      "${entries[j]::1}" == '+' && $j -ne $i) || \
-                     ("${entries[i]::1}" == '-' && \
-                      "${entries[j]::1}" == '-' && $j -ne $i)) && \
+            elif [[ ((${entries[i]::1} == '+' && ${entries[j]::1} == '+' && \
+                      $j -ne $i) || \
+                     (${entries[i]::1} == '-' && ${entries[j]::1} == '-' && \
+                      $j -ne $i)) && \
                     $under -eq 1 ]]
             then
                 pair "$i" "$j" matched
@@ -1361,7 +1360,7 @@ calc_drvspace() {
         done
 
         # in case include entry not matched by an exclude one, remove it
-        if [[ "${entries[i]::1}" == '+' && $match -eq 0 ]]; then
+        if [[ ${entries[i]::1} == '+' && $match -eq 0 ]]; then
             filter_data "$i" k j
 
             update "$j" matched # update matched entries
@@ -1399,7 +1398,7 @@ calc_drvspace() {
             filter "${i/+([0-9]),}" f # get filter for 2nd idx
 
             rm_entries="entries removed_entries"
-            if [[ ${k::1} != "${f::1}" ]]; then # this is a tuple
+            if [[ ${k::1} != ${f::1} ]]; then # this is a tuple
                 # set function to remove matched filter tuple entries
                 rm_entries="tuple_removal $rm_entries matched_filters"
             else # both filters are includes or excludes
@@ -1412,7 +1411,7 @@ calc_drvspace() {
             matched_filters=()
             if $rm_entries; then # remove matched entries
                 # set user message if both filters are includes or excludes
-                [[ ${k::1} == "${f::1}" ]] &&
+                [[ ${k::1} == ${f::1} ]] &&
                     buf="$buf$CYAN'${user_filters["$f"]}'$YELLOW"
                 ((match=1))
             else
@@ -1432,11 +1431,11 @@ calc_drvspace() {
                 filter "${j/+([0-9]),}" f # get filter for 2nd idx
 
                 # process filter with the same sign as the previous one
-                [[ ${f::1} != "$sign" ]] && continue
+                [[ ${f::1} != $sign ]] && continue
 
                 if $rm_entries; then # remove matched entries
                     # set user message if both filters are includes or excludes
-                    if [[ ${k::1} == "${f::1}" ]]; then
+                    if [[ ${k::1} == ${f::1} ]]; then
                         if (( match )); then
                             buf+=" and $CYAN'${user_filters["$f"]}'$YELLOW"
                         else
@@ -1452,7 +1451,7 @@ calc_drvspace() {
             # print matched filters and store them for removal
             if (( match )); then
                 filters_rm[$k]= # store filter for removal
-                if [[ ${k::1} != "$sign" ]]; then
+                if [[ ${k::1} != $sign ]]; then
                     # set user message
                     buf="$CYAN'${user_filters["$k"]}'$YELLOW"
                     for f in "${matched_filters[@]}"; do
@@ -1477,7 +1476,7 @@ calc_drvspace() {
     # reorder user filters storing the includes first
     abuf=()
     for buf in "${user_filters[@]}"; do
-        if [[ "${buf::1}" == "+" ]]; then
+        if [[ ${buf::1} == "+" ]]; then
             abuf=("${OFF}Include$YELLOW in cloning  : $CYAN${buf:1}" "${abuf[@]}")
         else
             abuf+=("Exclude from cloning: $CYAN${buf:1}")
@@ -1511,7 +1510,7 @@ calc_drvspace() {
             (( ! $? )) &&
                 for i in "${!src_ptn_data[@]}"; do
                     source=$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')
-                    if [[ "$source" == "$srcptn" ]]; then
+                    if [[ $source == $srcptn ]]; then
                         (( used = $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
                         (( used -= exc_size))
                         pcent=$(get_field "${src_ptn_data[i]}" "$PCENT" ' ')
@@ -1569,7 +1568,7 @@ calc_drvspace() {
             # includes spaces
             srcptn=$(eval findmnt -no SOURCE -T "$buf")
             if (( $? )); then
-                if [[ "$buf" == "/" ]]; then
+                if [[ $buf == "/" ]]; then
                     cecho "No souce partition found for '$k'. Exiting."\
                           | tee -a "$ERRFILE"
                     return 1
@@ -1581,7 +1580,7 @@ calc_drvspace() {
             fi
         done
         
-        if [[ "${srcptn::1}" != "/" ]]; then
+        if [[ ${srcptn::1} != "/" ]]; then
             srcmnt_dir="/"
         else
             srcmnt_dir=$(lsblk -no MOUNTPOINT "$srcptn")
@@ -1592,11 +1591,11 @@ calc_drvspace() {
         # rsync uses the first filter it encounters to exclude/include
         # files/dirs therefore, the include filters must be first
         if [[ $sign == "+" ]]; then
-            [[ "$k" =~ "/**/" ]] && 
+            [[ $k =~ "/**/" ]] && 
                 rsync_filters[$srcmnt_dir]="-f \"$sign ${k/'**/'}\" ${rsync_filters["$srcmnt_dir"]} "
             rsync_filters[$srcmnt_dir]="-f \"$sign $k\" ${rsync_filters["$srcmnt_dir"]} "
         else
-            [[ "$k" =~ "/**/" ]] && 
+            [[ $k =~ "/**/" ]] && 
                 rsync_filters[$srcmnt_dir]+="-f \"$sign ${k/'**/'}\" "
             rsync_filters[$srcmnt_dir]+="-f \"$sign $k\" "
         fi
@@ -1614,7 +1613,7 @@ create_partitions() {
     ptn_tbl=$(get_field "${drv_data[${OPTIONS[0]}]}" "$DPTN_TBL_TYPE")
 
     # if partition table on dst != src mark dst for wipe
-    [[ "$ptn_tbl" != $(get_field "${drv_data[${OPTIONS[1]}]}" "$DPTN_TBL_TYPE") ]] && 
+    [[ $ptn_tbl != $(get_field "${drv_data[${OPTIONS[1]}]}" "$DPTN_TBL_TYPE") ]] && 
         ((create_ptn=1))
 
     local -i i
@@ -1637,12 +1636,12 @@ create_partitions() {
         for i in "${!src_ptn_data[@]}"; do
             ptn=$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')
             for ptn_num in "${!esp_ptn_nums[@]}"; do
-                if [[ "$ptn" == "$srcdrv$SP$ptn_num" ]]; then
+                if [[ $ptn == $srcdrv$SP$ptn_num ]]; then
                     (( clone_size -= $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
                     break
                 fi
             done
-            [[ "$ptn" == "$srcdrv$SP$bios_ptn" ]] &&
+            [[ $ptn == $srcdrv$SP$bios_ptn ]] &&
                 (( clone_size -= $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
         done
 
@@ -1665,8 +1664,8 @@ create_partitions() {
                         fstype=$(get_field "$ptn" "$PFSTYPE") # extract filesystem type
 
                         # all partitions except esp, bios & swap can be resized
-                        if [[ ! "$flags" =~ esp && ! "$flags" =~ bios && \
-                              ! "$fstype" =~ swap ]]
+                        if [[ ! $flags =~ esp && ! $flags =~ bios && \
+                              ! $fstype =~ swap ]]
                         then
                             ptn_size bytes # get ptn size in bytes variable
 
@@ -1718,13 +1717,13 @@ create_partitions() {
             ((ptn_cnt=$(get_field "$ptn" "$PPTN_CNT"))) # extract partition counter
 
             # all partitions except esp, bios & swap can be resized
-            if [[ ! "$flags" =~ esp && ! "$flags" =~ bios && ! "$fstype" =~ swap ]]
+            if [[ ! $flags =~ esp && ! $flags =~ bios && ! $fstype =~ swap ]]
             then
                 # dst ptn size is calculated based on src ptn data size
                 if (( resize_for_data )); then
                     ((src_ptn_data_size=0))
                     for i in "${!src_ptn_data[@]}"; do
-                        if [[ "$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')" == \
+                        if [[ $(get_field "${src_ptn_data[i]}" "$SOURCE" ' ') == \
                               "$srcdrv$SP$ptn_num" ]]
                         then
                             # get data size of src partition
@@ -1784,7 +1783,7 @@ create_partitions() {
             fi
 
             # create 'mkpart' cmd for new partition
-            if [[ "$fstype" ]]; then
+            if [[ $fstype ]]; then
                 cmd="parted --script --fix -a optimal '$dstdrv' unit $UNIT mkpart "
                 cmd+="primary '$fstype' $start $end"
                 cmds+=("$cmd")
@@ -1793,7 +1792,7 @@ create_partitions() {
                 cmd+="primary $start $end"
                 cmds+=("$cmd")
             fi
-            [[ "$name" && "$ptn_tbl" != "msdos" ]] &&
+            [[ $name && $ptn_tbl != msdos ]] &&
                 cmds+=("parted --script --fix '$dstdrv' name $ptn_cnt \"$name\"")
 
             # check partition alignment
@@ -1802,7 +1801,7 @@ create_partitions() {
             # create set cmds to set partition flags
             ((i=1))
             flag=$(get_field "$flags" $i ',' | xargs)
-            while [[ "$flag" ]]; do
+            while [[ $flag ]]; do
                 cmds+=("parted --script --fix '$dstdrv' set $ptn_cnt '$flag' on")
                 ((++i))
                 flag=$(get_field "$flags" $i ',' | xargs)
@@ -1811,7 +1810,7 @@ create_partitions() {
             # create cmds to format the partition
             # get filesystem cmd that applies to partition fstype
             for cmd in "${FSTYPES[@]}"; do
-                if [[ "$fstype" && "$cmd" =~ $fstype ]]; then
+                if [[ $fstype && $cmd =~ $fstype ]]; then
                     # create cmd to format the newly created partition
                     cmds+=("$(get_field "$cmd" 2) '$dstdrv$DP$ptn_cnt'")
                     break
@@ -1825,7 +1824,7 @@ create_partitions() {
                     dst_ptn="$name$fstype$start$end$flags"
                     dst_ptn=$(echo "$dst_ptn" | xargs) # remove whitespace
 
-                    [[ "$dst_ptn" != "${dst_ptns[j]}" ]] && ((create_ptn=1))
+                    [[ $dst_ptn != ${dst_ptns[j]} ]] && ((create_ptn=1))
                     ((++j))
                 else
                     ((create_ptn=1)) # src has more partitions than dst
@@ -1834,7 +1833,7 @@ create_partitions() {
             ((start=end+1)) # update start byte for next partition
         else
             # to remove swap partition it has to be off first
-            [[ "$fstype" =~ swap ]] && 
+            [[ $fstype =~ swap ]] && 
             swapon | grep -q "$dstdrv$DP$ptn_num" 2>> "$ERRFILE" &&
             cmds+=("swapoff '$dstdrv$DP$ptn_num'")            
 
@@ -1914,7 +1913,7 @@ clone() {
 
             # swap partitions are not cloned, just created, thus, are not part
             # of any rsync parameters and are not mounted
-            if [[ "$fstype" =~ swap ]]; then
+            if [[ $fstype =~ swap ]]; then
                 # save src swap UUIDs, as they'll be replaced with dst ones
                 # on dst drive after cloning
                 swap_ptn_UUIDs="$srcdrv$SP$ptn_num:"
@@ -1929,7 +1928,7 @@ clone() {
                 swap_ptn_UUIDs+="$(expr "$($cmd)" : ".* UUID=\"\(.*\)\" TYPE"):"
                 swap_ptns_UUIDs+=("$swap_ptn_UUIDs")
                 cmds+=("mkswap -f '$dstdrv$DP$ptn_cnt'")
-            elif [[ "$flags" =~ bios ]]; then
+            elif [[ $flags =~ bios ]]; then
                 ((bios=1)) # set flag if bios partition
             else
                 # mount src partition
@@ -1966,7 +1965,7 @@ clone() {
     local FSTAB_FILE="/etc/fstab"
     readonly FSTAB_FILE
 
-    if [[ "$BOOTPTN" =~ $srcdrv$SP ]]; then
+    if [[ $BOOTPTN =~ $srcdrv$SP ]]; then
         # find swap files listed in fstab file
         mapfile -t abuf < <(grep swap "$FSTAB_FILE")
 
@@ -1982,13 +1981,13 @@ clone() {
         # iterate over swap file names and add cmds to create them on dst
         for buf in "${abuf[@]}"; do
             # if swap entry is a file and not a partition
-            if [[ "${buf::1}" == "/" ]]; then
+            if [[ ${buf::1} == "/" ]]; then
                 file="${buf%%+( *)}" # get swap filename
                 ((found=0))
 
                 # check if swap file has been added to swap file list
                 for buf in "${files[@]}"; do
-                    [[ "$buf" == "$file" ]] && found=1 && break
+                    [[ $buf == $file ]] && found=1 && break
                 done
                 (( found )) && continue    # swap file has been added so skip it
                 files+=("$file") # add swap file to swap file list
@@ -1996,13 +1995,13 @@ clone() {
                 srcptn=$(findmnt -no SOURCE -T "$file")
 
                 # add the swap file only if it exists on the src drive
-                if [[ "$srcptn" =~ $srcdrv$SP ]]; then
+                if [[ $srcptn =~ $srcdrv$SP ]]; then
                     srcmnt=$(lsblk -no MOUNTPOINT "$srcptn")
                     
                     # don't clone swap file (add to rsync filters)
                     rsync_filters[$srcmnt]+="-f \"- ${file//\"/\\\"}\" "
                     
-                    if [[ -f "$file" && -s "$file" && -r "$file" && -w "$file" ]]
+                    if [[ -f $file && -s $file && -r $file && -w $file ]]
                     then
                         # add cmds to create swap files on dst
                         ((size=$(find "$file" -printf %s)))
@@ -2013,7 +2012,8 @@ clone() {
                         ptn=$(findmnt -no SOURCE -T "$file")
                         
                         for ptn_pair in "${rsync_params[@]}"; do
-                            if [[ "$ptn" == "$(get_field "$ptn_pair" "$MPTN")" ]]; then
+                            if [[ $ptn == $(get_field "$ptn_pair" "$MPTN") ]]
+                            then
                                 dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
 
                                 # the following three numbers at the beginning
@@ -2043,7 +2043,7 @@ clone() {
     for ptn_pair in "${rsync_params[@]}"; do
         srcmnt=$(get_field "$ptn_pair" "$MDIR") # get src dir
 
-        if [[ "$srcmnt" == "/" ]]; then
+        if [[ $srcmnt == "/" ]]; then
             buf="$srcmnt"
         else
             # remove trailing '/' as it's not part of key of associative array
@@ -2066,13 +2066,13 @@ clone() {
             for i in "${!src_ptn_data[@]}"; do
                 srcptn=$(get_field "${src_ptn_data[i]}" "$SOURCE" ' ')
                 for ptn_num in "${!esp_ptn_nums[@]}"; do
-                    [[ "$srcptn" == "$srcdrv$SP$ptn_num" ]] && break
+                    [[ $srcptn == $srcdrv$SP$ptn_num ]] && break
                 done
-                [[ "$srcptn" == "$srcdrv$SP$ptn_num" || \
-                   "$srcptn" == "$srcdrv$SP$bios_ptn" ]] &&
+                [[ $srcptn == $srcdrv$SP$ptn_num || \
+                   $srcptn == $srcdrv$SP$bios_ptn ]] &&
                     continue
 
-                if [[ "$srcptn" == $(get_field "$ptn_pair" "$MPTN") ]]; then
+                if [[ $srcptn == $(get_field "$ptn_pair" "$MPTN") ]]; then
                     (( used = $(get_field "${src_ptn_data[i]}" "$USED" ' ') ))
                     break
                 fi
@@ -2098,7 +2098,7 @@ clone() {
         # volume, executing a 'ls' cmd on the mounted volume produces the
         # following message "ls: '<mount_dir>': No data available" yet the
         # contents are displayed correctly.
-        [[ "$(findmnt -no FSTYPE "$srcmnt" 2>> "$ERRFILE")" =~ hfs ]] &&
+        [[ $(findmnt -no FSTYPE "$srcmnt" 2>> "$ERRFILE") =~ hfs ]] &&
             flags="${flags:0:-1}"
 
         # create rsync cmd; the following two numbers at the beginning of the 
@@ -2127,7 +2127,7 @@ clone() {
     cmd=""
     cmds=()
     buf=""
-    if [[ "${files[*]}" ]]; then
+    if [[ ${files[*]} ]]; then
         echo -e "\tCreating commands to make destination drive bootable..."
         echo -e "\tCreating command to update fstab file on destination drive..."
 
@@ -2173,7 +2173,7 @@ clone() {
             mapfile -t files < <(grep swap "$file" 2>> "$ERRFILE")
             for file in "${files[@]}"; do
                 # if swap entry is a file and not a partition
-                if [[ "${file::1}" == "/" ]]; then
+                if [[ ${file::1} == "/" ]]; then
                     file="${file%%+( *)}"   # get swap filename
                     file="$dstmnt${file:1}" # add dst dir and remove '/'
 
@@ -2181,7 +2181,7 @@ clone() {
                     ((size=$(filefrag -v "$file" | \
                              awk '$1=="0:" {print substr($4, 1, length($4)-2)}')))
 
-                    if [[ ! "$size" =~ ^[0-9]+$ || "$size" -lt 1 ]]; then
+                    if [[ ! $size =~ ^[0-9]+$ || $size -lt 1 ]]; then
                         print_stack "\nSwap file:'$file' offset is < 1. Exiting."
                         return $?
                     fi
@@ -2190,7 +2190,7 @@ clone() {
                     # to sed expressions
                     UUID=$(findmnt -no UUID -T "$file")      # get dst UUID
                     for ptn_pair in "${rsync_params[@]}"; do # get src UUID
-                        if [[ "$(get_field "$ptn_pair" "$((MUUID+MDST))")" == "$UUID" ]]
+                        if [[ $(get_field "$ptn_pair" "$((MUUID+MDST))") == $UUID ]]
                         then
                             UUID=$(get_field "$ptn_pair" "$MUUID")
                             break
@@ -2212,7 +2212,7 @@ clone() {
     for ptn_pair in "${rsync_params[@]}"; do
         dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
         for buf in "/grub/" "/etc/default/grub.d/" "/etc/grub.d/"; do
-            if [[ -d "$dstmnt$buf" ]]; then
+            if [[ -d $dstmnt$buf ]]; then
                 buf="find '$dstmnt$buf' -maxdepth 1 -type f -exec file '{}' \; "
                 buf+="2>> "$ERRFILE" | grep -i ascii | cut -d : -f 1"
                 mapfile -t -O ${#grubcfg_files[@]} grubcfg_files < <(eval $buf)
@@ -2222,7 +2222,7 @@ clone() {
 
     files=()
     abuf=()
-    if [[ "${grubcfg_files[*]}" ]]; then
+    if [[ ${grubcfg_files[*]} ]]; then
         echo -e "\tCreating commands to update grub configuration files on"\
                 "destination drive..."
 
@@ -2231,13 +2231,13 @@ clone() {
         for ptn_pair in "${rsync_params[@]}"; do
             UUID=$(get_field "$ptn_pair" "$MUUID")
             for buf in "${!grubcfg_files[@]}"; do
-                if [[ "${grubcfg_files[buf]}" =~ grubenv && \
-                      ! "${files[*]}" =~ "${grubcfg_files[buf]}" ]]
+                if [[ ${grubcfg_files[buf]} =~ grubenv && \
+                      ! ${files[*]} =~ "${grubcfg_files[buf]}" ]]
                 then
                     files+=("${grubcfg_files[buf]}")
                     unset grubcfg_files[buf]
                 elif grep -q "$UUID" "${grubcfg_files[buf]}" 2>> "$ERRFILE"; then
-                    [[ ! "${abuf[*]}" =~ "${grubcfg_files[buf]}" ]] &&
+                    [[ ! ${abuf[*]} =~ "${grubcfg_files[buf]}" ]] &&
                     abuf+=("${grubcfg_files[buf]}")
                 fi
             done
@@ -2259,7 +2259,7 @@ clone() {
         val=""
         for ptn_pair in "${rsync_params[@]}"; do
             # get entry if it exists in grubenv file on dst
-            if [[ -z "$val" ]]; then
+            if [[ -z $val ]]; then
                 UUID=$(get_field "$ptn_pair" "$MUUID")
                 buf=$(grep "$UUID" "$file" 2> /dev/null)
                 if (( $? == 0 )); then
@@ -2269,7 +2269,7 @@ clone() {
                     # replace src with dst UUID
                     val="${val/$UUID/$(get_field "$ptn_pair" "$((MUUID+MDST))")}"
                     dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
-                    if [[ -x "$dstmnt${GRUB_EDITENV}" ]]; then
+                    if [[ -x $dstmnt${GRUB_EDITENV} ]]; then
                         cmd="$dstmnt${GRUB_EDITENV}"
                         cmds+=("$cmd '$file' set '$name'='$val'")
                         if (( ! used )); then
@@ -2306,8 +2306,8 @@ clone() {
     for ptn_pair in "${rsync_params[@]}"; do
         # if bios flag is set, get dst boot dir
         flags=$(get_field "$ptn_pair" "$((MUUID+MDST+1))")
-        if [[ $bios -ne 0 && -z "$dst_bootdir" && \
-              ("$flags" =~ boot || "$flags" =~ esp) ]]
+        if [[ $bios -ne 0 && -z $dst_bootdir && ($flags =~ boot || \
+                                                 $flags =~ esp) ]]
         then
             dst_bootdir="$ptn_pair"
         fi
@@ -2316,12 +2316,12 @@ clone() {
 
         # if bios flag is set, install grub bootloader for non-UEFI (bios) system
         if (( bios )); then
-            if [[ -z "$cmd" && -x "$dstmnt"/usr/bin/grub-install ]]; then
+            if [[ -z $cmd && -x $dstmnt/usr/bin/grub-install ]]; then
                 cmd="$dstmnt"/usr/bin/grub-install # grub installer pathname
                 mnt="$dstmnt"
             fi
 
-            if [[ "$dst_bootdir" && "$cmd" ]]; then
+            if [[ $dst_bootdir && $cmd ]]; then
                 UUID=$(get_field "$dst_bootdir" "$MUUID")
                 if grep -q "$UUID" "$mnt/$FSTAB_FILE" 2> /dev/null; then
                     dst_bootdir=$(get_field "$dst_bootdir" "$((MDIR+MDST))")
@@ -2345,7 +2345,7 @@ clone() {
         fi
 
         # if dst is not removable add shim efi boot entries if they don't exist
-        if [[ "$removable" == 0 && ("$flags" =~ boot || "$flags" =~ esp)]]; then
+        if [[ $removable == 0 && ($flags =~ boot || $flags =~ esp)]]; then
             # get dst boot partition UUID
             UUID=$(get_field "$ptn_pair" "$((MUUID+MDST))")
 
@@ -2365,7 +2365,7 @@ clone() {
                 
                 # skip entries that contain '/BOOT/' (it's for removable media)
                 # or not 'shim'
-                [[ "$buf" =~ /$BOOT/ || ! "$buf" =~ $SHIM ]] && continue
+                [[ $buf =~ /$BOOT/ || ! $buf =~ $SHIM ]] && continue
 
                 # remove suffix up to and including last '/'
                 distro="${buf%+(/*)}"
@@ -2376,7 +2376,7 @@ clone() {
                 buf="${buf//'/'/'\'}" # efi boot entries use '\'
 
                 # if no shim boot entries for dst, add them
-                if [[ ! "$entries" =~ .+$ptn_num.+$UUID.+"$buf" ]]; then
+                if [[ ! $entries =~ .+$ptn_num.+$UUID.+"$buf" ]]; then
                     echo -en "\tCreating command to add UEFI boot entry "
 
                     # separate line as $entry contains special characters that
@@ -2465,7 +2465,7 @@ cleanup() {
 
         cmds=("flock '$LCKFILE' sed -Ezi 's|$$_${OPTIONS_S}_$dstdrv[[:space:]]+||g' '$LCKFILE'")
         exec_cmds "${cmds[@]}"
-    elif [[ "$OPTIONS_S" ]]; then
+    elif [[ $OPTIONS_S ]]; then
         echo -e "\tIgnoring trapped signals during cleanup..."
 
         cmds=("trap '' $CANCEL_SIGNALS")
@@ -2497,7 +2497,7 @@ cleanup() {
 result() {
     local -i err=0
 
-    if [[ "$OPTIONS_S" ]] && no_other_session; then
+    if [[ $OPTIONS_S ]] && no_other_session; then
         # if only one clone process then pid lock file can be safely removed
         echo -e "\tDeleting lock file directory $LCKDIR ..."
 
@@ -2508,9 +2508,9 @@ result() {
         ((err=$?))
     fi
 
-    [[ "$1" ]] && cecho -e "$1"
+    [[ $1 ]] && cecho -e "$1"
     
-    if [[ "$START_DATE" ]]; then
+    if [[ $START_DATE ]]; then
         # the timestamp will be used to calculate the run time
         local end_date
         end_date=$(date)

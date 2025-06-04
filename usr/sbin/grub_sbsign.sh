@@ -9,7 +9,7 @@ shopt -s extglob
 # $2    : str, the error message from a command, if any
 # return: 0 if (( $1 == 0 )) else $1
 exit_on_error() {
-    if (( $# != 2 )) || [[ ! "$1" =~ ^-?[0-9]+$ ]]; then
+    if (( $# != 2 )) || [[ ! $1 =~ ^-?[0-9]+$ ]]; then
         local msg="Two params are required and the first must be an integer. "
 
         msg+="Exiting."
@@ -119,7 +119,7 @@ res=$(mokutil --sb-state) # get secure boot state
 # if secure boot is enabled, disable 'insmod' cmds in grub cfg file as the grub
 # bootloader sometimes displays errors like 'error: command failed.' or
 # 'error: prohibited by secure boot policy'
-[[ "${res,,}" =~ enabled ]] &&
+[[ ${res,,} =~ enabled ]] &&
     sed -i -E 's|^(\s*insmod.*)$|true #\1|g' "$grub_cfg_path"
 
 # if grub cfg file contains password hash restrict permissions

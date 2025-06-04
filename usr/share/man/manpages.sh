@@ -20,7 +20,7 @@ for entry in "${entries[@]}"; do
 
     # add correct extention to man page file name
     fname="${file##/*/}"
-    if [[ -f /usr/sbin/"$fname".sh ]]; then
+    if [[ -f /usr/sbin/$fname.sh ]]; then
         entry="$MPDIR/man$n/$fname.sh.$n"
     else
         entry="$MPDIR/man$n/${fname//-*}.sh-${fname//*-}.conf.$n"
