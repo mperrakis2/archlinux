@@ -127,7 +127,7 @@ is_file() {
 prompt() {
     local -n ref_loop="$1"
 
-    if [[ $# -lt 1 || $# -gt 2 || ! $ref_loop =~ ^[0-1]$ ]]; then
+    if [[ $# -lt 1 || $# -gt 2 || ! $ref_loop =~ ^[01]$ ]]; then
         local msg="\nOne or two params required: bool, 0 or 1 (loop or not) and "
         
         msg+="an optional prompt string. Exiting."
