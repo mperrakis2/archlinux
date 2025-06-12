@@ -11,9 +11,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
    or
 
-   $ paru -Syu --skipreview --noinstalldebug --upgrademenu --removemake \
-          --cleanafter --nokeepsrc --sudoloop --nokeeprepocache \
-          --redownload=all --rebuild=tree
+   $ paru
 
    then:
    * $ fwupdmgr update # update firmware
