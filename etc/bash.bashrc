@@ -114,7 +114,7 @@ export HISTTIMEFORMAT='%F %T '
 
 # for the following see
 # https://wiki.archlinux.org/title/Hardware_video_acceleration#Configuring_Vulkan_Video
-export ANV_VIDEO_DECODE=1
-export RADV_PERFTEST=video_decode,video_encode
+lsmod | grep -wq i915 && export ANV_VIDEO_DECODE=1
+lsmod | grep -wq amdgpu && export RADV_PERFTEST=video_decode,video_encode
 
 source /usr/share/doc/pkgfile/command-not-found.bash
