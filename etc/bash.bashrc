@@ -42,10 +42,9 @@ alias sudo="sudo " # so that aliases can be used when calling sudo
 if groups "$(whoami)" | grep wheel &> /dev/null; then
     _pm=pacman
     _pkg=archlinux-keyring
-    _keyring="$_pm -Qu $_pkg && id -u && $_pm --noconfirm -Sy $_pkg; "
-    _keyring+="(( \$(id -u) != 0 ))"
-    alias pacman="sh -c '$_keyring'; (( \$? )) && _pm='sudo $_pm' || _pm=pacman; \$_pm"
-    alias paru="paru -Qu $_pkg && paru --noconfirm -Sy $_pkg; paru"
+    _keyring="id -u && $_pm --needed --noconfirm -Sy $_pkg; (( \$(id -u) != 0 ))"
+    alias pacman="sh -c '$_keyring'; (( \$? )) && _pm='sudo $_pm' || _pm=$_pm; \$_pm"
+    alias paru="paru --needed --noconfirm -Sy $_pkg; paru"
     unset _pm _pkg _keyring
     export SUDO_EDITOR=mousepad
 fi
