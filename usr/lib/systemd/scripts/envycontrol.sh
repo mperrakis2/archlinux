@@ -18,10 +18,10 @@ pkg="envycontrol"
 
 # nvidia hybrid package installed
 if paru -Qsq "$pkg" &> /dev/null; then
-    if ! lsmod | grep -iwq nvidia; then # no nvidia card
+    if ! lsmod | grep -wq nvidia; then # no nvidia card
         paru -Rns --noconfirm "$pkg" # uninstall nvidia hybrid package
     fi
-elif lsmod | grep -iwq nvidia; then # PC with nvidia card
+elif lsmod | grep -wq nvidia; then # PC with nvidia card
     script="$pkg"
 
     # get display manager
