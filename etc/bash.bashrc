@@ -51,7 +51,7 @@ if groups $(whoami) | grep -q wheel; then
     export SUDO_EDITOR=mousepad
     unset _underscore
 elif groups $(whoami) | grep -q root; then
-    alias pacman="$_keyring; 'pacman'"
+    alias pacman="${_keyring//'sudo '}; 'pacman'"
 fi
 unset _keyring
 
