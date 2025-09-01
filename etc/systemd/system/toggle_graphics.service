@@ -1,12 +1,12 @@
 [Unit]
-Description=Enable/Disable graphics services & update graphics driver conf file
+Description=Enable/Disable nvidia services & update X Intel conf file
 
 Before=nvidia-hibernate.service
 Before=nvidia-suspend.service
 Before=nvidia-suspend-then-hibernate.service
 Before=nvidia-resume.service
 Before=nvidia-persistenced.service
-Before=lightdm.service
+Before=sddm.service
 
 [Service]
 Type=oneshot

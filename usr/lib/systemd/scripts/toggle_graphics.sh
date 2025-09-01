@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# enable/disable nvidia services & update intel graphics driver conf file
+# enable/disable nvidia services & update X Intel conf file
 
-services="nvidia-hibernate.service nvidia-suspend.service "\
+readonly SERVICES="nvidia-hibernate.service nvidia-suspend.service "\
 "nvidia-resume.service nvidia-suspend-then-hibernate.service "\
 "nvidia-persistenced.service"
 
 # disable nvidia services if no nvidia kernel module loaded
 if ! lsmod | grep -wq nvidia; then
-    systemctl stop $services
-    systemctl disable $services
+    systemctl stop $SERVICES
+    systemctl disable $SERVICES
 else
     # enable nvidia services if nvidia kernel module loaded
-    for service in $services; do
+    for service in $SERVICES; do
         if ! systemctl is-enabled "$service"; then
             systemctl enable "$service"
         fi
@@ -34,13 +34,13 @@ if find "$REV"; then
 
         if [[ $drv =~ ^(i915|xe) ]]; then # if intel driver
             readonly INTEL_CONF=/etc/X11/xorg.conf.d/20-intel.conf
-            
+
             if (( gen < 4 )); then # use old driver
                 sed -i -e 's|Driver[[:space:]]\+"modesetting"|Driver "intel"|g' \
-                           "$INTEL_CONF"
+                          "$INTEL_CONF"
             else # use new driver
                 sed -i -e 's|Driver[[:space:]]\+"intel"|Driver "modesetting"|g' \
-                           "$INTEL_CONF"
+                          "$INTEL_CONF"
             fi
         fi
     fi
