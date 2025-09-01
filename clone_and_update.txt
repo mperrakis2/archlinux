@@ -7,7 +7,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
 2. system update
    =============
-   use bauh GUI application
+   use bauh GUI utility
 
    or
 
