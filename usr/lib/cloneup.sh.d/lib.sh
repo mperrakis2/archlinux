@@ -21,14 +21,16 @@ clone one drive to another using rsync(1)
 -s, --src <src_drive>        source drive, e.g. /dev/sda
                              must be combined with '-d, --dst' option
 
-if '-s' and '-d' are omitted a list of drives is displayed and user input is
-based on source and destination drive number as per the list
+if '-s' and '-d' are omitted a numbered list of drives is displayed and the
+user has to select source and destination drive number
 
 if '-e' or '-f' is omitted the conf file is read from:
-    * ~/$LCL_CFG_DIR/ if it exists and the script is not run under its
-      own directory ($SCRIPTDIR/)
-    * $DEF_CFG_DIR/ and $OVR_CFG_DIR/ (if it exists) in all
-      other cases
+    ~/$LCL_CFG_DIR/ (if it exists and the script is not run under its
+    own directory, i.e. $SCRIPTDIR/)
+    
+    or
+
+    $DEF_CFG_DIR/ and $OVR_CFG_DIR/ (if it exists)
 
 for more info see $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5)
 helpmsg
