@@ -15,8 +15,8 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
    then:
    * $ fwupdmgr update # update firmware
-   * run kodi to update kodi add ons
-   * run qBitTorrent and update plug ins
+   * if Kodi is installed, run it to update its add ons
+   * if qBittorrent is installed, run it and update its plug ins
 
 3. clear space
    ===========
