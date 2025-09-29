@@ -219,6 +219,11 @@ init() {
         esac
     done
 
+    if (( $(id -u) )); then # exit if not run with sudo
+        cecho "${RED}You must run this script with sudo."
+        exit 1
+    fi
+
     # script mode, i.e. no user input other than cmd line args
     if [[ $srcdrv && $dstdrv ]]; then
         ((script=1))
