@@ -3,7 +3,7 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
 
 THE FOLLOWING REQUIRE ROOT PRIVILEGES
 =====================================
-1. run clone script (man cloneup.sh & man cloneup.sh-exclude.conf)
+1. run clone script (man pages: cloneup.sh(1) & cloneup.sh-exclude.conf(5))
 
 2. system update
    =============
