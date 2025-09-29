@@ -313,13 +313,15 @@ DESCRIPTION
 This script will clone one drive to another using rsync(1). Source and
 destination drives need not be the same size as long as all source data fits on
 destination. Also, the files and/or directories contained in the following
-file(s)
+file(s):
+
 $YELLOW'$FILTERS_FILE'$OFF
 usage_msg
 
         [[ $override_file ]] && cecho "'$override_file'"
 
         cat << usage_msg
+
 will ${YELLOW}NOT$OFF be cloned. Here they are:
 
 usage_msg
