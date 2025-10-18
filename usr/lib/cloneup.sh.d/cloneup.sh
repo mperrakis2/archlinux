@@ -2334,7 +2334,7 @@ clone() {
                     dst_bootdir=$(get_field "$dst_bootdir" "$((MDIR+MDST))")
 
                     echo -e "\tCreating command to install grub bootloader on"\
-                            "bios and boot partitions on destination drive..."
+                            "bios partition on destination drive..."
 
                     # the following three numbers at the beginning of the cmd
                     # are parsed as follows:
