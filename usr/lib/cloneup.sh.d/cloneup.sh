@@ -76,10 +76,9 @@ BOLD=$(tput bold)
 RED="$BOLD$(tput setaf 1)"
 GREEN="$BOLD$(tput setaf 2)"  
 YELLOW="$BOLD$(tput setaf 3)" 
-CYAN="$BOLD$(tput setaf 6)"   
 OFF=$(tput sgr0) # turn off all attributes
 REDB="$BOLD$(tput setab 1)" # bold colors background
-readonly BOLD RED GREEN YELLOW CYAN OFF REDB
+readonly BOLD RED GREEN YELLOW OFF REDB
 
 # these variables are field numbers used by get_field()
 # BEGIN
@@ -332,7 +331,7 @@ will ${YELLOW}NOT$OFF be cloned. Here they are:
 usage_msg
 
         for fd in "${!filters[@]}"; do
-            cecho "$CYAN${filters[fd]}"
+            cecho "$YELLOW${filters[fd]}"
         done
         echo
 
@@ -1152,7 +1151,7 @@ calc_drvspace() {
             fi
         done
 
-        buf="$CYAN'${paths[*]}'$YELLOW has wrong syntax and will be omitted. "
+        buf="$OFF'${paths[*]}'$YELLOW has wrong syntax and will be omitted. "
         buf+="$MSG for correct syntax."
 
         # For valid entries see '$FILTERS_FILE' file.
@@ -1172,7 +1171,7 @@ calc_drvspace() {
         srcptn=$(eval findmnt -no SOURCE -T "$(dirname "${paths[0]:1}")")
 
         if (( $? )); then
-            cechot "$CYAN'${paths[*]}'$YELLOW does not exist and will be omitted."\
+            cechot "$OFF'${paths[*]}'$YELLOW does not exist and will be omitted."\
                    "$MSG."
             continue
         fi
@@ -1181,19 +1180,19 @@ calc_drvspace() {
         # /sys, /proc, etc
         if [[ ${srcptn::1} != "/" ]]; then
             if [[ ${paths[0]::1} == "+" ]]; then
-                cechot "$CYAN'${paths[*]}'$YELLOW is not on the source drive"\
+                cechot "$OFF'${paths[*]}'$YELLOW is not on the source drive"\
                        "and it's an include entry which is not valid. $MSG."
             elif [[ $BOOTPTN =~ $srcdrv$SP ]]; then
                 new_filter filters user_filters paths
             else                
-                cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source"\
+                cechot "$OFF'${paths[*]}'$YELLOW exists but not on the source"\
                        "drive and will be omitted. $MSG."
             fi
             continue
 
         # if paths are not on src drive, skip them
         elif [[ ! $srcptn =~ $srcdrv$SP ]]; then
-            cechot "$CYAN'${paths[*]}'$YELLOW exists but not on the source drive"\
+            cechot "$OFF'${paths[*]}'$YELLOW exists but not on the source drive"\
                    "and will be omitted. $MSG."
             continue
 
@@ -1251,7 +1250,7 @@ calc_drvspace() {
             
         # read next if file(s) and/or dir(s) don't exist
         if (( ! ${#next_entries[@]} )); then
-            cechot "$CYAN'${paths[*]}'$YELLOW does not exist and will be omitted."\
+            cechot "$OFF'${paths[*]}'$YELLOW does not exist and will be omitted."\
                    "$MSG."
             continue
         fi
@@ -1261,7 +1260,7 @@ calc_drvspace() {
         for k in "${!user_filters[@]}"; do
             # if new path is an existing filter, skip it
             if [[ ${paths[*]} == ${user_filters["$k"]} ]]; then
-                cechot "$CYAN'${paths[*]}'$YELLOW is listed more than once"\
+                cechot "$OFF'${paths[*]}'$YELLOW is listed more than once"\
                         "and will be omitted. $MSG."
                 ((match=1))
                 break
@@ -1272,8 +1271,8 @@ calc_drvspace() {
                 # if existing filter "fits" into new filter, skip new
                 if [[ ${user_filters["$k"]: -1} == "/" && \
                         "${paths[*]}" =~ "${user_filters["$k"]}" ]]; then
-                    cechot "$CYAN'${paths[*]}'$YELLOW is under"\
-                           "$CYAN'${user_filters["$k"]}'$YELLOW and will be"\
+                    cechot "$OFF'${paths[*]}'$YELLOW is under"\
+                           "$OFF'${user_filters["$k"]}'$YELLOW and will be"\
                            "omitted. $MSG."
                     ((match=1))
                     break
@@ -1285,8 +1284,8 @@ calc_drvspace() {
                 if [[ ${paths[i-1]: -1} == "/" && \
                       ${user_filters["$k"]} =~ "${paths[*]}" ]]
                 then
-                    cechot "$CYAN'${user_filters["$k"]}'$YELLOW is under"\
-                           "$CYAN'${paths[*]}'$YELLOW and will be omitted. $MSG."
+                    cechot "$OFF'${user_filters["$k"]}'$YELLOW is under"\
+                           "$OFF'${paths[*]}'$YELLOW and will be omitted. $MSG."
                     for i in ${filters["$k"]}; do # remove filter entries
                         unset entries[i]
                     done
@@ -1376,7 +1375,7 @@ calc_drvspace() {
                 unset entries[j]
             done
 
-            buf="$CYAN'${user_filters["$k"]}'$YELLOW is not under an "
+            buf="$OFF'${user_filters["$k"]}'$YELLOW is not under an "
             buf+="exclude entry and will be omitted. $MSG."               
 
             # remove rsync & user filters
@@ -1419,7 +1418,7 @@ calc_drvspace() {
             if $rm_entries; then # remove matched entries
                 # set user message if both filters are includes or excludes
                 [[ ${k::1} == ${f::1} ]] &&
-                    buf="$buf$CYAN'${user_filters["$f"]}'$YELLOW"
+                    buf="$buf'${user_filters["$f"]}'"
                 ((match=1))
             else
                 ((match=0))
@@ -1444,9 +1443,9 @@ calc_drvspace() {
                     # set user message if both filters are includes or excludes
                     if [[ ${k::1} == ${f::1} ]]; then
                         if (( match )); then
-                            buf+=" and $CYAN'${user_filters["$f"]}'$YELLOW"
+                            buf+=" and '${user_filters["$f"]}'"
                         else
-                            buf="$buf$CYAN'${user_filters["$f"]}'$YELLOW"
+                            buf="$buf'${user_filters["$f"]}'"
                         fi
                     fi
                     ((match=1))
@@ -1460,14 +1459,14 @@ calc_drvspace() {
                 filters_rm[$k]= # store filter for removal
                 if [[ ${k::1} != $sign ]]; then
                     # set user message
-                    buf="$CYAN'${user_filters["$k"]}'$YELLOW"
+                    buf="'${user_filters["$k"]}'"
                     for f in "${matched_filters[@]}"; do
-                        buf+=" and $CYAN'${user_filters["$f"]}'$YELLOW"
+                        buf+=" and '${user_filters["$f"]}'"
                         filters_rm[$f]= # store filter for removal
                     done
                     cechot "$buf cancel out each other and will be omitted. $MSG."
                 else
-                    buf="$CYAN'${user_filters["$k"]}'$YELLOW$buf"
+                    buf="'${user_filters["$k"]}'$buf"
                     cechot "$buf and will be omitted. $MSG."
                 fi
             fi                
@@ -1484,9 +1483,9 @@ calc_drvspace() {
     abuf=()
     for buf in "${user_filters[@]}"; do
         if [[ ${buf::1} == "+" ]]; then
-            abuf=("${OFF}Include$YELLOW in cloning  : $CYAN${buf:1}" "${abuf[@]}")
+            abuf=("${OFF}Include in cloning  : $GREEN${buf:1}" "${abuf[@]}")
         else
-            abuf+=("Exclude from cloning: $CYAN${buf:1}")
+            abuf+=("${OFF}Exclude from cloning: $YELLOW${buf:1}")
         fi
     done
         
@@ -1538,14 +1537,14 @@ calc_drvspace() {
         conversion sizes[i]
     done
 
-    cecho -e "\n\tData size on source drive: ${OFF}${sizes[0]}$YELLOW."
+    echo -e "\n\tData size on source drive: ${sizes[0]}."
     if (( total_exc_size )); then
-        cechot "Data size of excluded directories and/or files on source drive:"\
-               "${CYAN}${sizes[1]}$YELLOW."
-        cechot "Total data size to be cloned from source drive:"\
-               "$OFF${sizes[0]} - $CYAN${sizes[1]}$OFF = ${sizes[2]}$YELLOW."
+        echo -e "\tData size of excluded directories and/or files on source"\
+                "drive: $YELLOW${sizes[1]}."
+        cechot "${OFF}Total data size to be cloned from source drive:"\
+               "$OFF${sizes[0]} - $YELLOW${sizes[1]}$OFF = ${sizes[2]}."
     fi
-    cechot "Total space on destination drive: $OFF${sizes[3]}$YELLOW."
+    echo -e "\tTotal space on destination drive: ${sizes[3]}."
     if (( clone_size > dst_drv_size )); then
         cechot "${RED}Data on source drive does not fit on destination drive"\
                "${RED}($YELLOW${sizes[2]} > ${sizes[3]}$RED). Exiting."\
@@ -1576,7 +1575,7 @@ calc_drvspace() {
             srcptn=$(eval findmnt -no SOURCE -T "$buf")
             if (( $? )); then
                 if [[ $buf == "/" ]]; then
-                    cecho "No souce partition found for '$k'. Exiting."\
+                    cecho "${RED}No source partition found for '$k'. Exiting."\
                           | tee -a "$ERRFILE"
                     return 1
                 else
