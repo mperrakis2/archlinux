@@ -338,14 +338,14 @@ usage_msg
         cat << usage_msg
 For more info see $SCRIPTNAME(1) & $SCRIPTNAME-exclude.conf(5).
 
-${YELLOW}LIMITATIONS
-===========$OFF
+${YELLOW}LIMITATIONS$OFF
+===========
 See ${YELLOW}LIMITS$OFF section in $SCRIPTNAME(1).
 
-${YELLOW}WARNING
+${YELLOW}WARNING$OFF
 =======
 Before proceeding close all programs on all user accounts and logout from all
-user accounts but one that will be used to run this script.$OFF
+user accounts but one that will be used to run this script.
 
 DRIVES
 usage_msg
