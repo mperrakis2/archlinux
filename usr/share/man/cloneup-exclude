@@ -1,13 +1,13 @@
 .\" Manpage for exclude.conf used by cloneup.sh.
 .TH CLONEUP.SH-EXCLUDE.CONF 5 "30 September 2024" "1.0" "File Formats"
 .SH NAME
-cloneup.sh-exclude.conf \- configuration file for \fBcloneup.sh\fR(1) that contains files/dirs to be excluded from cloning
+cloneup.sh-exclude.conf \- configuration file for \fBcloneup.sh\fR(1) that contains files/dirs to exclude from cloning
 .SH SYNOPSIS
 /etc/cloneup.sh.d/exclude.conf, /etc/cloneup.sh.d/conf.d/exclude.conf, ~/.config/cloneup.sh.d/exclude.conf, <custom pathname>
 .SH DESCRIPTION
 The default entries in \fBexclude.conf\fR are based on the Filesystem Hierarchy Standard (FHS).
 
-The default directory of the \fBexclude.conf\fR configuration file is \fI/etc/cloneup.sh.d/\fR. The file should not be deleted and if the default entries need to be modified it is best to create a new one under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR but the same filename has to be used. A file under \fI/etc/cloneup.sh.d/conf.d/\fR modifies (overrides) the default one and one under \fI~/.config/cloneup.sh.d/\fR replaces it.
+The default directory of the \fBexclude.conf\fR configuration file is \fI/etc/cloneup.sh.d/\fR. This file should not be deleted and if the default entries need to be modified it is best to create a new file under \fI/etc/cloneup.sh.d/conf.d/\fR and/or \fI~/.config/cloneup.sh.d/\fR (but the SAME filename has to be used). A file under \fI/etc/cloneup.sh.d/conf.d/\fR modifies (overrides) the default one and one under \fI~/.config/cloneup.sh.d/\fR replaces it.
 
 \fBcloneup.sh\fR(1) uses the configuration file under \fI~/.config/cloneup.sh.d/\fR if not run under its directory (\fI/usr/sbin/\fR).
 
@@ -31,7 +31,7 @@ A leading plus (+) sign specifies an include entry.
 
 A tuple requires at least two entries and one of them has to be an exclude. If there's no exclude entry for an include entry the include entry is ignored. The exclude entry need not preceed the include entries.
 
-If you want to exclude a pathname only if it's a file you can create a tuple as follows:
+If you want to exclude a pathname, only if it's a file, you can create a tuple as follows:
     -/home/user/report  (exclude a file or directory named 'report')
     +/home/user/report/ (include directory 'report')
 
@@ -42,7 +42,7 @@ Another example of a tuple:
 
 .I SPECIAL & ESCAPED CHARACTERS
 
-If a filename or dirname includes spaces, parentheses or escaped characters, e.g. newline, they have to be escaped. Consider the following output of the ls command:
+If a filename or dirname includes spaces, parentheses or escaped characters, e.g. newline, they have to be escaped. Consider the following output of the \fBls\fR(1) command:
 
     [prompt]$ ls -1
     \'/home/user/monthly\'$\'\\n\'\'reports/november\'
@@ -93,7 +93,7 @@ A leading sign ('-' or '+') is followed by a mandatory file specification (<fspe
 
 .B d)\fR any line with syntax '-|+/[<path>] [<path>]<name>' where:
 
-A leading sign ('-' or '+') is followed by a '/' and an optional <path> which can have a trailing '/' (all metacharacters of the bash shell can be used in <path>). The next token contains an optional <path> which must not have a leading '/' and a mandatory  <name> which specifies filenames or dirnames. If both <path> and <name> are specified they must be separated by a '/'. The following metacharacters can be used in [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies a directory only (no files).
+A leading sign ('-' or '+') is followed by a '/' and an optional <path> which can have a trailing '/' (all metacharacters of the bash shell can be used in <path>). The next token contains an optional <path> which must not have a leading '/' and a mandatory  <name> which specifies filenames or dirnames. If both <path> and <name> are specified they must be separated by a '/'. The following metacharacters can be used in [<path>]<name>: *, ?, [], [^]. <name> can have a trailing '/' which specifies directories only (no files).
 
 .I invalid examples
     The following examples are invalid, as the second token contains some metacharacters that are interpreted as plain characters (valid metacharacters for the second token are *, ?, [], [^]).
@@ -149,4 +149,4 @@ A leading sign ('-' or '+') is followed by a '/' and an optional <path> which ca
     -/dir1/+(*jpg|*mp3)/          dir2/dir3/[^p]*
     -/dir1/!(*jpg|*mp3)           dir2/dir3/[^p]*/
 .SH SEE ALSO
-\fBcloneup.sh\fR(1)
+\fBcloneup.sh\fR(1), \fBls\fR(1)
