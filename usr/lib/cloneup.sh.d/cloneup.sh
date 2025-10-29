@@ -326,12 +326,17 @@ usage_msg
 
         cat << usage_msg
 
-will ${YELLOW}NOT$OFF be cloned. Here they are:
+will ${YELLOW}NOT$OFF be cloned unless prefixed by a '+' sign. Here they are:
 
 usage_msg
+        local entry
 
-        for fd in "${!filters[@]}"; do
-            cecho "$YELLOW${filters[fd]}"
+        for entry in "${filters[@]}"; do
+            if [[ "${entry:0:1}" == '+' ]]; then
+                cecho "$GREEN$entry"
+            else
+                cecho "$YELLOW$entry"
+            fi
         done
         echo
 
