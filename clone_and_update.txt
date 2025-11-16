@@ -7,6 +7,8 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    ===========
    $ bleachbit
    $ sudo bleachbit
+   * if Kodi is installed, run it to update its add ons
+   * if qBittorrent is installed, run it and update its plug ins
    reboot
 
 2. run clone script (man pages: cloneup.sh(1) & cloneup.sh-exclude.conf(5))
@@ -19,7 +21,6 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
    $ paru
 
-   then:
-   * $ fwupdmgr update # update firmware
-   * if Kodi is installed, run it to update its add ons
-   * if qBittorrent is installed, run it and update its plug ins
+   then
+
+   $ fwupdmgr update # update firmware
