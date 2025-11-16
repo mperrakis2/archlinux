@@ -3,9 +3,15 @@ Education is the path from cocky ignorance to miserable uncertainty. (Mark Twain
 
 THE FOLLOWING REQUIRE ROOT PRIVILEGES
 =====================================
-1. run clone script (man pages: cloneup.sh(1) & cloneup.sh-exclude.conf(5))
+1. clear space
+   ===========
+   $ bleachbit
+   $ sudo bleachbit
+   reboot
 
-2. system update
+2. run clone script (man pages: cloneup.sh(1) & cloneup.sh-exclude.conf(5))
+
+3. system update
    =============
    use bauh package manager (GUI utility)
 
@@ -17,8 +23,3 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    * $ fwupdmgr update # update firmware
    * if Kodi is installed, run it to update its add ons
    * if qBittorrent is installed, run it and update its plug ins
-
-3. clear space
-   ===========
-   $ bleachbit
-   $ sudo bleachbit
