@@ -2122,10 +2122,15 @@ clone() {
                          '$srcmnt' '$dstmnt'")
     done
 
-    # add commands to create swap files, if any, on dst
-    (( ${#swap_file_cmds[@]} )) && cmds+=("${swap_file_cmds[@]}")
+    buf="\n\tExecuting cloning commands "
 
-    echo -e "\n\tExecuting cloning commands (this may take a while)..."
+    # add commands to create swap files, if any, on dst
+    if (( ${#swap_file_cmds[@]} )); then
+        cmds+=("${swap_file_cmds[@]}")
+        buf+="and commands to create swap files.\n\t"
+    fi
+
+    echo -e "$buf(this may take a while)...\n"
 
     exec_cmds "${cmds[@]}"
     ((err=$?)); ((err)) && return $err
