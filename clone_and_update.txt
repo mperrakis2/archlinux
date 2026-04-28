@@ -15,7 +15,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
 
 3. system update
    =============
-   use PacHub package manager (GUI utility)
+   use Octopi package manager (GUI utility)
 
    or
 
