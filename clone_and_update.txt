@@ -24,3 +24,4 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    then
 
    $ fwupdmgr update # update firmware
+   $ sudo pacdiff
