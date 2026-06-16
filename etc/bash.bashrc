@@ -40,7 +40,7 @@ alias diff='diff --color=auto'
 alias sudo="sudo " # so that aliases can be used when calling sudo
 
 _keyring=\
-"'pacman' -Qu archlinux-keyring && "\
+"sudo 'pacman' -Sy && 'pacman' -Qu archlinux-keyring && "\
 "sudo 'pacman' --noconfirm -Sy archlinux-keyring; "\
 "(( \$(id -u) != 0 ))"
 
