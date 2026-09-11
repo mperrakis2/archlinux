@@ -24,7 +24,7 @@ cloneup copies an entire drive, partition by partition, to another drive. It cop
 - **Dry run.** `-r` prints every command cloneup would run, without running any of them.
 - **Safety checks.** cloneup won't use the drive the system booted from, or the drive it's running from, as the destination. It validates your choice and lets you re-enter it, and it notices if the list of drives changes while it's waiting.
 - **Several clones at once.** You can clone one drive to several others in parallel from separate terminals. A lock file, managed with `flock`, stops two sessions from writing to the same drive.
-- **Progress and logs.** Partitions are copied in parallel, with `rsync` progress on screen. Each session logs the files copied, any errors and the commands it ran, under `/var/log/cloneup.sh.d/`.
+- **Progress and logs.** `rsync` shows its progress on screen as each partition is copied. Each session logs the files copied, any errors and the commands it ran, under `/var/log/cloneup.sh.d/`.
 - **No surprises mid-clone.** On systemd systems, sleep, shutdown and the lid switch are blocked until cloning finishes. Ctrl-C cancels cleanly at any point.
 - **Configurable exclusions.** An exclude file controls what is left out, with include rules for exceptions. cloneup reports and drops rules that cancel out or duplicate each other. Settings are layered: system defaults, local overrides, per-user files, or a file named on the command line.
 - **Swap handled properly.** Swap partitions and swap files are recreated on the destination rather than copied, and the configuration is updated to match.
@@ -87,7 +87,7 @@ create_partitions &&  # repartition and format the destination if needed
 clone                 # copy each partition with rsync, then update the boot setup
 ```
 
-Every command that changes a drive goes through one function, `exec_cmds` in `lib.sh`. It logs the command, runs long jobs such as `rsync` in the background and waits for them, handles interruptions, and during a dry run prints the command instead of running it.
+Every command that changes a drive goes through one function, `exec_cmds` in `lib.sh`. It logs each command and, during a dry run, prints it instead of running it. Long jobs such as `rsync` are started in the background and waited on, one at a time, so that signals such as Ctrl-C are handled straight away instead of only when the job finishes.
 
 ### Where to start reading the code
 
