@@ -1292,11 +1292,11 @@ calc_drvspace() {
                     cechot "$OFF'${user_filters["$k"]}'$YELLOW is under"\
                            "$OFF'${paths[*]}'$YELLOW and will be omitted. $MSG."
                     for i in ${filters["$k"]}; do # remove filter entries
-                        unset entries[i]
+                        unset 'entries[i]'
                     done
                     
                     # remove rsync & user filters
-                    unset filters["$k"] user_filters["$k"]
+                    unset 'filters["$k"]' 'user_filters["$k"]'
                 fi                    
             fi
         done 
@@ -1377,14 +1377,14 @@ calc_drvspace() {
             update "$j" matched # update matched entries
 
             for j in ${filters["$k"]}; do # remove filter entries
-                unset entries[j]
+                unset 'entries[j]'
             done
 
             buf="$OFF'${user_filters["$k"]}'$YELLOW is not under an "
             buf+="exclude entry and will be omitted. $MSG."               
 
             # remove rsync & user filters
-            unset filters["$k"] user_filters["$k"]
+            unset 'filters["$k"]' 'user_filters["$k"]'
             cechot "$buf"                
         fi
     done
@@ -1480,7 +1480,7 @@ calc_drvspace() {
         # remove matched filters, i.e. include and exclude filters that cancel
         # out each other, or filters that are equal or under others
         for k in "${!filters_rm[@]}"; do 
-            unset filters["$k"] user_filters["$k"] # remove rsync & user filters
+            unset 'filters["$k"]' 'user_filters["$k"]' # remove rsync & user filters
         done        
     fi
 
@@ -2026,6 +2026,7 @@ clone() {
                             if [[ $ptn == $(get_field "$ptn_pair" "$MPTN") ]]
                             then
                                 dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
+                                file=${file#$(findmnt -no TARGET -T "$file")}
 
                                 # the following three numbers at the beginning
                                 # of the cmd are parsed as follows:
@@ -2102,7 +2103,7 @@ clone() {
             fi
         fi
 
-        flags="aAhHxlzEUtX"
+        flags="aAhHxlEUtX"
 
         # After tests, rsync does not support extended attributes on HFS
         # filesystems so that option is removed below. After mounting an HFS
@@ -2187,11 +2188,12 @@ clone() {
 
             # create cmd(s) for grub cfg files
             mapfile -t files < <(grep swap "$file" 2>> "$ERRFILE")
+            buf='$(findmnt -no TARGET -T "$file")/'
             for file in "${files[@]}"; do
                 # if swap entry is a file and not a partition
                 if [[ ${file::1} == "/" ]]; then
-                    file="${file%%+( *)}"   # get swap filename
-                    file="$dstmnt${file:1}" # add dst dir and remove '/'
+                    file="${file%%+( *)}" # get swap filename
+                    file="$buf${file:1}"  # add dst dir and remove '/'
 
                     # get swap file offset
                     ((size=$(filefrag -v "$file" | \
@@ -2251,7 +2253,7 @@ clone() {
                       ! ${files[*]} =~ "${grubcfg_files[buf]}" ]]
                 then
                     files+=("${grubcfg_files[buf]}")
-                    unset grubcfg_files[buf]
+                    unset 'grubcfg_files[buf]'
                 elif grep -q "$UUID" "${grubcfg_files[buf]}" 2>> "$ERRFILE"; then
                     [[ ! ${abuf[*]} =~ "${grubcfg_files[buf]}" ]] &&
                     abuf+=("${grubcfg_files[buf]}")
@@ -2548,7 +2550,7 @@ result() {
 
 declare -i err=0
 
-source /usr/lib/"$SCRIPTNAME".d/lib.sh && init $@
+source /usr/lib/"$SCRIPTNAME".d/lib.sh && init "$@"
 ((err=$?))
 readonly FILTERS_FILE FSTYPES_FILE
 

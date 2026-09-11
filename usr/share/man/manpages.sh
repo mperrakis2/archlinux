@@ -8,7 +8,7 @@ SCRIPTDIR=$(cd "$(dirname "${BASH_SOURCE:-$0}")" && pwd) # script dir
 readonly SCRIPTDIR
 
 # get entries under script dir
-mapfile -t entries < <(grep --exclude=*.sh "TH" "$SCRIPTDIR"/*)
+mapfile -t entries < <(grep --exclude=*.sh "^\.TH" "$SCRIPTDIR"/*)
 
 readonly MPDIR="/usr/share/man/"    # man pages dir
 for entry in "${entries[@]}"; do

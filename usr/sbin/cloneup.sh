@@ -30,8 +30,11 @@ if [[ $(ps -p 1 -o comm=) == systemd ]]; then
 else
     "$SCRIPTPATH" "${params[@]}"
 fi
+rc=$?
 
 if ((wait)); then
     echo -e '\nPress any key to exit.'
     read -rsn 1
 fi
+
+exit "$rc"

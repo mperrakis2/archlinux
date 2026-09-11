@@ -410,7 +410,7 @@ update() {
         ((idx2=${idx_pair/+([0-9]),})) # get 2nd filter idx
 
         if (( idx1 == $1 || idx2 == $1 )); then # remove equal
-            unset ref_matched[$idx_pair]
+            unset 'ref_matched[$idx_pair]'
 
         # create new match with updated indices and delete existing
         elif (( idx1 > $1 )); then
@@ -419,10 +419,10 @@ update() {
             else
                 ref_matched[$((idx1-1)),$((idx2-1))]="${ref_matched[$idx_pair]}"            
             fi
-            unset ref_matched[$idx_pair]
+            unset 'ref_matched[$idx_pair]'
         elif (( idx2 > $1 )); then
             ref_matched[$idx1,$((idx2-1))]="${ref_matched[$idx_pair]}"            
-            unset ref_matched[$idx_pair]
+            unset 'ref_matched[$idx_pair]'
         fi    
     done
 }
@@ -542,7 +542,7 @@ tuple_removal() {
     for matched_idx in ${matched[$matched_idx]}; do
         # store indices of include entries only
         (( j % 2 == 0 )) && ref_removed_entries[$matched_idx]=
-        unset ref_entries[matched_idx]
+        unset 'ref_entries[matched_idx]'
         ((++j))
     done
 
@@ -601,12 +601,12 @@ filter_removal() {
             # entry of the reverse pair.
             if [[ ${matched[$idx2,$idx1]} =~ "$idx $prev_idx " ]]; then
                 if [[ -v ref_entries[prev_idx] ]]; then
-                    unset ref_entries[idx]
+                    unset 'ref_entries[idx]'
                 else
                     ((removed+=1))
                 fi
             else
-                unset ref_entries[prev_idx]                
+                unset 'ref_entries[prev_idx]'                
             fi
             
             ref_removed_entries[$prev_idx]= # store entry index
@@ -1020,7 +1020,7 @@ exec_cmds() {
     local -i i
 
     for i in "${!cmds[@]}"; do # remove empty cmd
-        [[ -z ${cmds[i]//[[:space:]]} ]] && unset cmds[i]
+        [[ -z ${cmds[i]//[[:space:]]} ]] && unset 'cmds[i]'
     done
     (( ! ${#cmds[@]} )) && return 0 # return if no cmds
 
