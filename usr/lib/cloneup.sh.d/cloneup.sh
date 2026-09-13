@@ -2188,7 +2188,6 @@ clone() {
             (( $? == 0 )) && cmds+=("$cmd '$file'")
 
             mapfile -t files < <(grep swap "$file" 2>> "$ERRFILE")
-            buf=$(findmnt -no TARGET -T "$file")/
             for file in "${files[@]}"; do
                 # if swap entry is a file and not a partition
                 if [[ ${file::1} == "/" ]]; then
