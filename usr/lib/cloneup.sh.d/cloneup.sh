@@ -2026,18 +2026,19 @@ clone() {
                             if [[ $ptn == $(get_field "$ptn_pair" "$MPTN") ]]
                             then
                                 dstmnt=$(get_field "$ptn_pair" "$((MDIR+MDST))")
-                                file=${file#$(findmnt -no TARGET -T "$file")}
+                                srcmnt=$(findmnt -no TARGET -T "$file")
+                                file="${file#"${srcmnt%/}"}" # keeps a leading '/'
 
                                 # the following three numbers at the beginning
                                 # of the cmd are parsed as follows:
                                 # 1: run in the background
                                 # 1: redirect stdout
                                 # 0: don't redirect stderr
-                                cmd="110 dd if=/dev/zero of='$dstmnt'/'$file' "
+                                cmd="110 dd if=/dev/zero of='${dstmnt%/}$file' "
                                 cmd+="bs=1M count=$count status=progress"
                                 swap_file_cmds+=("$cmd")
-                                swap_file_cmds+=("chmod 0600 '$dstmnt'/'$file'")
-                                swap_file_cmds+=("mkswap -f -U clear '$dstmnt'/'$file'")
+                                swap_file_cmds+=("chmod 0600 '${dstmnt%/}$file'")
+                                swap_file_cmds+=("mkswap -f -U clear '${dstmnt%/}$file'")
                                 break
                             fi
                         done
@@ -2186,14 +2187,15 @@ clone() {
             cmd=$(build_sed_exps "$file" sed_exps)
             (( $? == 0 )) && cmds+=("$cmd '$file'")
 
-            # create cmd(s) for grub cfg files
             mapfile -t files < <(grep swap "$file" 2>> "$ERRFILE")
-            buf='$(findmnt -no TARGET -T "$file")/'
+            buf=$(findmnt -no TARGET -T "$file")/
             for file in "${files[@]}"; do
                 # if swap entry is a file and not a partition
                 if [[ ${file::1} == "/" ]]; then
-                    file="${file%%+( *)}" # get swap filename
-                    file="$buf${file:1}"  # add dst dir and remove '/'
+                    file="${file%%+( *)}" # swap filename, as in src fstab
+                    srcmnt=$(findmnt -no TARGET -T "$file") # which src partition it's on
+                    dstmnt=$(get_dst_mnt "$srcmnt")         # its dst mountpoint
+                    file="${dstmnt%/}${file#"${srcmnt%/}"}"
 
                     # get swap file offset
                     ((size=$(filefrag -v "$file" | \

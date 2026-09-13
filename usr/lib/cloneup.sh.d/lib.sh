@@ -1144,6 +1144,37 @@ rm_lba_flag() {
     echo "$flags_no_lba"
 }
 
+# get the dst mountpoint that corresponds to a src mountpoint
+# $1    : str, src mountpoint, e.g. '/home' or '/'
+# $2... : str, partition data (see format in mount_ptn() function)
+# stdout: the corresponding dst mountpoint, e.g. '/run/media/user/UUID/'
+# return: int, 0 if found else 1
+get_dst_mnt() {
+    if (( $# < 2 )); then
+        local msg="\nAt least two params required: src mountpoint and rsync "
+
+        msg+="params. Exiting."
+        exit_with_stack "$msg"
+    fi
+
+    local ptn_pair
+    local -a rsync_params=("${@:2}") # get all params except first one
+    local srcmnt
+
+    # iterate over partition data to find the src mountpoint
+    for ptn_pair in "${rsync_params[@]}"; do
+        srcmnt=$(get_field "$ptn_pair" "$MDIR")
+
+        # mountpoints, except '/', have a trailing '/' (see mount_ptn())
+        if [[ ${srcmnt%/} == "${1%/}" ]]; then
+            get_field "$ptn_pair" "$((MDIR+MDST))"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 # get the destination pathnames of a file based on mount point
 # $1    : str, filename
 # $@    : array of str, rsync params
