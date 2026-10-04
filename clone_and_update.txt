@@ -9,7 +9,7 @@ THE FOLLOWING REQUIRE ROOT PRIVILEGES
    $ sudo bleachbit
    * if Kodi is installed, run it to update its add ons
    * if qBittorrent is installed, run it and update its plug ins
-   reboot
+   $ reboot
 
 2. run clone script (man pages: cloneup.sh(1) & cloneup.sh-exclude.conf(5))
 
