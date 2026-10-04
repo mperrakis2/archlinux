@@ -1166,8 +1166,8 @@ get_dst_mnt() {
         srcmnt=$(get_field "$ptn_pair" "$MDIR")
 
         # mountpoints, except '/', have a trailing '/' (see mount_ptn())
-        if [[ ${srcmnt%/} == "${1%/}" ]]; then
-            get_field "$ptn_pair" "$((MDIR+MDST))"
+        if [[ "${srcmnt%/}" == "${1%/}" ]]; then
+            echo "$(get_field "$ptn_pair" "$((MDIR+MDST))")"
             return 0
         fi
     done

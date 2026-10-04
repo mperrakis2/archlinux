@@ -2193,7 +2193,7 @@ clone() {
                 if [[ ${file::1} == "/" ]]; then
                     file="${file%%+( *)}" # swap filename, as in src fstab
                     srcmnt=$(findmnt -no TARGET -T "$file") # which src partition it's on
-                    dstmnt=$(get_dst_mnt "$srcmnt")         # its dst mountpoint
+                    dstmnt=$(get_dst_mnt "$srcmnt" "${rsync_params[@]}") # its dst mountpoint
                     file="${dstmnt%/}${file#"${srcmnt%/}"}"
 
                     # get swap file offset
