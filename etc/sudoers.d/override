@@ -9,7 +9,7 @@ ALL ALL=NOPASSWD: /usr/lib/systemd/scripts/envycontrol.sh
 
 # Set default EDITOR to restricted version of nano, and do not allow visudo to
 # use EDITOR/VISUAL.
-Defaults editor=/usr/bin/rnano, !env_editor
+Defaults editor=/usr/bin/micro, !env_editor
 
 Defaults rootpw
 Defaults passwd_timeout=0
