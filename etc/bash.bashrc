@@ -108,9 +108,14 @@ fi
 
 PS1="[\[\e[1;${color}m\]\u\[\e[0m\]@\[\e[1;32m\]\H\[\e[0m\]: "
 PS1+="\[\e[1;${color}m\]\w\[\e[0m\] \[\e[1;32m\]\A\[\e[0m\]]$suffix "
+unset suffix
+
 export PS1
 export HISTCONTROL=erasedups
 export HISTTIMEFORMAT='%F %T '
+
+# Make backspace handle multibyte (Greek) characters correctly in the tty
+[[ $- == *i* ]] && stty iutf8
 
 # for the following see
 # https://wiki.archlinux.org/title/Hardware_video_acceleration#Configuring_Vulkan_Video
