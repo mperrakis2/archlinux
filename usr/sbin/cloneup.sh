@@ -1,5 +1,9 @@
 #! /bin/bash
 
+# set locale to C.UTF-8 to avoid issues with non-ASCII characters in the output
+export LC_ALL=C.UTF-8 
+unset LANGUAGE
+
 # wrapper for clone script
 
 readonly SCRIPTPATH=/usr/lib/cloneup.sh.d/cloneup.sh
